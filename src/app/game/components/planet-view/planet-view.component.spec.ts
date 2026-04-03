@@ -63,20 +63,20 @@ describe('PlanetViewComponent', () => {
     expect(component.localAutoLabel).toBeTruthy();
   });
 
-  it('should not have unlocked cargo hold initially', () => {
-    expect(component.hasUnlockedCargoHold).toBeFalse();
+  it('should not have unlocked the orbital station panel initially', () => {
+    expect(component.hasUnlockedOrbitalStationPanel).toBeFalse();
   });
 
-  it('should toggle cargo collapsed', () => {
-    expect(component.cargoCollapsed).toBeFalse();
-    component.toggleCargoCollapsed();
-    expect(component.cargoCollapsed).toBeTrue();
-    component.toggleCargoCollapsed();
-    expect(component.cargoCollapsed).toBeFalse();
+  it('should toggle orbital station collapsed', () => {
+    expect(component.stationCollapsed).toBeFalse();
+    component.toggleStationCollapsed();
+    expect(component.stationCollapsed).toBeTrue();
+    component.toggleStationCollapsed();
+    expect(component.stationCollapsed).toBeFalse();
   });
 
-  it('should produce a cargo toggle label', () => {
-    expect(component.cargoToggleLabel).toBeTruthy();
+  it('should produce an orbital station toggle label', () => {
+    expect(component.stationToggleLabel).toBeTruthy();
   });
 
   it('should get resource amount from service', () => {
@@ -85,8 +85,12 @@ describe('PlanetViewComponent', () => {
     expect(component.getResourceAmount('carbon')).toBeGreaterThan(0);
   });
 
-  it('should get crafted amount from service', () => {
-    expect(component.getCraftedAmount('condensedCarbon')).toBe(0);
+  it('should get item label for crafted items', () => {
+    expect(component.getItemLabel('condensedCarbon' as any)).toBeTruthy();
+  });
+
+  it('should get item color for crafted items', () => {
+    expect(component.getItemColor('condensedCarbon' as any)).toBe('#f97316');
   });
 
   it('should get planet multiplier', () => {

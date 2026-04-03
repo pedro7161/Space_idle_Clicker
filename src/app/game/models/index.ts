@@ -6,6 +6,7 @@ export type { Multiplier, MultiplierType } from './multiplier.model';
 export type { Planet } from './planet.model';
 export type { Recipe } from './recipe.model';
 export type { ResourceUpgrade, UpgradeEffect } from './resource-upgrade.model';
+export type { OwnedSpaceStation, SpaceStationBlueprint } from './space-station.model';
 export type {
   CraftedDef,
   CraftedId,
@@ -14,6 +15,6 @@ export type {
   ResourceDef,
   ResourceId,
 } from './resource.model';
-export type { Ship } from './ship.model';
+export type { OwnedShip, Ship, ShipRoute, ShipStatus, ShipTransit } from './ship.model';
 export type { ShipPart } from './ship-part.model';
 export type { Tool } from './tool.model';

@@ -33,6 +33,10 @@ describe('GameComponent', () => {
     expect(component.hasStarted).toBeFalse();
   });
 
+  it('should default to the surface workspace', () => {
+    expect(component.activeWorkspace).toBe('surface');
+  });
+
   describe('startGame', () => {
     it('should set hasStarted to true', () => {
       component.startGame();
@@ -94,6 +98,45 @@ describe('GameComponent', () => {
     });
   });
 
+  describe('ships workspace', () => {
+    it('should not unlock fleet access before launch', () => {
+      component.startGame();
+      expect(component.hasFleetAccess()).toBeFalse();
+    });
+
+    it('should toggle to ships workspace once a ship exists', () => {
+      component.startGame();
+      const state = gameService.getState();
+      state.shipLaunched = true;
+      state.ships = [
+        {
+          id: 'ship-1',
+          definitionId: 'shuttle',
+          routeId: null,
+          status: 'idle',
+          currentPlanetId: state.currentPlanetId,
+          cargo: { itemId: null, amount: 0 },
+          transit: null,
+        },
+      ];
+
+      expect(component.hasFleetAccess()).toBeTrue();
+      expect(component.activeWorkspace).toBe('surface');
+
+      component.toggleShipsWorkspace();
+      expect(component.activeWorkspace).toBe('ships');
+
+      component.toggleShipsWorkspace();
+      expect(component.activeWorkspace).toBe('surface');
+    });
+
+    it('should ignore ships workspace toggle when fleet access is locked', () => {
+      component.startGame();
+      component.toggleShipsWorkspace();
+      expect(component.activeWorkspace).toBe('surface');
+    });
+  });
+
   describe('mobile resources', () => {
     it('should toggle showMobileResources', () => {
       expect(component.showMobileResources).toBeFalse();
@@ -110,6 +153,15 @@ describe('GameComponent', () => {
       component.requestResetFromSettings();
       expect(component.showSettingsDialog).toBeFalse();
       expect(component.showResetDialog).toBeTrue();
+    });
+  });
+
+  describe('openChangelogDialog', () => {
+    it('should close settings and open the changelog dialog', () => {
+      component.showSettingsDialog = true;
+      component.openChangelogDialog();
+      expect(component.showSettingsDialog).toBeFalse();
+      expect(component.showChangelogDialog).toBeTrue();
     });
   });
 

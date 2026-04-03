@@ -16,8 +16,9 @@ The design goal is not a generic idle game where everything scales passively fro
 2. Upgrade that resource path.
 3. Unlock crafting and convert raw materials into refined ones.
 4. Build automation to reduce manual work.
-5. Use crafted materials to support ship construction and later expansion.
-6. Grow into a stronger interplanetary resource network.
+5. Use crafted materials to support ship construction and first launch.
+6. Move resources between planets through assigned ship routes.
+7. Build orbital stations to improve logistics and prepare future hub systems.
 
 ## Product Clarifications
 
@@ -27,8 +28,10 @@ These are current design decisions and should override older wording if there is
 - `Solara Basin` is the starter environment for learning the basics.
 - Desktop/PC is the primary target layout.
 - Mobile support is valuable, but it must not degrade the desktop experience.
-- The shared cargo hold should feel anchored to the bottom of the playfield.
-- The shared cargo hold should only appear after the player unlocks the crafting/shared inventory layer.
+- Planet inventories are local, not globally shared.
+- The old cargo-hold area on the mining surface is now an orbital station module instead of a crafted-item storage panel.
+- The ships menu unlocks after the player owns a ship and replaces the left-side mining workspace when opened.
+- Orbital stations are per-planet logistics upgrades and should naturally evolve into future hub mechanics.
 
 ## Current Implemented Systems
 
@@ -36,10 +39,17 @@ The current project includes:
 
 - one active manual mining mode at a time
 - multiple raw resources and crafted materials
+- per-planet inventories for raw and crafted items
 - per-resource upgrade paths
 - per-resource automation
 - planet-specific resource multipliers
 - ship-part construction
+- first-ship launch progression
+- multiple ship tiers with different cargo and travel-speed profiles
+- dedicated ships workspace with route management, shipyard, and ship stats views
+- repeatable logistics routes between discovered planets
+- orbital station construction with route-efficiency bonuses
+- in-game changelog dialog
 - save/load through local storage
 - save import/export
 - language catalogs for future localization
@@ -49,9 +59,11 @@ The current project includes:
 
 - The main mining surface should stay visually dominant.
 - The right-side operations panel is a desktop sidebar and a mobile drawer.
+- The ships workspace should feel like a true page swap, not a small embedded subsection.
 - Resource summaries can be collapsed on smaller screens.
 - Dense progression controls should scroll inside their own panels instead of stretching the full layout.
 - Important unlock-driven UI should only appear when it becomes relevant.
+- Planet-surface support UI should reinforce local-planet management rather than duplicate the fleet screen.
 
 ## Technical Structure
 
@@ -105,11 +117,11 @@ npm test
 Test coverage includes:
 
 - `FormatNumberPipe` — number formatting thresholds (K, M, B, T suffixes)
-- `GameService` — core game logic: initialization, mining, upgrades, crafting, auto miners, ship parts, planet travel, save/load/export/import, reset, visibility checks, affordability, and progress scoring
+- `GameService` — core game logic: initialization, mining, upgrades, crafting, auto miners, ship parts, planet travel, fleet routes, space stations, save/load/export/import, reset, visibility checks, affordability, and progress scoring
 - `AppComponent` — root component creation and router outlet rendering
-- `GameComponent` — start screen flow, fresh start, reset dialog, settings dialog, mobile panel toggles, save import handling, and destroy lifecycle
-- `StatsHeaderComponent` — resource display, active resource stats, label generation, and mobile toggle labels
-- `PlanetViewComponent` — mineral node generation, mining click handling, floating text spawning, mine animation, cargo hold toggle, resource/crafted amounts, and planet multipliers
+- `GameComponent` — start screen flow, fresh start, reset dialog, settings dialog, ships workspace toggles, mobile panel toggles, save import handling, and destroy lifecycle
+- `StatsHeaderComponent` — resource display, active resource stats, label generation, ships button labels, and mobile toggle labels
+- `PlanetViewComponent` — mineral node generation, mining click handling, floating text spawning, mine animation, orbital station panel state, item labels/colors, and planet multipliers
 - `UpgradePanelComponent` — tab structure, inventory labels/colors, upgrade/craft/automation delegation, ship part building, planet travel, and all label generators
 - `ResetDialogComponent` — confirm/cancel output emissions and backdrop click handling
 - `SettingsDialogComponent` — input binding, feedback updates, import/export/locale change emissions, and file download
@@ -136,8 +148,8 @@ Likely next areas of depth:
 
 - stronger planet specialization
 - deeper crafting chains
-- logistics and shipping between planets
-- space-station or shared routing systems
+- station-to-station hub systems
+- richer routing controls and multi-stop logistics
 - richer mid-game and post-first-ship progression
 
 ## Notes For Future Changes

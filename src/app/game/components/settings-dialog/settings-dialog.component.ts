@@ -18,6 +18,7 @@ export class SettingsDialogComponent {
   readonly importRequested = output<string>();
   readonly localeChanged = output<SupportedLocale>();
   readonly resetRequested = output<void>();
+  readonly changelogRequested = output<void>();
 
   importValue = '';
   feedbackMessage = '';

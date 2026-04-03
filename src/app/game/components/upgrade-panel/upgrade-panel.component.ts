@@ -336,6 +336,16 @@ export class UpgradePanelComponent implements OnDestroy {
       : this.copy.messages.ui.upgradePanel.discover;
   }
 
+  getPlanetRequirementLabel(planet: Planet): string | null {
+    if (planet.requiredShipTier <= 0) {
+      return null;
+    }
+
+    return this.copy.format(this.copy.messages.ui.upgradePanel.planetRequirement, {
+      tier: planet.requiredShipTier,
+    });
+  }
+
   startInventoryResize(event: PointerEvent): void {
     if (event.pointerType === 'mouse' && event.button !== 0) {
       return;

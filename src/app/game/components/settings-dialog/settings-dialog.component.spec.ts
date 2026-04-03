@@ -95,6 +95,12 @@ describe('SettingsDialogComponent', () => {
     expect(component.resetRequested.emit).toHaveBeenCalled();
   });
 
+  it('should emit changelogRequested output', () => {
+    spyOn(component.changelogRequested, 'emit');
+    component.changelogRequested.emit();
+    expect(component.changelogRequested.emit).toHaveBeenCalled();
+  });
+
   it('should emit closed output', () => {
     spyOn(component.closed, 'emit');
     component.closed.emit();

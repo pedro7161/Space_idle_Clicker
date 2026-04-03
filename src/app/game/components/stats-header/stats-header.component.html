@@ -63,6 +63,20 @@
           <span>{{ mobileMenuLabel }}</span>
         </button>
 
+        @if (shipsUnlocked()) {
+          <button
+            class="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border px-4 py-2.5 text-[0.76rem] font-bold transition min-[1600px]:gap-2.5 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-5 min-[1600px]:py-3 min-[1600px]:text-[0.84rem]"
+            [ngClass]="shipsViewActive()
+              ? 'border-emerald-400/35 bg-emerald-500/15 text-emerald-100 shadow-[inset_0_0_0_1px_rgba(209,250,229,0.08)] hover:-translate-y-px hover:bg-emerald-500/22'
+              : 'border-cyan-400/35 bg-cyan-900/25 text-cyan-100 shadow-[inset_0_0_0_1px_rgba(207,250,254,0.08)] hover:-translate-y-px hover:bg-cyan-800/28'"
+            type="button"
+            (click)="shipsWorkspaceToggleRequested.emit()"
+          >
+            <span aria-hidden="true" class="text-[0.95rem] leading-none min-[1600px]:text-[1.05rem]">🛰</span>
+            <span>{{ shipsButtonLabel }}</span>
+          </button>
+        }
+
         <button
           class="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border border-blue-400/35 bg-blue-800/30 px-4 py-2.5 text-[0.76rem] font-bold text-blue-100 shadow-[inset_0_0_0_1px_rgba(191,219,254,0.08)] transition hover:-translate-y-px hover:bg-blue-700/35 min-[1600px]:gap-2.5 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-5 min-[1600px]:py-3 min-[1600px]:text-[0.84rem]"
           type="button"

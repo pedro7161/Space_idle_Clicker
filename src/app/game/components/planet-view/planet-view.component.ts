@@ -3,7 +3,7 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
-import { FloatingText, Planet, ResourceDef } from '../../models';
+import { FloatingText, ItemId, Planet, ResourceDef } from '../../models';
 import { GameMessagesService } from '../../i18n/game-messages';
 
 interface MineralNode {
@@ -23,7 +23,7 @@ export class PlanetViewComponent implements OnInit {
   floatingTexts: FloatingText[] = [];
   mineralNodes: MineralNode[] = [];
   mineAnimating = false;
-  cargoCollapsed = false;
+  stationCollapsed = false;
 
   private readonly destroyRef = inject(DestroyRef);
   private floatId = 0;
@@ -52,10 +52,6 @@ export class PlanetViewComponent implements OnInit {
     return this.game.resources;
   }
 
-  get craftedItems() {
-    return this.game.craftedItems;
-  }
-
   get currentPlanet(): Planet {
     return this.game.getCurrentPlanet();
   }
@@ -78,14 +74,52 @@ export class PlanetViewComponent implements OnInit {
     });
   }
 
-  get cargoToggleLabel(): string {
-    return this.cargoCollapsed
-      ? this.copy.messages.ui.planetView.expandCargoHold
-      : this.copy.messages.ui.planetView.collapseCargoHold;
+  get stationToggleLabel(): string {
+    return this.stationCollapsed
+      ? this.copy.messages.ui.planetView.expandOrbitalStation
+      : this.copy.messages.ui.planetView.collapseOrbitalStation;
   }
 
-  get hasUnlockedCargoHold(): boolean {
-    return this.game.hasUnlockedCrafting();
+  get hasUnlockedOrbitalStationPanel(): boolean {
+    return this.game.getState().shipLaunched || this.game.hasSpaceStation(this.currentPlanet.id);
+  }
+
+  get hasSpaceStation(): boolean {
+    return this.game.hasSpaceStation(this.currentPlanet.id);
+  }
+
+  get stationBlueprint() {
+    return this.game.getSpaceStationBlueprintForPlanet(this.currentPlanet.id);
+  }
+
+  get stationCargoBonusLabel(): string {
+    return this.copy.format(this.copy.messages.ui.planetView.stationCargoBoost, {
+      percent: this.game.getSpaceStationCargoBonusPercent(this.currentPlanet.id),
+    });
+  }
+
+  get stationTravelReductionLabel(): string {
+    return this.copy.format(this.copy.messages.ui.planetView.stationTravelReduction, {
+      percent: this.game.getSpaceStationTravelReductionPercent(this.currentPlanet.id),
+    });
+  }
+
+  get stationLinkedRoutesLabel(): string {
+    return this.copy.format(this.copy.messages.ui.planetView.stationRoutes, {
+      count: this.game.getPlanetRouteCount(this.currentPlanet.id),
+    });
+  }
+
+  get stationInboundRoutesLabel(): string {
+    return this.copy.format(this.copy.messages.ui.planetView.stationInbound, {
+      count: this.game.getPlanetRouteCount(this.currentPlanet.id, 'inbound'),
+    });
+  }
+
+  get stationOutboundRoutesLabel(): string {
+    return this.copy.format(this.copy.messages.ui.planetView.stationOutbound, {
+      count: this.game.getPlanetRouteCount(this.currentPlanet.id, 'outbound'),
+    });
   }
 
   onMineClick(event: MouseEvent): void {
@@ -102,16 +136,38 @@ export class PlanetViewComponent implements OnInit {
     return this.game.getInventoryAmount(resourceId);
   }
 
-  getCraftedAmount(itemId: string): number {
-    return this.game.getInventoryAmount(itemId as never);
+  getItemLabel(itemId: ItemId): string {
+    const resource = this.game.resources.find(item => item.id === itemId);
+    if (resource) {
+      return resource.name;
+    }
+
+    return this.game.craftedItems.find(item => item.id === itemId)?.name ?? itemId;
+  }
+
+  getItemColor(itemId: ItemId): string {
+    const resource = this.game.resources.find(item => item.id === itemId);
+    if (resource) {
+      return resource.color;
+    }
+
+    return this.game.craftedItems.find(item => item.id === itemId)?.color ?? '#cbd5e1';
   }
 
   getPlanetMultiplier(resourceId: ResourceDef['id']): number {
     return this.game.getPlanetMultiplier(this.currentPlanet.id, resourceId);
   }
 
-  toggleCargoCollapsed(): void {
-    this.cargoCollapsed = !this.cargoCollapsed;
+  canBuildStation(): boolean {
+    return this.game.canBuildSpaceStation(this.currentPlanet.id);
+  }
+
+  buildStation(): void {
+    this.game.buildSpaceStation(this.currentPlanet.id);
+  }
+
+  toggleStationCollapsed(): void {
+    this.stationCollapsed = !this.stationCollapsed;
   }
 
   private spawnFloatingText(event: MouseEvent, value: number): void {

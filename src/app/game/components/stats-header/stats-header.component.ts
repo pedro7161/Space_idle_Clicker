@@ -14,7 +14,10 @@ import { GameMessagesService } from '../../i18n/game-messages';
 export class StatsHeaderComponent {
   readonly mobileResourcesExpanded = input(false);
   readonly mobileMenuOpen = input(false);
+  readonly shipsUnlocked = input(false);
+  readonly shipsViewActive = input(false);
   readonly settingsRequested = output<void>();
+  readonly shipsWorkspaceToggleRequested = output<void>();
   readonly mobileResourcesToggleRequested = output<void>();
   readonly mobileMenuToggleRequested = output<void>();
 
@@ -54,7 +57,10 @@ export class StatsHeaderComponent {
   get shipStatus(): string {
     const state = this.game.getState();
     if (state.shipLaunched) {
-      return this.copy.messages.ui.statsHeader.shipLaunched;
+      return this.copy.format(this.copy.messages.ui.statsHeader.fleetStatus, {
+        ships: state.ships.length,
+        tier: this.game.getHighestOwnedShipTier(),
+      });
     }
 
     const built = state.builtShipPartIds.length;
@@ -96,6 +102,12 @@ export class StatsHeaderComponent {
     return this.mobileMenuOpen()
       ? this.copy.messages.ui.statsHeader.closeMenu
       : this.copy.messages.ui.statsHeader.openMenu;
+  }
+
+  get shipsButtonLabel(): string {
+    return this.shipsViewActive()
+      ? this.copy.messages.ui.statsHeader.surface
+      : this.copy.messages.ui.statsHeader.ships;
   }
 
   getAmount(resourceId: ResourceDef['id']): number {

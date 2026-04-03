@@ -92,4 +92,8 @@ describe('StatsHeaderComponent', () => {
   it('should produce mobile menu label based on input', () => {
     expect(component.mobileMenuLabel).toBeTruthy();
   });
+
+  it('should produce a ships button label', () => {
+    expect(component.shipsButtonLabel).toBeTruthy();
+  });
 });

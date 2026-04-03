@@ -84,49 +84,131 @@
   </div>
 
   <section class="relative z-10 flex min-h-0 flex-col gap-4 min-[1200px]:flex-row min-[1200px]:items-end min-[1200px]:justify-between min-[1600px]:gap-6">
-    @if (hasUnlockedCargoHold) {
+    @if (hasUnlockedOrbitalStationPanel) {
       <div
         class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[1.1rem] rounded-b-none border border-white/10 bg-[rgba(8,15,26,0.62)] backdrop-blur-xl transition-[height] duration-200 min-[1600px]:rounded-t-[1.3rem] min-[1600px]:rounded-b-none"
-        [ngClass]="cargoCollapsed
+        [ngClass]="stationCollapsed
           ? 'h-[3.9rem] min-[1600px]:h-[4.3rem]'
           : 'h-[clamp(11rem,24vh,15rem)] max-[820px]:h-[min(18rem,38vh)] min-[1600px]:h-[clamp(12rem,25vh,17rem)]'"
       >
         <div class="flex items-center justify-between gap-3 px-4 py-3 min-[1600px]:px-5 min-[1600px]:py-3.5">
           <div class="min-w-0">
             <div class="text-[0.8rem] uppercase tracking-[0.14em] text-slate-400 min-[1600px]:text-[0.86rem]">
-              {{ copy.messages.ui.planetView.sharedCargoHold }}
+              {{ copy.messages.ui.planetView.orbitalStation }}
+            </div>
+            <div class="mt-1 text-[0.82rem] text-slate-300 min-[1600px]:text-[0.88rem]">
+              {{ stationBlueprint.name }}
             </div>
           </div>
           <button
             class="inline-flex h-9 w-9 items-center justify-center rounded-[0.75rem] border border-white/10 bg-white/[0.04] text-[0.95rem] font-bold text-slate-100 transition hover:bg-white/[0.08] min-[1600px]:h-10 min-[1600px]:w-10 min-[1600px]:rounded-[0.85rem] min-[1600px]:text-[1rem]"
             type="button"
-            [attr.aria-expanded]="!cargoCollapsed"
-            [attr.aria-label]="cargoToggleLabel"
-            [attr.title]="cargoToggleLabel"
-            (click)="toggleCargoCollapsed()"
+            [attr.aria-expanded]="!stationCollapsed"
+            [attr.aria-label]="stationToggleLabel"
+            [attr.title]="stationToggleLabel"
+            (click)="toggleStationCollapsed()"
           >
-            <span aria-hidden="true">{{ cargoCollapsed ? '↑' : '↓' }}</span>
+            <span aria-hidden="true">{{ stationCollapsed ? '↑' : '↓' }}</span>
           </button>
         </div>
 
-        @if (!cargoCollapsed) {
+        @if (!stationCollapsed) {
           <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pr-3 min-[1600px]:px-5 min-[1600px]:pb-5 min-[1600px]:pr-4">
-            <div class="grid gap-3 min-[820px]:grid-cols-2 min-[1400px]:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] min-[1600px]:gap-4 min-[1900px]:grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
-              @for (item of craftedItems; track item.id) {
-                <div class="flex items-center gap-3 rounded-[0.9rem] bg-white/[0.04] px-3.5 py-3 min-[1600px]:gap-4 min-[1600px]:rounded-[1rem] min-[1600px]:px-4 min-[1600px]:py-3.5">
-                  <span
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-[0.65rem] bg-white/[0.05] text-[0.75rem] font-bold min-[1600px]:h-9 min-[1600px]:w-9 min-[1600px]:rounded-[0.75rem] min-[1600px]:text-[0.82rem]"
-                    [style.color]="item.color"
+            @if (!hasSpaceStation) {
+              <div class="grid gap-4">
+                <div class="rounded-[1rem] border border-white/8 bg-slate-950/30 px-4 py-3.5">
+                  <div class="text-[0.84rem] font-semibold text-slate-50">
+                    {{ copy.messages.ui.planetView.stationPlanning }}
+                  </div>
+                  <p class="mt-1.5 text-[0.8rem] leading-6 text-slate-300">
+                    {{ copy.format(copy.messages.ui.planetView.stationBuildDescription, { planet: currentPlanet.name }) }}
+                  </p>
+                </div>
+
+                <div class="grid gap-3 min-[820px]:grid-cols-3">
+                  <div class="rounded-[0.95rem] border border-white/8 bg-white/[0.04] px-3.5 py-3 text-[0.78rem] text-slate-200">
+                    {{ stationCargoBonusLabel }}
+                  </div>
+                  <div class="rounded-[0.95rem] border border-white/8 bg-white/[0.04] px-3.5 py-3 text-[0.78rem] text-slate-200">
+                    {{ stationTravelReductionLabel }}
+                  </div>
+                  <div class="rounded-[0.95rem] border border-white/8 bg-white/[0.04] px-3.5 py-3 text-[0.78rem] text-slate-200">
+                    {{ copy.messages.ui.planetView.stationFutureHub }}
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  @for (cost of game.getSpaceStationBuildCost(currentPlanet.id); track cost.itemId + '-' + cost.amount) {
+                    <span
+                      class="rounded-full border px-2 py-1 text-[0.72rem] text-slate-300"
+                      [style.borderColor]="getItemColor(cost.itemId)"
+                    >
+                      {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                    </span>
+                  }
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div class="text-[0.76rem] text-slate-400">
+                    {{ stationBlueprint.description }}
+                  </div>
+                  <button
+                    class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.76rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+                    [disabled]="!canBuildStation()"
+                    (click)="buildStation()"
                   >
-                    {{ item.icon }}
-                  </span>
-                  <span class="flex flex-col gap-0.5">
-                    <strong class="text-[0.8rem] text-slate-50 min-[1600px]:text-[0.88rem]">{{ item.name }}</strong>
-                    <span class="text-[0.74rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getCraftedAmount(item.id) | formatNumber }}</span>
+                    {{ copy.messages.ui.planetView.buildStation }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="grid gap-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div class="text-[0.84rem] font-semibold text-slate-50">
+                      {{ copy.messages.ui.planetView.stationOnline }}
+                    </div>
+                    <p class="mt-1.5 text-[0.8rem] leading-6 text-slate-300">
+                      {{ copy.format(copy.messages.ui.planetView.stationOnlineDescription, { planet: currentPlanet.name }) }}
+                    </p>
+                  </div>
+                  <span class="rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1 text-[0.72rem] font-semibold text-emerald-200">
+                    {{ stationBlueprint.name }}
                   </span>
                 </div>
-              }
-            </div>
+
+                <div class="grid gap-3 min-[820px]:grid-cols-2 min-[1400px]:grid-cols-4">
+                  <div class="rounded-[0.95rem] border border-white/8 bg-white/[0.04] px-3.5 py-3">
+                    <div class="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.planetView.stationTraffic }}
+                    </div>
+                    <div class="mt-1 text-[0.88rem] text-slate-50">{{ stationLinkedRoutesLabel }}</div>
+                  </div>
+                  <div class="rounded-[0.95rem] border border-white/8 bg-white/[0.04] px-3.5 py-3">
+                    <div class="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.planetView.stationInboundTitle }}
+                    </div>
+                    <div class="mt-1 text-[0.88rem] text-slate-50">{{ stationInboundRoutesLabel }}</div>
+                  </div>
+                  <div class="rounded-[0.95rem] border border-white/8 bg-white/[0.04] px-3.5 py-3">
+                    <div class="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.planetView.stationOutboundTitle }}
+                    </div>
+                    <div class="mt-1 text-[0.88rem] text-slate-50">{{ stationOutboundRoutesLabel }}</div>
+                  </div>
+                  <div class="rounded-[0.95rem] border border-white/8 bg-white/[0.04] px-3.5 py-3">
+                    <div class="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.planetView.stationBoostTitle }}
+                    </div>
+                    <div class="mt-1 text-[0.88rem] text-slate-50">{{ stationCargoBonusLabel }}</div>
+                  </div>
+                </div>
+
+                <div class="rounded-[1rem] border border-cyan-400/15 bg-cyan-500/8 px-4 py-3 text-[0.8rem] leading-6 text-cyan-50">
+                  {{ stationTravelReductionLabel }} · {{ copy.messages.ui.planetView.stationFutureHub }}
+                </div>
+              </div>
+            }
           </div>
         }
       </div>

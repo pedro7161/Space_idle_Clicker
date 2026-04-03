@@ -87,6 +87,21 @@
           {{ copy.messages.ui.settingsDialog.importCode }}
         </button>
 
+        <div class="mt-4 border-t border-slate-300/12 pt-4">
+          <div class="flex items-center justify-between gap-4">
+            <h3 class="text-lg text-slate-50">{{ copy.messages.ui.settingsDialog.changelogTitle }}</h3>
+          </div>
+          <p class="mb-3 mt-2 text-[0.82rem] leading-6 text-slate-400">
+            {{ copy.messages.ui.settingsDialog.changelogDescription }}
+          </p>
+          <button
+            class="rounded-[0.8rem] border border-sky-400/25 bg-sky-500/12 px-4 py-2.5 text-[0.76rem] font-bold text-sky-100 transition hover:-translate-y-px hover:bg-sky-500/20"
+            (click)="changelogRequested.emit()"
+          >
+            {{ copy.messages.ui.settingsDialog.openChangelog }}
+          </button>
+        </div>
+
         <div class="mt-4 border-t border-rose-300/18 pt-4">
           <div class="flex items-center justify-between gap-4">
             <h3 class="text-lg text-slate-50">{{ copy.messages.ui.settingsDialog.resetTitle }}</h3>
