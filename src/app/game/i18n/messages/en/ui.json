@@ -8,7 +8,7 @@
     "clicks": "{value} clicks",
     "shipLaunched": "Ship launched",
     "shipParts": "Ship parts {built}/{total}",
-    "saveData": "Save Data",
+    "settings": "Settings",
     "reset": "Reset"
   },
   "planetView": {
@@ -69,6 +69,25 @@
     "copySuccess": "Save code copied to clipboard.",
     "copyError": "Clipboard access failed. Copy the save code manually.",
     "importSuccess": "Save imported successfully."
+  },
+  "settingsDialog": {
+    "eyebrow": "Control Deck",
+    "title": "Settings",
+    "close": "Close",
+    "languageTitle": "Language",
+    "languageDescription": "Choose the interface language. The app reloads after switching so game content is rebuilt in the selected locale.",
+    "languageLabel": "Language",
+    "saveTitle": "Save Data",
+    "saveDescription": "Back up progress to a file, copy a transfer code, or restore a saved run from file or code.",
+    "exportFile": "Export Save File",
+    "copyCode": "Copy Save Code",
+    "importFile": "Import Save File",
+    "importCode": "Import Code",
+    "importPlaceholder": "Paste exported save code here",
+    "resetTitle": "Reset Progress",
+    "resetDescription": "Clear the current run and start over. This still opens a confirmation step before data is erased.",
+    "resetAction": "Reset Save",
+    "languageUpdated": "Language updated. Reloading..."
   },
   "startScreen": {
     "eyebrow": "Frontier Deployment",

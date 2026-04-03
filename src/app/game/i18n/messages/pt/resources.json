@@ -1,0 +1,38 @@
+{
+  "raw": {
+    "carbon": {
+      "name": "Carbono",
+      "description": "Matéria orgânica rica em combustível usada para calor, energia e sistemas de sobrevivência."
+    },
+    "ferrite": {
+      "name": "Ferrite",
+      "description": "A base estrutural para blindagem, maquinaria e construção de naves."
+    },
+    "oxygen": {
+      "name": "Oxigénio",
+      "description": "Um gás volátil usado para sistemas de pressão, células de combustível e suporte de vida."
+    }
+  },
+  "crafted": {
+    "condensedCarbon": {
+      "name": "Carbono Condensado",
+      "description": "Blocos de carbono comprimido para sistemas energéticos de alta densidade."
+    },
+    "refinedMetal": {
+      "name": "Metal Refinado",
+      "description": "Ligas de ferrite purificadas para estruturas e máquinas duráveis."
+    },
+    "oxygenCells": {
+      "name": "Células de Oxigénio",
+      "description": "Recipientes estáveis de oxigénio para motores, sistemas de pressão e combustível."
+    },
+    "mechanicalParts": {
+      "name": "Peças Mecânicas",
+      "description": "Componentes de precisão necessários para automação e estruturas do casco."
+    },
+    "basicCircuits": {
+      "name": "Circuitos Básicos",
+      "description": "Placas de controlo simples para encaminhar energia e sistemas de voo."
+    }
+  }
+}

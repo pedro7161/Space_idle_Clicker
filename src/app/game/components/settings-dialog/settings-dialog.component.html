@@ -1,0 +1,72 @@
+<div class="overlay" (click)="closed.emit()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <div>
+        <div class="eyebrow">{{ copy.messages.ui.settingsDialog.eyebrow }}</div>
+        <h2>{{ copy.messages.ui.settingsDialog.title }}</h2>
+      </div>
+      <button class="icon-btn" (click)="closed.emit()">{{ copy.messages.ui.settingsDialog.close }}</button>
+    </div>
+
+    <div class="dialog-grid">
+      <section class="panel">
+        <div class="panel-header">
+          <h3>{{ copy.messages.ui.settingsDialog.languageTitle }}</h3>
+        </div>
+        <p>{{ copy.messages.ui.settingsDialog.languageDescription }}</p>
+
+        <label class="field">
+          <span>{{ copy.messages.ui.settingsDialog.languageLabel }}</span>
+          <select [ngModel]="currentLocale" (ngModelChange)="onLocaleChange($event)">
+            <option *ngFor="let option of localeOptions" [ngValue]="option.id">
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h3>{{ copy.messages.ui.settingsDialog.saveTitle }}</h3>
+        </div>
+        <p>{{ copy.messages.ui.settingsDialog.saveDescription }}</p>
+
+        <div class="button-row">
+          <button class="btn btn-primary" (click)="exportSaveFile()">{{ copy.messages.ui.settingsDialog.exportFile }}</button>
+          <button class="btn btn-secondary" (click)="copyExportCode()">{{ copy.messages.ui.settingsDialog.copyCode }}</button>
+        </div>
+
+        <div class="button-row">
+          <label class="btn btn-secondary file-btn">
+            {{ copy.messages.ui.settingsDialog.importFile }}
+            <input type="file" accept=".json,.txt" (change)="importSaveFile($event)" />
+          </label>
+        </div>
+
+        <textarea
+          class="save-area"
+          [(ngModel)]="importValue"
+          [placeholder]="copy.messages.ui.settingsDialog.importPlaceholder"
+        ></textarea>
+        <button class="btn btn-primary full-width" (click)="requestImportCode()">{{ copy.messages.ui.settingsDialog.importCode }}</button>
+
+        <div class="danger-zone">
+          <div class="panel-header">
+            <h3>{{ copy.messages.ui.settingsDialog.resetTitle }}</h3>
+          </div>
+          <p>{{ copy.messages.ui.settingsDialog.resetDescription }}</p>
+          <button class="btn btn-danger" (click)="resetRequested.emit()">{{ copy.messages.ui.settingsDialog.resetAction }}</button>
+        </div>
+      </section>
+    </div>
+
+    <p
+      *ngIf="feedbackMessage"
+      class="feedback"
+      [class.success]="feedbackTone === 'success'"
+      [class.error]="feedbackTone === 'error'"
+    >
+      {{ feedbackMessage }}
+    </p>
+  </div>
+</div>

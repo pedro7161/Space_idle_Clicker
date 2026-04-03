@@ -1,0 +1,62 @@
+{
+  "upgradeTemplates": {
+    "cutters": {
+      "name": "Cortadores",
+      "description": "Aumenta a força da extração manual deste recurso no planeta atual."
+    },
+    "survey": {
+      "name": "Mapeamento de Prospeção",
+      "description": "Melhora todo o rendimento deste recurso no planeta atual."
+    },
+    "lattice": {
+      "name": "Rede de Processo",
+      "description": "Adiciona uma camada de eficiência de fim de jogo a esta cadeia de recurso."
+    }
+  },
+  "automationTemplates": {
+    "rig": {
+      "name": "Plataforma de Campo",
+      "description": "Um extrator robusto que mantém um fluxo básico neste planeta."
+    },
+    "array": {
+      "name": "Matriz de Extração",
+      "description": "Uma plataforma de automação estabilizada afinada para esta cadeia de recurso."
+    }
+  },
+  "recipes": {
+    "condensed-carbon": {
+      "name": "Condensar Carbono",
+      "description": "Comprime carbono bruto num bloco de combustível mais denso e útil."
+    },
+    "refined-metal": {
+      "name": "Refinar Metal",
+      "description": "Purifica ferrite em metal estrutural padronizado."
+    },
+    "oxygen-cells": {
+      "name": "Preparar Células de Oxigénio",
+      "description": "Estabiliza oxigénio em células portáteis de pressão e combustível."
+    },
+    "mechanical-parts": {
+      "name": "Montar Peças Mecânicas",
+      "description": "Combina material refinado em componentes móveis de nível industrial."
+    },
+    "basic-circuits": {
+      "name": "Imprimir Circuitos Básicos",
+      "description": "Constrói placas de controlo simples para mineiros e sistemas da nave."
+    }
+  },
+  "shipParts": {
+    "hull": {
+      "name": "Estrutura do Casco",
+      "description": "Uma carcaça resistente à pressão suficientemente forte para sobreviver ao lançamento."
+    },
+    "thrusters": {
+      "name": "Conjunto de Propulsores",
+      "description": "Um sistema de propulsão remendado capaz de escapar ao primeiro planeta."
+    },
+    "guidance": {
+      "name": "Núcleo de Navegação",
+      "description": "Aviónica primitiva, mas suficiente para rotas interplanetárias curtas."
+    }
+  }
+}
