@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { GameService } from './game.service';
 import { PLANETS } from '../constants';
+import { CURRENT_SAVE_KEY } from '../storage/game-save';
 
 describe('GameService', () => {
   let service: GameService;
-  const SAVE_KEY = 'space-idle-save-v3';
 
   beforeEach(() => {
     localStorage.clear();
@@ -407,7 +407,7 @@ describe('GameService', () => {
     it('should persist to localStorage on save', () => {
       service.init();
       service.exportSave();
-      expect(localStorage.getItem(SAVE_KEY)).toBeTruthy();
+      expect(localStorage.getItem(CURRENT_SAVE_KEY)).toBeTruthy();
     });
   });
 
@@ -426,7 +426,7 @@ describe('GameService', () => {
       service.init();
       service.mineActiveResource();
       service.destroy();
-      expect(localStorage.getItem(SAVE_KEY)).toBeTruthy();
+      expect(localStorage.getItem(CURRENT_SAVE_KEY)).toBeTruthy();
     });
   });
 

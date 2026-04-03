@@ -31,16 +31,15 @@ import {
   ShipStatus,
   SpaceStationBlueprint,
 } from '../models';
-
-type LegacySavedState = Partial<GameState> & {
-  inventory?: Record<ItemId, number>;
-};
-
-const SAVE_KEY = 'space-idle-save-v3';
-const SAVE_TRANSFER_PREFIX = 'frontier-miner-save:';
+import {
+  buildDefaultGameState,
+  CURRENT_SAVE_KEY,
+  mergeSavedStateWithDefaults,
+  SAVE_TRANSFER_PREFIX,
+} from '../storage/game-save';
+import type { LegacySavedState } from '../storage/game-save';
 const SAVE_INTERVAL_MS = 10_000;
 const TICK_INTERVAL_MS = 200;
-const SAVE_VERSION = 3;
 const MAX_OFFLINE_SECONDS = 60 * 60 * 4;
 const BASE_TRAVEL_TIME_MS = 12_000;
 
@@ -52,16 +51,6 @@ function buildNumberRecord<T extends string>(ids: readonly T[]): Record<T, numbe
     },
     {} as Record<T, number>,
   );
-}
-
-function buildPlanetItemMatrix<T extends string>(
-  planetIds: readonly string[],
-  itemIds: readonly T[],
-): Record<string, Record<T, number>> {
-  return planetIds.reduce<Record<string, Record<T, number>>>((matrix, planetId) => {
-    matrix[planetId] = buildNumberRecord(itemIds);
-    return matrix;
-  }, {});
 }
 
 @Injectable({ providedIn: 'root' })
@@ -81,7 +70,7 @@ export class GameService {
   readonly shipDefinitions = SHIPS;
   readonly spaceStationBlueprints = SPACE_STATION_BLUEPRINTS;
 
-  readonly state$ = new BehaviorSubject<GameState>(this.buildDefaultState());
+  readonly state$ = new BehaviorSubject<GameState>(buildDefaultGameState());
 
   init(): void {
     if (this.initialized) {
@@ -353,13 +342,13 @@ export class GameService {
   }
 
   resetGame(): void {
-    localStorage.removeItem(SAVE_KEY);
-    this.state = this.buildDefaultState();
+    localStorage.removeItem(CURRENT_SAVE_KEY);
+    this.state = buildDefaultGameState();
     this.emit();
   }
 
   hasSavedGame(): boolean {
-    return !!localStorage.getItem(SAVE_KEY);
+    return !!localStorage.getItem(CURRENT_SAVE_KEY);
   }
 
   exportSave(): string {
@@ -382,7 +371,7 @@ export class GameService {
 
     try {
       const parsed = this.decodeSavePayload(trimmed);
-      this.state = this.mergeWithDefaults(parsed);
+      this.state = mergeSavedStateWithDefaults(parsed);
       this.state.lastTickAt = Date.now();
       this.save();
       this.emit();
@@ -928,7 +917,7 @@ export class GameService {
   }
 
   private save(): void {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
+    localStorage.setItem(CURRENT_SAVE_KEY, JSON.stringify(this.state));
   }
 
   private encodeSavePayload(state: GameState): string {
@@ -950,139 +939,16 @@ export class GameService {
   }
 
   private loadOrDefault(): GameState {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(CURRENT_SAVE_KEY);
     if (!raw) {
-      return this.buildDefaultState();
+      return buildDefaultGameState();
     }
 
     try {
       const saved = JSON.parse(raw) as LegacySavedState;
-      return this.mergeWithDefaults(saved);
+      return mergeSavedStateWithDefaults(saved);
     } catch {
-      return this.buildDefaultState();
+      return buildDefaultGameState();
     }
-  }
-
-  private buildDefaultState(): GameState {
-    const startingPlanet = this.planets.find(planet => planet.unlockedByDefault) ?? this.planets[0];
-
-    return {
-      version: SAVE_VERSION,
-      planetInventories: buildPlanetItemMatrix(
-        this.planets.map(planet => planet.id),
-        ALL_ITEM_IDS,
-      ),
-      activeResourceId: 'carbon',
-      upgradeLevels: {},
-      autoMinerCounts: {},
-      builtShipPartIds: [],
-      discoveredPlanetIds: [startingPlanet.id],
-      totalClicks: 0,
-      totalMined: buildNumberRecord(RESOURCE_IDS),
-      currentPlanetId: startingPlanet.id,
-      shipLaunched: false,
-      ships: [],
-      shipRoutes: [],
-      spaceStations: [],
-      nextShipId: 1,
-      nextShipRouteId: 1,
-      lastTickAt: Date.now(),
-    };
-  }
-
-  private mergeWithDefaults(saved: LegacySavedState): GameState {
-    const defaults = this.buildDefaultState();
-    const currentPlanetId =
-      saved.currentPlanetId && this.getPlanet(saved.currentPlanetId)
-        ? saved.currentPlanetId
-        : defaults.currentPlanetId;
-
-    const planetInventories = buildPlanetItemMatrix(
-      this.planets.map(planet => planet.id),
-      ALL_ITEM_IDS,
-    );
-
-    Object.entries(saved.planetInventories ?? {}).forEach(([planetId, inventory]) => {
-      if (!planetInventories[planetId]) {
-        return;
-      }
-
-      planetInventories[planetId] = {
-        ...planetInventories[planetId],
-        ...inventory,
-      };
-    });
-
-    if (saved.inventory) {
-      planetInventories[currentPlanetId] = {
-        ...planetInventories[currentPlanetId],
-        ...saved.inventory,
-      };
-    }
-
-    const routes = (saved.shipRoutes ?? []).filter(route => {
-      return !!this.getPlanet(route.originPlanetId)
-        && !!this.getPlanet(route.destinationPlanetId)
-        && route.originPlanetId !== route.destinationPlanetId;
-    }).map(route => ({
-      ...route,
-      keepMinimum: Math.max(0, Math.floor(route.keepMinimum ?? 0)),
-      enabled: route.enabled ?? true,
-    }));
-
-    const routeIds = new Set(routes.map(route => route.id));
-    const spaceStations = (saved.spaceStations ?? []).filter(station => {
-      return !!this.getPlanet(station.planetId)
-        && !!this.getSpaceStationBlueprint(station.blueprintId);
-    }).map(station => ({
-      planetId: station.planetId,
-      blueprintId: station.blueprintId,
-    }));
-    const ships = (saved.ships ?? []).filter(ship => !!this.getShipDefinition(ship.definitionId)).map(ship => ({
-      id: ship.id,
-      definitionId: ship.definitionId,
-      routeId: ship.routeId && routeIds.has(ship.routeId) ? ship.routeId : null,
-      status: ship.status ?? 'idle',
-      currentPlanetId: ship.currentPlanetId && this.getPlanet(ship.currentPlanetId) ? ship.currentPlanetId : currentPlanetId,
-      cargo: {
-        itemId: ship.cargo?.itemId ?? null,
-        amount: ship.cargo?.amount ?? 0,
-      },
-      transit: ship.transit && this.getPlanet(ship.transit.fromPlanetId) && this.getPlanet(ship.transit.toPlanetId)
-        ? { ...ship.transit }
-        : null,
-    }));
-
-    const merged: GameState = {
-      ...defaults,
-      ...saved,
-      version: SAVE_VERSION,
-      planetInventories,
-      totalMined: {
-        ...defaults.totalMined,
-        ...(saved.totalMined ?? {}),
-      },
-      upgradeLevels: saved.upgradeLevels ?? defaults.upgradeLevels,
-      autoMinerCounts: saved.autoMinerCounts ?? defaults.autoMinerCounts,
-      builtShipPartIds: saved.builtShipPartIds ?? defaults.builtShipPartIds,
-      discoveredPlanetIds:
-        saved.discoveredPlanetIds && saved.discoveredPlanetIds.length > 0
-          ? saved.discoveredPlanetIds
-          : defaults.discoveredPlanetIds,
-      currentPlanetId,
-      ships,
-      shipRoutes: routes,
-      spaceStations,
-      nextShipId: saved.nextShipId ?? Math.max(ships.length + 1, defaults.nextShipId),
-      nextShipRouteId: saved.nextShipRouteId ?? Math.max(routes.length + 1, defaults.nextShipRouteId),
-      lastTickAt: saved.lastTickAt ?? defaults.lastTickAt,
-    };
-
-    if (merged.shipLaunched && merged.ships.length === 0) {
-      this.state = merged;
-      merged.ships = [this.createShipInstance('shuttle', merged.currentPlanetId)];
-    }
-
-    return merged;
   }
 }
