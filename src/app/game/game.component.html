@@ -1,4 +1,7 @@
-<app-stats-header (resetRequested)="showResetDialog = true"></app-stats-header>
+<app-stats-header
+  (resetRequested)="showResetDialog = true"
+  (saveTransferRequested)="openSaveTransferDialog()"
+></app-stats-header>
 
 <div class="main">
   <app-planet-view></app-planet-view>
@@ -10,3 +13,11 @@
   (confirmed)="onResetConfirmed()"
   (cancelled)="showResetDialog = false"
 ></app-reset-dialog>
+
+<app-save-transfer-dialog
+  *ngIf="showSaveTransferDialog"
+  #saveTransferDialog
+  [exportValue]="exportSaveValue"
+  (closed)="showSaveTransferDialog = false"
+  (importRequested)="handleImport(saveTransferDialog, $event)"
+></app-save-transfer-dialog>

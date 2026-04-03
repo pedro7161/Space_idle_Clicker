@@ -1,0 +1,39 @@
+<div class="overlay" (click)="closed.emit()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <div>
+        <div class="eyebrow">Save Transfer</div>
+        <h2>Import Or Export Progress</h2>
+      </div>
+      <button class="icon-btn" (click)="closed.emit()">Close</button>
+    </div>
+
+    <div class="dialog-grid">
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Export</h3>
+          <button class="btn btn-secondary" (click)="copyExport()">Copy</button>
+        </div>
+        <p>Use this code as a manual backup or to move the save to another browser.</p>
+        <textarea class="save-area" [value]="exportValue" readonly></textarea>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Import</h3>
+          <button class="btn btn-primary" (click)="requestImport()">Import</button>
+        </div>
+        <p>Import replaces the current local save immediately. Paste an exported save string below.</p>
+        <textarea
+          class="save-area"
+          [(ngModel)]="importValue"
+          placeholder="Paste exported save data here"
+        ></textarea>
+      </section>
+    </div>
+
+    <p *ngIf="feedbackMessage" class="feedback" [class.success]="feedbackTone === 'success'" [class.error]="feedbackTone === 'error'">
+      {{ feedbackMessage }}
+    </p>
+  </div>
+</div>
