@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
+import { GameMessagesService } from '../../i18n/game-messages';
 import {
   AutoMiner,
   ItemCost,
@@ -30,14 +31,20 @@ interface TabDef {
 export class UpgradePanelComponent {
   activeTab: Tab = 'upgrades';
 
-  readonly tabs: TabDef[] = [
-    { key: 'upgrades', label: 'Upgrades' },
-    { key: 'crafting', label: 'Crafting' },
-    { key: 'automation', label: 'Automation' },
-    { key: 'launch', label: 'Launch' },
-  ];
+  readonly tabs: TabDef[];
 
-  constructor(public game: GameService) {}
+  constructor(
+    public game: GameService,
+    public copy: GameMessagesService,
+  ) {
+    const tabMessages = this.copy.messages.ui.upgradePanel.tabs;
+    this.tabs = [
+      { key: 'upgrades', label: tabMessages.upgrades },
+      { key: 'crafting', label: tabMessages.crafting },
+      { key: 'automation', label: tabMessages.automation },
+      { key: 'launch', label: tabMessages.launch },
+    ];
+  }
 
   get resources(): ResourceDef[] {
     return this.game.resources;
@@ -79,6 +86,12 @@ export class UpgradePanelComponent {
 
   getMinersForResource(resourceId: ResourceDef['id']): AutoMiner[] {
     return this.visibleAutoMiners.filter(miner => miner.resourceId === resourceId);
+  }
+
+  getLockedMinersForResource(resourceId: ResourceDef['id']): AutoMiner[] {
+    return this.game.autoMiners.filter(
+      miner => miner.resourceId === resourceId && !this.game.isAutoMinerVisible(miner),
+    );
   }
 
   getItemAmount(itemId: ItemId): number {
@@ -134,6 +147,148 @@ export class UpgradePanelComponent {
     return !this.game.isShipPartBuilt(part.id) && this.game.canAfford(part.cost);
   }
 
+  getInventoryGroupTitle(kind: 'raw' | 'crafted'): string {
+    return this.copy.messages.ui.upgradePanel[kind];
+  }
+
+  getResourceUpgradeTitle(resource: ResourceDef): string {
+    return this.copy.format(this.copy.messages.ui.upgradePanel.resourceUpgradesTitle, {
+      resource: resource.name,
+    });
+  }
+
+  getResourceAutomationTitle(resource: ResourceDef): string {
+    return this.copy.format(this.copy.messages.ui.upgradePanel.resourceAutomationTitle, {
+      resource: resource.name,
+    });
+  }
+
+  getPlanetYieldLabel(resource: ResourceDef): string {
+    return this.copy.format(this.copy.messages.ui.upgradePanel.planetYield, {
+      multiplier: this.game.getPlanetMultiplier(this.currentPlanet.id, resource.id),
+      planet: this.currentPlanet.name,
+    });
+  }
+
+  getMineMoreToUnlockLabel(resource: ResourceDef): string {
+    return this.copy.format(this.copy.messages.ui.upgradePanel.mineMoreToUnlock, {
+      resource: resource.name.toLowerCase(),
+    });
+  }
+
+  getUpgradeLevelLabel(upgrade: ResourceUpgrade): string {
+    return this.copy.format(this.copy.messages.ui.upgradePanel.level, {
+      level: this.getUpgradeLevel(upgrade),
+      max: upgrade.maxLevel,
+    });
+  }
+
+  getCraftOutputLabel(recipe: Recipe): string {
+    return this.copy.format(this.copy.messages.ui.upgradePanel.craftOutput, {
+      amount: recipe.outputAmount,
+      item: this.getItemLabel(recipe.outputId),
+    });
+  }
+
+  getAutomationOutputHereLabel(resource: ResourceDef): string {
+    return this.copy.format(this.copy.messages.ui.upgradePanel.automationOutputHere, {
+      value: new FormatNumberPipe().transform(
+        this.game.getAutoRateForPlanetResource(this.currentPlanet.id, resource.id),
+      ),
+    });
+  }
+
+  getAutomationOutputOnPlanetLabel(miner: AutoMiner): string {
+    return this.copy.format(this.copy.messages.ui.upgradePanel.automationOutputOnPlanet, {
+      value: new FormatNumberPipe().transform(this.getAutoMinerOutput(miner)),
+      planet: this.currentPlanet.name,
+    });
+  }
+
+  getNextAutomationUnlock(resource: ResourceDef): AutoMiner | undefined {
+    return this.getLockedMinersForResource(resource.id)[0];
+  }
+
+  getAutomationUnlockTitle(resource: ResourceDef): string {
+    const nextMiner = this.getNextAutomationUnlock(resource);
+    if (!nextMiner) {
+      return this.copy.messages.ui.upgradePanel.automationUnavailable;
+    }
+
+    return this.copy.format(this.copy.messages.ui.upgradePanel.automationNextUnlock, {
+      name: nextMiner.name,
+    });
+  }
+
+  getAutomationUnlockRequirements(resource: ResourceDef): string[] {
+    const nextMiner = this.getNextAutomationUnlock(resource);
+    if (!nextMiner) {
+      return [this.copy.messages.ui.upgradePanel.automationUnavailable];
+    }
+
+    const requirements: string[] = [];
+    const minedAmount = this.state.totalMined[resource.id];
+
+    if (minedAmount < nextMiner.unlockAtTotal) {
+      requirements.push(
+        this.copy.format(this.copy.messages.ui.upgradePanel.automationMineRequirement, {
+          current: new FormatNumberPipe().transform(minedAmount),
+          required: new FormatNumberPipe().transform(nextMiner.unlockAtTotal),
+          resource: resource.name.toLowerCase(),
+        }),
+      );
+    }
+
+    if (nextMiner.unlockCraftedId) {
+      const ownedAmount = this.getItemAmount(nextMiner.unlockCraftedId);
+      if (ownedAmount < 1) {
+        requirements.push(
+          this.copy.format(this.copy.messages.ui.upgradePanel.automationCraftRequirement, {
+            required: 1,
+            item: this.getItemLabel(nextMiner.unlockCraftedId),
+          }),
+        );
+      }
+    }
+
+    return requirements;
+  }
+
+  getShipAssemblyProgressLabel(): string {
+    return this.copy.format(this.copy.messages.ui.upgradePanel.shipAssemblyProgress, {
+      built: this.state.builtShipPartIds.length,
+      total: this.shipParts.length,
+    });
+  }
+
+  getLaunchButtonLabel(): string {
+    return this.state.shipLaunched
+      ? this.copy.messages.ui.upgradePanel.shipLaunched
+      : this.copy.messages.ui.upgradePanel.launchShip;
+  }
+
+  getPlanetStatusLabel(planet: Planet): string {
+    if (planet.id === this.currentPlanet.id) {
+      return this.copy.messages.ui.upgradePanel.current;
+    }
+
+    if (this.game.isPlanetDiscovered(planet.id)) {
+      return this.copy.messages.ui.upgradePanel.discovered;
+    }
+
+    return '';
+  }
+
+  getPlanetActionLabel(planet: Planet): string {
+    if (planet.id === this.currentPlanet.id) {
+      return this.copy.messages.ui.upgradePanel.here;
+    }
+
+    return this.game.isPlanetDiscovered(planet.id)
+      ? this.copy.messages.ui.upgradePanel.travel
+      : this.copy.messages.ui.upgradePanel.discover;
+  }
+
   buyUpgrade(upgrade: ResourceUpgrade): void {
     this.game.buyUpgrade(upgrade.id);
   }
@@ -164,5 +319,9 @@ export class UpgradePanelComponent {
 
   trackByCost(_: number, item: ItemCost): string {
     return `${item.itemId}-${item.amount}`;
+  }
+
+  trackByText(_: number, item: string): string {
+    return item;
   }
 }

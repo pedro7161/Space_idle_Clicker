@@ -1,10 +1,13 @@
 import { Planet } from '../models';
+import { GAME_MESSAGES } from '../i18n/game-messages';
+
+const planetMessages = GAME_MESSAGES.world.planets;
 
 export const PLANETS: Planet[] = [
   {
     id: 'solara',
-    name: 'Solara Basin',
-    description: 'The hostile starting world. Balanced yields, weak infrastructure, no margin for waste.',
+    name: planetMessages.solara.name,
+    description: planetMessages.solara.description,
     resourceMultipliers: {
       carbon: 1,
       ferrite: 1,
@@ -18,8 +21,8 @@ export const PLANETS: Planet[] = [
   },
   {
     id: 'ferros',
-    name: 'Ferros Cradle',
-    description: 'A metallic world where ferrite veins are dense but fuel-bearing deposits are scarce.',
+    name: planetMessages.ferros.name,
+    description: planetMessages.ferros.description,
     resourceMultipliers: {
       carbon: 0.65,
       ferrite: 2.8,
@@ -36,8 +39,8 @@ export const PLANETS: Planet[] = [
   },
   {
     id: 'verdara',
-    name: 'Verdara Drift',
-    description: 'A volatile atmosphere makes oxygen easy to harvest and ferrite harder to pull cleanly.',
+    name: planetMessages.verdara.name,
+    description: planetMessages.verdara.description,
     resourceMultipliers: {
       carbon: 0.85,
       ferrite: 0.7,
@@ -54,8 +57,8 @@ export const PLANETS: Planet[] = [
   },
   {
     id: 'cinder',
-    name: 'Cinder Span',
-    description: 'An ash-choked furnace planet where carbon is plentiful and everything else fights back.',
+    name: planetMessages.cinder.name,
+    description: planetMessages.cinder.description,
     resourceMultipliers: {
       carbon: 3.4,
       ferrite: 0.8,

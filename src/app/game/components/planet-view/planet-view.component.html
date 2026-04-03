@@ -26,7 +26,7 @@
     </div>
 
     <aside class="planet-panel">
-      <div class="planet-panel__eyebrow">Current Site</div>
+      <div class="planet-panel__eyebrow">{{ copy.messages.ui.planetView.currentSite }}</div>
       <strong>{{ currentPlanet.name }}</strong>
       <p>{{ currentPlanet.description }}</p>
     </aside>
@@ -34,9 +34,9 @@
 
   <div class="mine-area" [class.mine-pulse]="mineAnimating" (click)="onMineClick($event)">
     <div class="mine-core">
-      <div class="mine-core__eyebrow">Manual Mining</div>
+      <div class="mine-core__eyebrow">{{ copy.messages.ui.planetView.manualMining }}</div>
       <h2>{{ activeResource.name }}</h2>
-      <p>Only one mining mode can be active at a time. Switch focus when a chain becomes the bottleneck.</p>
+      <p>{{ copy.messages.ui.planetView.manualMiningDescription }}</p>
       <div class="mine-core__yield" [style.color]="activeResource.color">
         +{{ activeClickYield | formatNumber }}
       </div>
@@ -66,7 +66,7 @@
 
   <section class="bottom-bar">
     <div class="cargo-panel">
-      <div class="cargo-panel__title">Shared Cargo Hold</div>
+      <div class="cargo-panel__title">{{ copy.messages.ui.planetView.sharedCargoHold }}</div>
       <div class="crafted-list">
         <div *ngFor="let item of craftedItems; trackBy: trackById" class="crafted-chip">
           <span class="crafted-chip__icon" [style.color]="item.color">{{ item.icon }}</span>
@@ -79,8 +79,8 @@
     </div>
 
     <div class="status-pill">
-      <span>Local auto</span>
-      <strong>{{ localAutoRate | formatNumber }}/sec</strong>
+      <span>{{ copy.messages.ui.planetView.localAuto }}</span>
+      <strong>{{ localAutoLabel }}</strong>
     </div>
   </section>
 </div>

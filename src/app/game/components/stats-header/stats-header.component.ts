@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
 import { ResourceDef } from '../../models';
+import { GameMessagesService } from '../../i18n/game-messages';
 
 @Component({
   selector: 'app-stats-header',
@@ -14,7 +15,10 @@ import { ResourceDef } from '../../models';
 export class StatsHeaderComponent {
   @Output() resetRequested = new EventEmitter<void>();
 
-  constructor(public game: GameService) {}
+  constructor(
+    public game: GameService,
+    public copy: GameMessagesService,
+  ) {}
 
   get resources(): ResourceDef[] {
     return this.game.resources;
@@ -47,12 +51,36 @@ export class StatsHeaderComponent {
   get shipStatus(): string {
     const state = this.game.getState();
     if (state.shipLaunched) {
-      return 'Ship launched';
+      return this.copy.messages.ui.statsHeader.shipLaunched;
     }
 
     const built = state.builtShipPartIds.length;
     const total = this.game.shipParts.length;
-    return `Ship parts ${built}/${total}`;
+    return this.copy.format(this.copy.messages.ui.statsHeader.shipParts, { built, total });
+  }
+
+  get miningLabel(): string {
+    return this.copy.format(this.copy.messages.ui.statsHeader.mining, {
+      resource: this.activeResource.name,
+    });
+  }
+
+  get clickRateLabel(): string {
+    return this.copy.format(this.copy.messages.ui.statsHeader.clickRate, {
+      value: new FormatNumberPipe().transform(this.perClick),
+    });
+  }
+
+  get autoRateLabel(): string {
+    return this.copy.format(this.copy.messages.ui.statsHeader.totalAutoRate, {
+      value: new FormatNumberPipe().transform(this.totalAutoRate),
+    });
+  }
+
+  get totalClicksLabel(): string {
+    return this.copy.format(this.copy.messages.ui.statsHeader.clicks, {
+      value: new FormatNumberPipe().transform(this.totalClicks),
+    });
   }
 
   getAmount(resourceId: ResourceDef['id']): number {

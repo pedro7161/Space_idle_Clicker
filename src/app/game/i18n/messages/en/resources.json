@@ -1,0 +1,38 @@
+{
+  "raw": {
+    "carbon": {
+      "name": "Carbon",
+      "description": "Fuel-rich organic matter used for heat, power, and survival systems."
+    },
+    "ferrite": {
+      "name": "Ferrite",
+      "description": "The structural backbone for plating, machinery, and ship construction."
+    },
+    "oxygen": {
+      "name": "Oxygen",
+      "description": "A volatile gas used for pressure systems, fuel cells, and life support."
+    }
+  },
+  "crafted": {
+    "condensedCarbon": {
+      "name": "Condensed Carbon",
+      "description": "Compressed carbon bricks for high-density energy systems."
+    },
+    "refinedMetal": {
+      "name": "Refined Metal",
+      "description": "Purified ferrite alloys for durable structures and machines."
+    },
+    "oxygenCells": {
+      "name": "Oxygen Cells",
+      "description": "Stable oxygen canisters for engines, pressure systems, and fuel."
+    },
+    "mechanicalParts": {
+      "name": "Mechanical Parts",
+      "description": "Precision components required for automation and hull assemblies."
+    },
+    "basicCircuits": {
+      "name": "Basic Circuits",
+      "description": "Simple control boards for routing power and flight systems."
+    }
+  }
+}

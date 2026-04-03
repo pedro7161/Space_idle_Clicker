@@ -1,5 +1,8 @@
 import { ResourceId, ResourceUpgrade } from '../models';
 import { RESOURCE_DEFS } from './resources.data';
+import { GAME_MESSAGES } from '../i18n/game-messages';
+
+const upgradeMessages = GAME_MESSAGES.progression.upgradeTemplates;
 
 interface UpgradeTemplate {
   suffix: string;
@@ -17,8 +20,8 @@ interface UpgradeTemplate {
 const UPGRADE_TEMPLATES: UpgradeTemplate[] = [
   {
     suffix: 'cutters',
-    name: 'Cutters',
-    description: 'Raise manual extraction strength for this resource on the current planet.',
+    name: upgradeMessages.cutters.name,
+    description: upgradeMessages.cutters.description,
     effectType: 'flatClick',
     effectValue: 1,
     baseCost: resourceId => [{ itemId: resourceId, amount: 20 }],
@@ -29,8 +32,8 @@ const UPGRADE_TEMPLATES: UpgradeTemplate[] = [
   },
   {
     suffix: 'survey',
-    name: 'Survey Mapping',
-    description: 'Improve all yield for this resource on the current planet.',
+    name: upgradeMessages.survey.name,
+    description: upgradeMessages.survey.description,
     effectType: 'yieldMultiplier',
     effectValue: 0.2,
     baseCost: resourceId => [
@@ -44,8 +47,8 @@ const UPGRADE_TEMPLATES: UpgradeTemplate[] = [
   },
   {
     suffix: 'lattice',
-    name: 'Process Lattice',
-    description: 'Add a late-game efficiency layer for the same resource chain.',
+    name: upgradeMessages.lattice.name,
+    description: upgradeMessages.lattice.description,
     effectType: 'yieldMultiplier',
     effectValue: 0.35,
     baseCost: resourceId => [

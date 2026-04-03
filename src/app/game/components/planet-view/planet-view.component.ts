@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
 import { FloatingText, Planet, ResourceDef } from '../../models';
+import { GameMessagesService } from '../../i18n/game-messages';
 
 interface MineralNode {
   x: number;
@@ -28,7 +29,10 @@ export class PlanetViewComponent implements OnInit {
   private floatId = 0;
   private currentPlanetId = '';
 
-  constructor(public game: GameService) {}
+  constructor(
+    public game: GameService,
+    public copy: GameMessagesService,
+  ) {}
 
   ngOnInit(): void {
     this.currentPlanetId = this.currentPlanet.id;
@@ -66,6 +70,12 @@ export class PlanetViewComponent implements OnInit {
 
   get localAutoRate(): number {
     return this.game.getAutoRateForPlanetResource(this.currentPlanet.id, this.activeResource.id);
+  }
+
+  get localAutoLabel(): string {
+    return this.copy.format(this.copy.messages.ui.planetView.perSecond, {
+      value: new FormatNumberPipe().transform(this.localAutoRate),
+    });
   }
 
   onMineClick(event: MouseEvent): void {

@@ -1,9 +1,9 @@
 <div class="overlay" (click)="cancelled.emit()">
   <div class="dialog" (click)="$event.stopPropagation()">
-    <p>Reset all progress?</p>
+    <p>{{ copy.messages.ui.resetDialog.question }}</p>
     <div class="actions">
-      <button class="btn btn-danger" (click)="confirmed.emit()">Yes, Reset</button>
-      <button class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
+      <button class="btn btn-danger" (click)="confirmed.emit()">{{ copy.messages.ui.resetDialog.confirm }}</button>
+      <button class="btn btn-secondary" (click)="cancelled.emit()">{{ copy.messages.ui.resetDialog.cancel }}</button>
     </div>
   </div>
 </div>

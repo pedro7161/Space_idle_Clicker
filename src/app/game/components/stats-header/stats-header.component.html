@@ -1,8 +1,8 @@
 <header class="header">
   <div class="title-block">
-    <div class="eyebrow">Planetfall Operations</div>
+    <div class="eyebrow">{{ copy.messages.ui.statsHeader.eyebrow }}</div>
     <div class="title-row">
-      <h1>Frontier Miner</h1>
+      <h1>{{ copy.messages.ui.statsHeader.title }}</h1>
       <span class="planet-chip" [style.borderColor]="currentPlanet.color">
         {{ currentPlanet.name }}
       </span>
@@ -26,15 +26,15 @@
   </div>
 
   <div class="status-block">
-    <div class="focus-line">Mining {{ activeResource.name }}</div>
+    <div class="focus-line">{{ miningLabel }}</div>
     <div class="rate-line">
-      <span>+{{ perClick | formatNumber }}/click</span>
-      <span>{{ totalAutoRate | formatNumber }}/sec total</span>
+      <span>{{ clickRateLabel }}</span>
+      <span>{{ autoRateLabel }}</span>
     </div>
     <div class="meta-line">
       <span>{{ shipStatus }}</span>
-      <span>{{ totalClicks | formatNumber }} clicks</span>
+      <span>{{ totalClicksLabel }}</span>
     </div>
-    <button class="reset-btn" (click)="resetRequested.emit()">Reset</button>
+    <button class="reset-btn" (click)="resetRequested.emit()">{{ copy.messages.ui.statsHeader.reset }}</button>
   </div>
 </header>

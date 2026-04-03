@@ -47,8 +47,6 @@ export class GameService {
   private tickInterval: ReturnType<typeof setInterval> | null = null;
   private saveInterval: ReturnType<typeof setInterval> | null = null;
 
-  readonly state$ = new BehaviorSubject<GameState>(this.buildDefaultState());
-
   readonly resources = RESOURCE_DEFS;
   readonly craftedItems = CRAFTED_DEFS;
   readonly upgrades = RESOURCE_UPGRADES;
@@ -56,6 +54,8 @@ export class GameService {
   readonly recipes = RECIPES;
   readonly planets = PLANETS;
   readonly shipParts = SHIP_PARTS;
+
+  readonly state$ = new BehaviorSubject<GameState>(this.buildDefaultState());
 
   init(): void {
     if (this.initialized) {
@@ -216,6 +216,35 @@ export class GameService {
     localStorage.removeItem(SAVE_KEY);
     this.state = this.buildDefaultState();
     this.emit();
+  }
+
+  hasSavedGame(): boolean {
+    return !!localStorage.getItem(SAVE_KEY);
+  }
+
+  importSave(raw: string): { ok: true } | { ok: false; error: string } {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return { ok: false, error: 'empty' };
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed) as Partial<GameState>;
+      const merged = this.mergeWithDefaults(parsed);
+      merged.lastTickAt = Date.now();
+      this.state = merged;
+      localStorage.setItem(SAVE_KEY, JSON.stringify(merged));
+
+      if (this.initialized) {
+        this.emit();
+      } else {
+        this.state$.next(merged);
+      }
+
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'invalid' };
+    }
   }
 
   getState(): GameState {

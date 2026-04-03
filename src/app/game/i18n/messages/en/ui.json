@@ -1,0 +1,79 @@
+{
+  "statsHeader": {
+    "eyebrow": "Planetfall Operations",
+    "title": "Frontier Miner",
+    "mining": "Mining {resource}",
+    "clickRate": "+{value}/click",
+    "totalAutoRate": "{value}/sec total",
+    "clicks": "{value} clicks",
+    "shipLaunched": "Ship launched",
+    "shipParts": "Ship parts {built}/{total}",
+    "reset": "Reset"
+  },
+  "planetView": {
+    "currentSite": "Current Site",
+    "manualMining": "Manual Mining",
+    "manualMiningDescription": "Only one mining mode can be active at a time. Switch focus when a chain becomes the bottleneck.",
+    "sharedCargoHold": "Shared Cargo Hold",
+    "localAuto": "Local auto",
+    "perSecond": "{value}/sec"
+  },
+  "upgradePanel": {
+    "inventoryEyebrow": "Shared Inventory",
+    "inventoryTitle": "Cargo Ledger",
+    "raw": "Raw",
+    "crafted": "Crafted",
+    "tabs": {
+      "upgrades": "Upgrades",
+      "crafting": "Crafting",
+      "automation": "Automation",
+      "launch": "Launch"
+    },
+    "resourceUpgradesTitle": "{resource} Upgrades",
+    "resourceAutomationTitle": "{resource} Automation",
+    "planetYield": "x{multiplier} on {planet}",
+    "mineMoreToUnlock": "Mine more {resource} to unlock this path.",
+    "level": "Lv. {level}/{max}",
+    "upgrade": "Upgrade",
+    "craftingUnlockHint": "Crafting unlocks once enough raw extraction has happened to support refinement.",
+    "craftOutput": "+{amount} {item}",
+    "craft": "Craft",
+    "automationUnlockHint": "Automation opens after the early manual loop starts feeding refined materials.",
+    "automationUnavailable": "No automation unlocked for this resource yet.",
+    "automationNextUnlock": "Next unlock: {name}",
+    "automationMineRequirement": "Mine {current}/{required} {resource}",
+    "automationCraftRequirement": "Hold at least {required} {item}",
+    "automationOutputOnPlanet": "{value}/sec on {planet}",
+    "automationOutputHere": "{value}/sec here",
+    "build": "Build",
+    "shipAssembly": "Ship Assembly",
+    "shipAssemblyProgress": "{built}/{total} complete",
+    "built": "Built",
+    "launchShip": "Launch First Ship",
+    "shipLaunched": "First Ship Launched",
+    "planetRoutes": "Planet Routes",
+    "launchRequired": "Launch required",
+    "current": "Current",
+    "discovered": "Discovered",
+    "here": "Here",
+    "travel": "Travel",
+    "discover": "Discover"
+  },
+  "resetDialog": {
+    "question": "Reset all progress?",
+    "confirm": "Yes, Reset",
+    "cancel": "Cancel"
+  },
+  "startScreen": {
+    "eyebrow": "Frontier Deployment",
+    "title": "Frontier Miner",
+    "description": "Start a new expedition from local storage or import a save file before entering orbit.",
+    "start": "Start",
+    "newRun": "New Run",
+    "importFile": "Import Save File",
+    "saveDetected": "Local save detected",
+    "importSuccess": "Save imported successfully. Starting session.",
+    "importError": "The selected file is not a valid save.",
+    "importReadError": "The selected file could not be read."
+  }
+}

@@ -1,10 +1,13 @@
 import { Recipe } from '../models';
+import { GAME_MESSAGES } from '../i18n/game-messages';
+
+const recipeMessages = GAME_MESSAGES.progression.recipes;
 
 export const RECIPES: Recipe[] = [
   {
     id: 'condensed-carbon',
-    name: 'Condense Carbon',
-    description: 'Compress raw carbon into a denser, more useful fuel block.',
+    name: recipeMessages['condensed-carbon'].name,
+    description: recipeMessages['condensed-carbon'].description,
     ingredients: [{ itemId: 'carbon', amount: 25 }],
     outputId: 'condensedCarbon',
     outputAmount: 1,
@@ -14,8 +17,8 @@ export const RECIPES: Recipe[] = [
   },
   {
     id: 'refined-metal',
-    name: 'Refine Metal',
-    description: 'Purify ferrite into standardized structural metal.',
+    name: recipeMessages['refined-metal'].name,
+    description: recipeMessages['refined-metal'].description,
     ingredients: [{ itemId: 'ferrite', amount: 25 }],
     outputId: 'refinedMetal',
     outputAmount: 1,
@@ -25,8 +28,8 @@ export const RECIPES: Recipe[] = [
   },
   {
     id: 'oxygen-cells',
-    name: 'Pack Oxygen Cells',
-    description: 'Stabilize oxygen into portable pressure and fuel cells.',
+    name: recipeMessages['oxygen-cells'].name,
+    description: recipeMessages['oxygen-cells'].description,
     ingredients: [{ itemId: 'oxygen', amount: 20 }],
     outputId: 'oxygenCells',
     outputAmount: 1,
@@ -36,8 +39,8 @@ export const RECIPES: Recipe[] = [
   },
   {
     id: 'mechanical-parts',
-    name: 'Assemble Mechanical Parts',
-    description: 'Combine refined material into machine-grade moving components.',
+    name: recipeMessages['mechanical-parts'].name,
+    description: recipeMessages['mechanical-parts'].description,
     ingredients: [
       { itemId: 'refinedMetal', amount: 3 },
       { itemId: 'condensedCarbon', amount: 2 },
@@ -50,8 +53,8 @@ export const RECIPES: Recipe[] = [
   },
   {
     id: 'basic-circuits',
-    name: 'Print Basic Circuits',
-    description: 'Build simple control boards for miners and ship systems.',
+    name: recipeMessages['basic-circuits'].name,
+    description: recipeMessages['basic-circuits'].description,
     ingredients: [
       { itemId: 'oxygenCells', amount: 2 },
       { itemId: 'refinedMetal', amount: 2 },
