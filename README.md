@@ -72,6 +72,12 @@ The Pages build uses the repository base path:
 
 - `/Space_idle_Clicker/`
 
+## Project Docs
+
+Repo-level project documentation lives here:
+
+- [docs/project-overview.md](docs/project-overview.md)
+
 ## Status
 
 This project is still evolving. The current codebase already reflects the core mining, crafting, automation, and ship-building loop, but the broader logistics and late-game systems are still in progress.
