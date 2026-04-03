@@ -6,6 +6,8 @@ export interface Planet {
   description: string;
   resourceMultipliers: Record<ResourceId, number>;
   travelCost: ItemCost[];
+  requiredShipTier: number;
+  orbitIndex: number;
   unlockedByDefault: boolean;
   color: string;
   mineralColor: string;

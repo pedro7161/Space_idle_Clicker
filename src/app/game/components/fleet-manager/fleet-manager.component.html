@@ -1,0 +1,328 @@
+<div class="relative grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden px-5 pt-5 pb-5 min-[1600px]:px-6 min-[1600px]:pt-6 min-[1600px]:pb-6 min-[1920px]:px-7 min-[1920px]:pt-7 min-[1920px]:pb-7 max-[820px]:px-4 max-[820px]:pt-4 max-[820px]:pb-4">
+  <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.16),transparent_24%),linear-gradient(180deg,#06121d_0%,#02060d_100%)]"></div>
+  <div class="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(circle_at_1px_1px,rgba(226,232,240,0.18)_1px,transparent_0)] [background-size:28px_28px]"></div>
+
+  <section class="relative z-10 flex flex-col gap-4 min-[1200px]:flex-row min-[1200px]:items-end min-[1200px]:justify-between">
+    <div class="max-w-[48rem]">
+      <div class="text-[0.72rem] uppercase tracking-[0.18em] text-cyan-200/70">
+        {{ copy.messages.ui.fleetManager.workspaceEyebrow }}
+      </div>
+      <h2 class="mt-1 text-[clamp(2.2rem,4vw,3.4rem)] leading-[0.95] tracking-[-0.05em] text-slate-50">
+        {{ copy.messages.ui.fleetManager.title }}
+      </h2>
+      <p class="mt-2 max-w-[40rem] text-[0.9rem] leading-7 text-slate-300/85 min-[1600px]:text-[0.98rem]">
+        {{ copy.messages.ui.fleetManager.workspaceDescription }}
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <span class="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-3 py-1.5 text-[0.76rem] font-semibold text-cyan-100">
+        {{ copy.format(copy.messages.ui.fleetManager.fleetSummary, { ships: ships.length }) }}
+      </span>
+      <span class="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[0.76rem] font-semibold text-slate-200">
+        {{ getActiveRoutesLabel() }}
+      </span>
+      <span class="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[0.76rem] font-semibold text-slate-200">
+        {{ getIdleShipsLabel() }}
+      </span>
+      <span class="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[0.76rem] font-semibold text-slate-200">
+        {{ getHighestTierLabel() }}
+      </span>
+    </div>
+  </section>
+
+  <section class="relative z-10 mt-4 grid gap-3">
+    <nav class="grid grid-cols-3 gap-2 rounded-[1.2rem] border border-white/10 bg-[rgba(8,15,26,0.68)] p-2 backdrop-blur-xl">
+      @for (section of sections; track section.key) {
+        <button
+          class="rounded-[0.9rem] border px-3 py-3 text-[0.76rem] font-bold transition min-[1600px]:text-[0.84rem]"
+          [ngClass]="activeSection === section.key
+            ? 'border-cyan-400/30 bg-cyan-500/14 text-cyan-50 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.08)]'
+            : 'border-transparent bg-transparent text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'"
+          (click)="activeSection = section.key"
+        >
+          {{ section.label }}
+        </button>
+      }
+    </nav>
+  </section>
+
+  <section class="relative z-10 mt-4 min-h-0 overflow-hidden rounded-[1.4rem] border border-white/10 bg-[rgba(8,15,26,0.68)] shadow-[0_24px_70px_rgba(2,6,23,0.45)] backdrop-blur-xl">
+    <div class="h-full overflow-y-auto overscroll-contain p-4 min-[1600px]:p-5">
+      @if (!ships.length) {
+        <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-[0.82rem] text-slate-300">
+          {{ copy.messages.ui.fleetManager.launchRequired }}
+        </div>
+      } @else {
+        @if (activeSection === 'routes') {
+          <section class="grid gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">
+                  {{ copy.messages.ui.fleetManager.routeAssignments }}
+                </h3>
+                <p class="mt-1 text-[0.8rem] text-slate-400">
+                  {{ copy.messages.ui.fleetManager.routes }}
+                </p>
+              </div>
+              <span class="text-[0.74rem] text-slate-400">
+                {{ copy.format(copy.messages.ui.fleetManager.fleetSummary, { ships: ships.length }) }}
+              </span>
+            </div>
+
+            @if (!canConfigureRoutes()) {
+              <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-[0.82rem] text-slate-300">
+                {{ copy.messages.ui.fleetManager.notEnoughPlanets }}
+              </div>
+            }
+
+            @for (ship of ships; track ship.id) {
+              <div class="grid gap-4 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 min-[1200px]:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] min-[1600px]:p-5">
+                <div class="grid gap-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                      <div class="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-white/[0.05] text-lg">
+                        {{ getShipDefinition(ship).icon }}
+                      </div>
+                      <div class="min-w-0">
+                        <div class="text-[0.94rem] font-semibold text-slate-50">
+                          {{ getShipDefinition(ship).name }}
+                        </div>
+                        <div class="mt-1 text-[0.76rem] text-slate-400">
+                          {{ getShipStatusLabel(ship) }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-right text-[0.72rem] text-slate-400">
+                      <div>{{ getTierLabel(getShipDefinition(ship).tier) }}</div>
+                      <div>{{ getCargoCapacityLabel(getShipDefinition(ship)) }}</div>
+                      <div>{{ getTravelSpeedLabel(getShipDefinition(ship)) }}</div>
+                    </div>
+                  </div>
+
+                  <div class="rounded-[1rem] border border-white/8 bg-slate-950/30 px-3.5 py-3 text-[0.78rem] text-slate-300">
+                    {{ getRouteSummary(ship) }}
+                  </div>
+
+                  <div class="grid gap-2 text-[0.78rem] text-slate-300">
+                    <div>{{ getShipLocationLabel(ship) }}</div>
+                    <div class="text-slate-400">{{ getShipCargoLabel(ship) }}</div>
+                    @if (getShipEtaLabel(ship); as etaLabel) {
+                      <div class="text-cyan-300">{{ etaLabel }}</div>
+                    }
+                  </div>
+                </div>
+
+                <div class="grid gap-3">
+                  <label class="grid gap-1">
+                    <span class="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.fleetManager.routeOrigin }}
+                    </span>
+                    <select
+                      class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-[0.8rem] text-slate-50"
+                      [ngModel]="getRouteDraft(ship).originPlanetId"
+                      (ngModelChange)="updateRouteDraft(ship.id, 'originPlanetId', $event)"
+                    >
+                      @for (planet of discoveredPlanets; track planet.id) {
+                        <option [ngValue]="planet.id">{{ planet.name }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <label class="grid gap-1">
+                    <span class="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.fleetManager.routeDestination }}
+                    </span>
+                    <select
+                      class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-[0.8rem] text-slate-50"
+                      [ngModel]="getRouteDraft(ship).destinationPlanetId"
+                      (ngModelChange)="updateRouteDraft(ship.id, 'destinationPlanetId', $event)"
+                    >
+                      @for (planet of getDestinationOptions(ship); track planet.id) {
+                        <option [ngValue]="planet.id">{{ planet.name }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <label class="grid gap-1">
+                    <span class="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.fleetManager.routeItem }}
+                    </span>
+                    <select
+                      class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-[0.8rem] text-slate-50"
+                      [ngModel]="getRouteDraft(ship).itemId"
+                      (ngModelChange)="updateRouteDraft(ship.id, 'itemId', $event)"
+                    >
+                      @for (item of transportItems; track item.id) {
+                        <option [ngValue]="item.id">{{ item.name }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <label class="grid gap-1">
+                    <span class="text-[0.7rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.fleetManager.keepMinimum }}
+                    </span>
+                    <input
+                      class="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-[0.8rem] text-slate-50"
+                      type="number"
+                      min="0"
+                      [ngModel]="getRouteDraft(ship).keepMinimum"
+                      (ngModelChange)="updateRouteDraft(ship.id, 'keepMinimum', $event)"
+                    />
+                  </label>
+
+                  @if (getRequiredTierLabel(ship); as requirementLabel) {
+                    <div class="text-[0.74rem] text-amber-300">{{ requirementLabel }}</div>
+                  }
+
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.76rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+                      [disabled]="!canSaveRoute(ship)"
+                      (click)="saveRoute(ship)"
+                    >
+                      {{ copy.messages.ui.fleetManager.saveRoute }}
+                    </button>
+                    <button
+                      class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-transparent px-3 py-2.5 text-[0.76rem] font-bold text-slate-300 transition hover:bg-white/[0.05]"
+                      (click)="clearRoute(ship)"
+                    >
+                      {{ copy.messages.ui.fleetManager.clearRoute }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </section>
+        }
+
+        @if (activeSection === 'shipyard') {
+          <section class="grid gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">
+                  {{ copy.messages.ui.fleetManager.shipyard }}
+                </h3>
+                <p class="mt-1 text-[0.8rem] text-slate-400">
+                  {{ copy.messages.ui.fleetManager.starterShipReady }}
+                </p>
+              </div>
+              <span class="text-[0.74rem] text-slate-400">
+                {{ getHighestTierLabel() }}
+              </span>
+            </div>
+
+            <div class="grid gap-3 min-[1100px]:grid-cols-2">
+              @for (definition of shipDefinitions; track definition.id) {
+                <div class="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 min-[1600px]:p-5">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                      <div class="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-white/[0.05] text-lg">
+                        {{ definition.icon }}
+                      </div>
+                      <div class="min-w-0">
+                        <div class="text-[0.94rem] font-semibold text-slate-50">{{ definition.name }}</div>
+                        <p class="mt-1 text-[0.8rem] leading-6 text-slate-400">{{ definition.description }}</p>
+                      </div>
+                    </div>
+                    <span class="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[0.72rem] text-slate-300">
+                      {{ getOwnedCountLabel(definition) }}
+                    </span>
+                  </div>
+
+                  <div class="grid gap-1 text-[0.76rem] text-slate-300">
+                    <div>{{ getTierLabel(definition.tier) }}</div>
+                    <div>{{ getCargoCapacityLabel(definition) }}</div>
+                    <div>{{ getTravelSpeedLabel(definition) }}</div>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2">
+                    @for (cost of definition.buildCost; track cost.itemId + '-' + cost.amount) {
+                      <span
+                        class="rounded-full border px-2 py-1 text-[0.72rem] text-slate-300"
+                        [style.borderColor]="getItemColor(cost.itemId)"
+                      >
+                        {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                      </span>
+                    }
+                  </div>
+
+                  <button
+                    class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.76rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+                    [disabled]="!game.canBuildShip(definition.id)"
+                    (click)="buildShip(definition)"
+                  >
+                    {{ copy.messages.ui.fleetManager.buildShip }}
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        @if (activeSection === 'stats') {
+          <section class="grid gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">
+                  {{ copy.messages.ui.fleetManager.shipStats }}
+                </h3>
+                <p class="mt-1 text-[0.8rem] text-slate-400">
+                  {{ copy.messages.ui.fleetManager.fleet }}
+                </p>
+              </div>
+              <span class="text-[0.74rem] text-slate-400">
+                {{ getIdleShipsLabel() }}
+              </span>
+            </div>
+
+            <div class="grid gap-3">
+              @for (ship of ships; track ship.id) {
+                <div class="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 min-[1100px]:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] min-[1600px]:p-5">
+                  <div class="grid gap-3">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex items-start gap-3">
+                        <div class="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-white/[0.05] text-lg">
+                          {{ getShipDefinition(ship).icon }}
+                        </div>
+                        <div class="min-w-0">
+                          <div class="text-[0.94rem] font-semibold text-slate-50">
+                            {{ getShipDefinition(ship).name }}
+                          </div>
+                          <div class="mt-1 text-[0.76rem] text-slate-400">
+                            {{ getRouteSummary(ship) }}
+                          </div>
+                        </div>
+                      </div>
+                      <span class="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[0.72rem] text-slate-300">
+                        {{ getShipStatusLabel(ship) }}
+                      </span>
+                    </div>
+
+                    <div class="grid gap-2 text-[0.78rem] text-slate-300">
+                      <div>{{ getShipLocationLabel(ship) }}</div>
+                      <div class="text-slate-400">{{ getShipCargoLabel(ship) }}</div>
+                      @if (!getShipEtaLabel(ship)) {
+                        <div class="text-emerald-300">{{ copy.messages.ui.fleetManager.readyForOrders }}</div>
+                      }
+                      @if (getShipEtaLabel(ship); as etaLabel) {
+                        <div class="text-cyan-300">{{ etaLabel }}</div>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="grid gap-2 rounded-[1rem] border border-white/8 bg-slate-950/30 px-3.5 py-3 text-[0.78rem] text-slate-300">
+                    <div>{{ getTierLabel(getShipDefinition(ship).tier) }}</div>
+                    <div>{{ getCargoCapacityLabel(getShipDefinition(ship)) }}</div>
+                    <div>{{ getTravelSpeedLabel(getShipDefinition(ship)) }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      }
+    </div>
+  </section>
+</div>

@@ -376,6 +376,11 @@
                     }
                   </div>
                   <p class="mt-1 text-[0.78rem] leading-[1.45] text-slate-300">{{ planet.description }}</p>
+                  @if (getPlanetRequirementLabel(planet); as requirementLabel) {
+                    <div class="mt-2 text-[0.72rem] text-slate-400">
+                      {{ requirementLabel }}
+                    </div>
+                  }
                   @if (planet.travelCost.length > 0 && !game.isPlanetDiscovered(planet.id)) {
                     <div class="mt-2 flex flex-wrap gap-2">
                       @for (cost of planet.travelCost; track cost.itemId + '-' + cost.amount) {

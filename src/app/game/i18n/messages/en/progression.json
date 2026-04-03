@@ -58,5 +58,23 @@
       "name": "Guidance Core",
       "description": "Primitive avionics good enough for short interplanetary routes."
     }
+  },
+  "ships": {
+    "shuttle": {
+      "name": "Frontier Shuttle",
+      "description": "Fast and light. Good for early scouting and tight transport loops."
+    },
+    "hauler": {
+      "name": "Ore Hauler",
+      "description": "Slow, bulky, and built to move large loads between nearby worlds."
+    },
+    "cruiser": {
+      "name": "Star Cruiser",
+      "description": "A balanced mid-tier hull that can open deeper routes without giving up cargo."
+    },
+    "quantum_ship": {
+      "name": "Quantum Vessel",
+      "description": "A late-game carrier that crosses the system quickly and handles the heaviest runs."
+    }
   }
 }

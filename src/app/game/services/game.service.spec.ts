@@ -4,7 +4,7 @@ import { PLANETS } from '../constants';
 
 describe('GameService', () => {
   let service: GameService;
-  const SAVE_KEY = 'space-idle-save-v2';
+  const SAVE_KEY = 'space-idle-save-v3';
 
   beforeEach(() => {
     localStorage.clear();
@@ -37,9 +37,9 @@ describe('GameService', () => {
     it('should start with zero inventory for all items', () => {
       service.init();
       const state = service.getState();
-      expect(state.inventory['carbon']).toBe(0);
-      expect(state.inventory['ferrite']).toBe(0);
-      expect(state.inventory['oxygen']).toBe(0);
+      expect(state.planetInventories['solara']['carbon']).toBe(0);
+      expect(state.planetInventories['solara']['ferrite']).toBe(0);
+      expect(state.planetInventories['solara']['oxygen']).toBe(0);
     });
 
     it('should not re-initialize when called twice', () => {
@@ -58,6 +58,12 @@ describe('GameService', () => {
       const gained = service.mineActiveResource();
       expect(gained).toBeGreaterThan(0);
       expect(service.getInventoryAmount('carbon')).toBe(gained);
+    });
+
+    it('should keep resource inventory scoped to the current planet', () => {
+      service.mineActiveResource();
+      expect(service.getInventoryAmount('carbon', 'solara')).toBeGreaterThan(0);
+      expect(service.getInventoryAmount('carbon', 'ferros')).toBe(0);
     });
 
     it('should increment totalClicks', () => {
@@ -206,6 +212,13 @@ describe('GameService', () => {
     it('should report ship parts as not built initially', () => {
       expect(service.isShipPartBuilt('hull')).toBeFalse();
     });
+
+    it('should commission a starter shuttle when the first ship launches', () => {
+      (service as any).state.builtShipPartIds = service.shipParts.map(part => part.id);
+      expect(service.launchShip()).toBeTrue();
+      expect(service.getState().ships.length).toBe(1);
+      expect(service.getState().ships[0].definitionId).toBe('shuttle');
+    });
   });
 
   describe('planets and travel', () => {
@@ -230,6 +243,82 @@ describe('GameService', () => {
     it('should return correct planet multiplier', () => {
       expect(service.getPlanetMultiplier('solara', 'carbon')).toBe(1);
       expect(service.getPlanetMultiplier('ferros', 'ferrite')).toBe(2.8);
+    });
+
+    it('should gate undiscovered planets by owned ship tier', () => {
+      (service as any).state.builtShipPartIds = service.shipParts.map(part => part.id);
+      service.launchShip();
+      expect(service.canTravelToPlanet('ferros')).toBeFalse();
+      expect(service.canTravelToPlanet('cinder')).toBeFalse();
+    });
+  });
+
+  describe('fleet logistics', () => {
+    beforeEach(() => {
+      service.init();
+      (service as any).state.builtShipPartIds = service.shipParts.map(part => part.id);
+      service.launchShip();
+      (service as any).state.discoveredPlanetIds = ['solara', 'ferros'];
+      (service as any).state.planetInventories.solara.carbon = 40;
+    });
+
+    it('should save a route and load cargo from the origin planet', () => {
+      const starterShip = service.getState().ships[0];
+      const saved = service.saveShipRoute({
+        shipId: starterShip.id,
+        originPlanetId: 'solara',
+        destinationPlanetId: 'ferros',
+        itemId: 'carbon',
+        keepMinimum: 5,
+      });
+
+      expect(saved).toBeTrue();
+      const ship = service.getState().ships[0];
+      expect(ship.status).toBe('outbound');
+      expect(ship.cargo.itemId).toBe('carbon');
+      expect(ship.cargo.amount).toBe(20);
+      expect(service.getInventoryAmount('carbon', 'solara')).toBe(20);
+    });
+  });
+
+  describe('space stations', () => {
+    beforeEach(() => {
+      service.init();
+      (service as any).state.builtShipPartIds = service.shipParts.map(part => part.id);
+      service.launchShip();
+    });
+
+    it('should build a space station when affordable after launch', () => {
+      const state = (service as any).state;
+      service.getSpaceStationBuildCost('solara').forEach(cost => {
+        state.planetInventories.solara[cost.itemId] = cost.amount;
+      });
+
+      expect(service.canBuildSpaceStation('solara')).toBeTrue();
+      expect(service.buildSpaceStation('solara')).toBeTrue();
+      expect(service.hasSpaceStation('solara')).toBeTrue();
+    });
+
+    it('should increase route loading capacity from planets with a station', () => {
+      const state = (service as any).state;
+      state.discoveredPlanetIds = ['solara', 'ferros'];
+      service.getSpaceStationBuildCost('solara').forEach(cost => {
+        state.planetInventories.solara[cost.itemId] = cost.amount;
+      });
+      state.planetInventories.solara.carbon = 60;
+
+      expect(service.buildSpaceStation('solara')).toBeTrue();
+
+      const starterShip = service.getState().ships[0];
+      expect(service.saveShipRoute({
+        shipId: starterShip.id,
+        originPlanetId: 'solara',
+        destinationPlanetId: 'ferros',
+        itemId: 'carbon',
+        keepMinimum: 0,
+      })).toBeTrue();
+
+      expect(service.getState().ships[0].cargo.amount).toBe(24);
     });
   });
 

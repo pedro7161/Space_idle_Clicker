@@ -58,5 +58,23 @@
       "name": "Núcleo de Navegação",
       "description": "Aviónica primitiva, mas suficiente para rotas interplanetárias curtas."
     }
+  },
+  "ships": {
+    "shuttle": {
+      "name": "Vaivém da Fronteira",
+      "description": "Rápido e leve. Bom para reconhecimento inicial e rotas curtas."
+    },
+    "hauler": {
+      "name": "Cargueiro de Minério",
+      "description": "Lento, pesado e pensado para mover grandes cargas entre mundos próximos."
+    },
+    "cruiser": {
+      "name": "Cruzador Estelar",
+      "description": "Uma nave intermédia equilibrada que abre rotas mais profundas sem perder muita carga."
+    },
+    "quantum_ship": {
+      "name": "Vaso Quântico",
+      "description": "Um cargueiro de fim de jogo que atravessa o sistema depressa e suporta as rotas mais pesadas."
+    }
   }
 }

@@ -3,10 +3,12 @@ import { CommonModule } from '@angular/common';
 import { GameService } from './services/game.service';
 import { StatsHeaderComponent } from './components/stats-header/stats-header.component';
 import { PlanetViewComponent } from './components/planet-view/planet-view.component';
+import { FleetManagerComponent } from './components/fleet-manager/fleet-manager.component';
 import { UpgradePanelComponent } from './components/upgrade-panel/upgrade-panel.component';
 import { ResetDialogComponent } from './components/reset-dialog/reset-dialog.component';
 import { GameMessagesService } from './i18n/game-messages';
 import { SettingsDialogComponent } from './components/settings-dialog/settings-dialog.component';
+import { ChangelogDialogComponent } from './components/changelog-dialog/changelog-dialog.component';
 import { SupportedLocale } from './i18n/game-messages';
 
 @Component({
@@ -16,19 +18,23 @@ import { SupportedLocale } from './i18n/game-messages';
     CommonModule,
     StatsHeaderComponent,
     PlanetViewComponent,
+    FleetManagerComponent,
     UpgradePanelComponent,
     ResetDialogComponent,
     SettingsDialogComponent,
+    ChangelogDialogComponent,
   ],
   templateUrl: './game.component.html',
 })
 export class GameComponent implements OnDestroy {
+  activeWorkspace: 'surface' | 'ships' = 'surface';
   hasStarted = false;
   hasSavedGame = false;
   showResetDialog = false;
   exportSaveValue = '';
   exportSaveFileContents = '';
   showSettingsDialog = false;
+  showChangelogDialog = false;
   showMobilePanel = false;
   showMobileResources = false;
   startScreenMessage = '';
@@ -47,17 +53,20 @@ export class GameComponent implements OnDestroy {
 
   startGame(): void {
     this.game.init();
+    this.activeWorkspace = 'surface';
     this.hasStarted = true;
     this.hasSavedGame = this.game.hasSavedGame();
   }
 
   startFresh(): void {
     this.game.resetGame();
+    this.activeWorkspace = 'surface';
     this.startGame();
   }
 
   onResetConfirmed(): void {
     this.game.resetGame();
+    this.activeWorkspace = 'surface';
     this.showResetDialog = false;
   }
 
@@ -101,6 +110,15 @@ export class GameComponent implements OnDestroy {
     this.showMobilePanel = !this.showMobilePanel;
   }
 
+  toggleShipsWorkspace(): void {
+    if (!this.hasFleetAccess()) {
+      return;
+    }
+
+    this.showMobilePanel = false;
+    this.activeWorkspace = this.activeWorkspace === 'ships' ? 'surface' : 'ships';
+  }
+
   closeMobilePanel(): void {
     this.showMobilePanel = false;
   }
@@ -112,6 +130,15 @@ export class GameComponent implements OnDestroy {
   requestResetFromSettings(): void {
     this.showSettingsDialog = false;
     this.showResetDialog = true;
+  }
+
+  openChangelogDialog(): void {
+    this.showSettingsDialog = false;
+    this.showChangelogDialog = true;
+  }
+
+  hasFleetAccess(): boolean {
+    return this.game.getState().ships.length > 0;
   }
 
   handleImport(dialog: SettingsDialogComponent, raw: string): void {

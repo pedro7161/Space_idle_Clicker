@@ -69,14 +69,21 @@
     <app-stats-header
       [mobileResourcesExpanded]="showMobileResources"
       [mobileMenuOpen]="showMobilePanel"
+      [shipsUnlocked]="hasFleetAccess()"
+      [shipsViewActive]="activeWorkspace === 'ships'"
       (settingsRequested)="openSettingsDialog()"
+      (shipsWorkspaceToggleRequested)="toggleShipsWorkspace()"
       (mobileResourcesToggleRequested)="toggleMobileResources()"
       (mobileMenuToggleRequested)="toggleMobilePanel()"
     ></app-stats-header>
 
     <div class="relative min-h-0 flex-1 overflow-hidden">
       <div class="relative grid h-full min-h-0 overflow-hidden grid-cols-1 min-[960px]:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)] min-[1600px]:grid-cols-[minmax(0,1fr)_minmax(30rem,36rem)] min-[1920px]:grid-cols-[minmax(0,1fr)_minmax(34rem,40rem)]">
-        <app-planet-view class="block h-full min-h-0"></app-planet-view>
+        @if (activeWorkspace === 'ships') {
+          <app-fleet-manager class="block h-full min-h-0"></app-fleet-manager>
+        } @else {
+          <app-planet-view class="block h-full min-h-0"></app-planet-view>
+        }
         <app-upgrade-panel
           class="block h-full min-h-0 overflow-hidden"
           [mobileOpen]="showMobilePanel"
@@ -109,10 +116,15 @@
         [currentLocale]="copy.currentLocale"
         [localeOptions]="copy.localeOptions"
         (closed)="showSettingsDialog = false"
+        (changelogRequested)="openChangelogDialog()"
         (importRequested)="handleImport(settingsDialog, $event)"
         (localeChanged)="changeLanguage(settingsDialog, $event)"
         (resetRequested)="requestResetFromSettings()"
       ></app-settings-dialog>
+    }
+
+    @if (showChangelogDialog) {
+      <app-changelog-dialog (closed)="showChangelogDialog = false"></app-changelog-dialog>
     }
   }
 </div>
