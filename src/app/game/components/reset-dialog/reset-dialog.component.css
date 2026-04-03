@@ -1,0 +1,59 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.dialog {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 24px 32px;
+  text-align: center;
+}
+
+.dialog p {
+  font-size: 1.1rem;
+  color: #e2e8f0;
+  margin: 0 0 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn {
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-danger {
+  color: #fecdd3;
+  background: rgba(244, 63, 94, 0.2);
+  border-color: #f43f5e;
+}
+
+.btn-danger:hover {
+  background: rgba(244, 63, 94, 0.35);
+}
+
+.btn-secondary {
+  color: #e2e8f0;
+  background: #334155;
+  border-color: #475569;
+}
+
+.btn-secondary:hover {
+  background: #475569;
+}

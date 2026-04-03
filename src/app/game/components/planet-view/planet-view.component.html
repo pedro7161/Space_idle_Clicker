@@ -1,0 +1,86 @@
+<div class="planet-view" [style.background]="currentPlanet.bgGradient">
+  <div class="stars"></div>
+  <div
+    class="surface"
+    [style.background]="'linear-gradient(to top, ' + currentPlanet.color + '55, transparent)'"
+  ></div>
+
+  <section class="top-bar">
+    <div class="resource-switcher">
+      <button
+        *ngFor="let resource of resources; trackBy: trackById"
+        class="resource-button"
+        [class.active]="resource.id === activeResource.id"
+        [style.borderColor]="resource.id === activeResource.id ? resource.color : null"
+        (click)="setActiveResource(resource.id); $event.stopPropagation()"
+      >
+        <span class="resource-button__icon" [style.color]="resource.color">{{ resource.icon }}</span>
+        <span class="resource-button__copy">
+          <strong>{{ resource.name }}</strong>
+          <span>
+            {{ getResourceAmount(resource.id) | formatNumber }}
+            · x{{ getPlanetMultiplier(resource.id) }}
+          </span>
+        </span>
+      </button>
+    </div>
+
+    <aside class="planet-panel">
+      <div class="planet-panel__eyebrow">Current Site</div>
+      <strong>{{ currentPlanet.name }}</strong>
+      <p>{{ currentPlanet.description }}</p>
+    </aside>
+  </section>
+
+  <div class="mine-area" [class.mine-pulse]="mineAnimating" (click)="onMineClick($event)">
+    <div class="mine-core">
+      <div class="mine-core__eyebrow">Manual Mining</div>
+      <h2>{{ activeResource.name }}</h2>
+      <p>Only one mining mode can be active at a time. Switch focus when a chain becomes the bottleneck.</p>
+      <div class="mine-core__yield" [style.color]="activeResource.color">
+        +{{ activeClickYield | formatNumber }}
+      </div>
+    </div>
+
+    <div
+      *ngFor="let node of mineralNodes; trackBy: trackByIndex"
+      class="mineral-node"
+      [style.left.%]="node.x"
+      [style.top.%]="node.y"
+      [style.width.px]="node.size"
+      [style.height.px]="node.size"
+      [style.backgroundColor]="activeResource.mineralColor"
+      [style.animationDelay.s]="node.delay"
+    ></div>
+
+    <div
+      *ngFor="let item of floatingTexts; trackBy: trackByFloatId"
+      class="floating-text"
+      [style.left.px]="item.x"
+      [style.top.px]="item.y"
+      [style.color]="activeResource.mineralColor"
+    >
+      {{ item.value }}
+    </div>
+  </div>
+
+  <section class="bottom-bar">
+    <div class="cargo-panel">
+      <div class="cargo-panel__title">Shared Cargo Hold</div>
+      <div class="crafted-list">
+        <div *ngFor="let item of craftedItems; trackBy: trackById" class="crafted-chip">
+          <span class="crafted-chip__icon" [style.color]="item.color">{{ item.icon }}</span>
+          <span class="crafted-chip__copy">
+            <strong>{{ item.name }}</strong>
+            <span>{{ getCraftedAmount(item.id) | formatNumber }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-pill">
+      <span>Local auto</span>
+      <strong>{{ localAutoRate | formatNumber }}/sec</strong>
+    </div>
+  </section>
+</div>

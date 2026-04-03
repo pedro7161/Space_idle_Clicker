@@ -1,0 +1,40 @@
+<header class="header">
+  <div class="title-block">
+    <div class="eyebrow">Planetfall Operations</div>
+    <div class="title-row">
+      <h1>Frontier Miner</h1>
+      <span class="planet-chip" [style.borderColor]="currentPlanet.color">
+        {{ currentPlanet.name }}
+      </span>
+    </div>
+    <p>{{ currentPlanet.description }}</p>
+  </div>
+
+  <div class="resource-strip">
+    <div
+      *ngFor="let resource of resources; trackBy: trackById"
+      class="resource-card"
+      [class.active]="resource.id === activeResource.id"
+      [style.borderColor]="resource.color"
+    >
+      <span class="resource-icon" [style.color]="resource.color">{{ resource.icon }}</span>
+      <span class="resource-copy">
+        <strong>{{ resource.name }}</strong>
+        <span>{{ getAmount(resource.id) | formatNumber }}</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="status-block">
+    <div class="focus-line">Mining {{ activeResource.name }}</div>
+    <div class="rate-line">
+      <span>+{{ perClick | formatNumber }}/click</span>
+      <span>{{ totalAutoRate | formatNumber }}/sec total</span>
+    </div>
+    <div class="meta-line">
+      <span>{{ shipStatus }}</span>
+      <span>{{ totalClicks | formatNumber }} clicks</span>
+    </div>
+    <button class="reset-btn" (click)="resetRequested.emit()">Reset</button>
+  </div>
+</header>

@@ -1,0 +1,12 @@
+<app-stats-header (resetRequested)="showResetDialog = true"></app-stats-header>
+
+<div class="main">
+  <app-planet-view></app-planet-view>
+  <app-upgrade-panel></app-upgrade-panel>
+</div>
+
+<app-reset-dialog
+  *ngIf="showResetDialog"
+  (confirmed)="onResetConfirmed()"
+  (cancelled)="showResetDialog = false"
+></app-reset-dialog>

@@ -1,0 +1,235 @@
+<aside class="panel-shell">
+  <section class="inventory-panel">
+    <div class="inventory-header">
+      <div>
+        <span class="eyebrow">Shared Inventory</span>
+        <h2>Cargo Ledger</h2>
+      </div>
+      <span class="planet-name">{{ currentPlanet.name }}</span>
+    </div>
+
+    <div class="inventory-group">
+      <h3>Raw</h3>
+      <div class="inventory-grid">
+        <div *ngFor="let resource of resources; trackBy: trackById" class="inventory-chip">
+          <span class="inventory-chip__icon" [style.color]="resource.color">{{ resource.icon }}</span>
+          <span class="inventory-chip__copy">
+            <strong>{{ resource.name }}</strong>
+            <span>{{ getItemAmount(resource.id) | formatNumber }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="inventory-group">
+      <h3>Crafted</h3>
+      <div class="inventory-grid">
+        <div *ngFor="let item of craftedItems; trackBy: trackById" class="inventory-chip">
+          <span class="inventory-chip__icon" [style.color]="item.color">{{ item.icon }}</span>
+          <span class="inventory-chip__copy">
+            <strong>{{ item.name }}</strong>
+            <span>{{ getItemAmount(item.id) | formatNumber }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="tab-bar">
+    <button
+      *ngFor="let tab of tabs"
+      class="tab"
+      [class.active]="activeTab === tab.key"
+      (click)="activeTab = tab.key"
+    >
+      {{ tab.label }}
+    </button>
+  </nav>
+
+  <div class="tab-content">
+    <section *ngIf="activeTab === 'upgrades'" class="stack">
+      <div *ngFor="let resource of resources; trackBy: trackById" class="group">
+        <div class="group-header">
+          <h3>{{ resource.name }} Upgrades</h3>
+          <span>x{{ game.getPlanetMultiplier(currentPlanet.id, resource.id) }} on {{ currentPlanet.name }}</span>
+        </div>
+
+        <div *ngIf="getResourceUpgrades(resource.id).length === 0" class="empty-state">
+          Mine more {{ resource.name.toLowerCase() }} to unlock this path.
+        </div>
+
+        <div *ngFor="let upgrade of getResourceUpgrades(resource.id); trackBy: trackById" class="card">
+          <div class="card-icon">{{ upgrade.icon }}</div>
+          <div class="card-copy">
+            <div class="card-title">
+              <strong>{{ upgrade.name }}</strong>
+              <span>Lv. {{ getUpgradeLevel(upgrade) }}/{{ upgrade.maxLevel }}</span>
+            </div>
+            <p>{{ upgrade.description }}</p>
+
+            <div class="cost-row">
+              <span
+                *ngFor="let cost of game.getUpgradeCost(upgrade); trackBy: trackByCost"
+                class="cost-pill"
+                [style.borderColor]="getItemColor(cost.itemId)"
+              >
+                {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+              </span>
+            </div>
+          </div>
+
+          <button
+            class="action-btn"
+            [disabled]="getUpgradeLevel(upgrade) >= upgrade.maxLevel || !game.canAfford(game.getUpgradeCost(upgrade))"
+            (click)="buyUpgrade(upgrade)"
+          >
+            Upgrade
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab === 'crafting'" class="stack">
+      <div *ngIf="visibleRecipes.length === 0" class="empty-state wide">
+        Crafting unlocks once enough raw extraction has happened to support refinement.
+      </div>
+
+      <div *ngFor="let recipe of visibleRecipes; trackBy: trackById" class="card">
+        <div class="card-icon">{{ recipe.icon }}</div>
+        <div class="card-copy">
+          <div class="card-title">
+            <strong>{{ recipe.name }}</strong>
+            <span>+{{ recipe.outputAmount }} {{ getItemLabel(recipe.outputId) }}</span>
+          </div>
+          <p>{{ recipe.description }}</p>
+          <div class="cost-row">
+            <span
+              *ngFor="let ingredient of recipe.ingredients; trackBy: trackByCost"
+              class="cost-pill"
+              [style.borderColor]="getItemColor(ingredient.itemId)"
+            >
+              {{ getItemLabel(ingredient.itemId) }} {{ ingredient.amount | formatNumber }}
+            </span>
+          </div>
+        </div>
+        <button class="action-btn" [disabled]="!game.canAfford(recipe.ingredients)" (click)="craft(recipe)">
+          Craft
+        </button>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab === 'automation'" class="stack">
+      <div *ngIf="visibleAutoMiners.length === 0" class="empty-state wide">
+        Automation opens after the early manual loop starts feeding refined materials.
+      </div>
+
+      <div *ngFor="let resource of resources; trackBy: trackById" class="group">
+        <div class="group-header">
+          <h3>{{ resource.name }} Automation</h3>
+          <span>{{ game.getAutoRateForPlanetResource(currentPlanet.id, resource.id) | formatNumber }}/sec here</span>
+        </div>
+
+        <div *ngIf="getMinersForResource(resource.id).length === 0" class="empty-state">
+          No automation unlocked for this resource yet.
+        </div>
+
+        <div *ngFor="let miner of getMinersForResource(resource.id); trackBy: trackById" class="card">
+          <div class="card-icon">{{ miner.icon }}</div>
+          <div class="card-copy">
+            <div class="card-title">
+              <strong>{{ miner.name }}</strong>
+              <span>x{{ getAutoMinerCount(miner) }}</span>
+            </div>
+            <p>{{ miner.description }}</p>
+            <div class="subline" *ngIf="getAutoMinerCount(miner) > 0">
+              {{ getAutoMinerOutput(miner) | formatNumber }}/sec on {{ currentPlanet.name }}
+            </div>
+            <div class="cost-row">
+              <span
+                *ngFor="let cost of game.getAutoMinerCost(miner); trackBy: trackByCost"
+                class="cost-pill"
+                [style.borderColor]="getItemColor(cost.itemId)"
+              >
+                {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+              </span>
+            </div>
+          </div>
+          <button class="action-btn" [disabled]="!game.canAfford(game.getAutoMinerCost(miner))" (click)="buyAutoMiner(miner)">
+            Build
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab === 'launch'" class="stack">
+      <div class="group">
+        <div class="group-header">
+          <h3>Ship Assembly</h3>
+          <span>{{ state.builtShipPartIds.length }}/{{ shipParts.length }} complete</span>
+        </div>
+
+        <div *ngFor="let part of shipParts; trackBy: trackById" class="card">
+          <div class="card-icon">{{ part.icon }}</div>
+          <div class="card-copy">
+            <div class="card-title">
+              <strong>{{ part.name }}</strong>
+              <span *ngIf="game.isShipPartBuilt(part.id)">Built</span>
+            </div>
+            <p>{{ part.description }}</p>
+            <div class="cost-row">
+              <span
+                *ngFor="let cost of part.cost; trackBy: trackByCost"
+                class="cost-pill"
+                [style.borderColor]="getItemColor(cost.itemId)"
+              >
+                {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+              </span>
+            </div>
+          </div>
+          <button class="action-btn" [disabled]="!canBuildShipPart(part)" (click)="buildShipPart(part)">
+            {{ game.isShipPartBuilt(part.id) ? 'Built' : 'Build' }}
+          </button>
+        </div>
+
+        <button class="launch-btn" [disabled]="state.shipLaunched || !game.canLaunchShip()" (click)="launchShip()">
+          {{ state.shipLaunched ? 'First Ship Launched' : 'Launch First Ship' }}
+        </button>
+      </div>
+
+      <div class="group">
+        <div class="group-header">
+          <h3>Planet Routes</h3>
+          <span *ngIf="!state.shipLaunched">Launch required</span>
+        </div>
+
+        <div *ngFor="let planet of planets; trackBy: trackById" class="card planet-card">
+          <div class="card-icon" [style.color]="planet.color">●</div>
+          <div class="card-copy">
+            <div class="card-title">
+              <strong>{{ planet.name }}</strong>
+              <span *ngIf="planet.id === currentPlanet.id">Current</span>
+              <span *ngIf="planet.id !== currentPlanet.id && game.isPlanetDiscovered(planet.id)">Discovered</span>
+            </div>
+            <p>{{ planet.description }}</p>
+            <div class="cost-row" *ngIf="planet.travelCost.length > 0 && !game.isPlanetDiscovered(planet.id)">
+              <span
+                *ngFor="let cost of planet.travelCost; trackBy: trackByCost"
+                class="cost-pill"
+                [style.borderColor]="getItemColor(cost.itemId)"
+              >
+                {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+              </span>
+            </div>
+          </div>
+          <button
+            class="action-btn"
+            [disabled]="!game.canTravelToPlanet(planet.id)"
+            (click)="travelToPlanet(planet)"
+          >
+            {{ planet.id === currentPlanet.id ? 'Here' : game.isPlanetDiscovered(planet.id) ? 'Travel' : 'Discover' }}
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+</aside>

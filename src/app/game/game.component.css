@@ -1,0 +1,21 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  color: var(--text-soft);
+  overflow: hidden;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(24rem, 30rem);
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 960px) {
+  .main {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(26rem, auto) auto;
+  }
+}
