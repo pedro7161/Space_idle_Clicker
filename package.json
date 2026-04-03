@@ -8,7 +8,8 @@
     "build:pages": "ng build --base-href /Space_idle_Clicker/",
     "deploy:pages": "npm run build:pages && gh-pages -d dist/my-web-app/browser",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:ci": "ng test --watch=false --browsers=FirefoxHeadless"
   },
   "private": true,
   "dependencies": {
