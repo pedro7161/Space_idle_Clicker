@@ -364,6 +364,10 @@ export class GameService {
     return this.getProgressScore() >= recipe.unlockAtTotal;
   }
 
+  hasUnlockedCrafting(): boolean {
+    return this.recipes.some(recipe => this.isRecipeVisible(recipe));
+  }
+
   isShipPartBuilt(partId: string): boolean {
     return this.state.builtShipPartIds.includes(partId);
   }

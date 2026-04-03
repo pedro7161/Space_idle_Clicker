@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
@@ -10,10 +10,13 @@ import { GameMessagesService } from '../../i18n/game-messages';
   standalone: true,
   imports: [CommonModule, FormatNumberPipe],
   templateUrl: './stats-header.component.html',
-  styleUrl: './stats-header.component.css',
 })
 export class StatsHeaderComponent {
-  @Output() settingsRequested = new EventEmitter<void>();
+  readonly mobileResourcesExpanded = input(false);
+  readonly mobileMenuOpen = input(false);
+  readonly settingsRequested = output<void>();
+  readonly mobileResourcesToggleRequested = output<void>();
+  readonly mobileMenuToggleRequested = output<void>();
 
   constructor(
     public game: GameService,
@@ -83,11 +86,19 @@ export class StatsHeaderComponent {
     });
   }
 
-  getAmount(resourceId: ResourceDef['id']): number {
-    return this.game.getInventoryAmount(resourceId);
+  get mobileResourcesLabel(): string {
+    return this.mobileResourcesExpanded()
+      ? this.copy.messages.ui.statsHeader.hideResources
+      : this.copy.messages.ui.statsHeader.showResources;
   }
 
-  trackById(_: number, item: { id: string }): string {
-    return item.id;
+  get mobileMenuLabel(): string {
+    return this.mobileMenuOpen()
+      ? this.copy.messages.ui.statsHeader.closeMenu
+      : this.copy.messages.ui.statsHeader.openMenu;
+  }
+
+  getAmount(resourceId: ResourceDef['id']): number {
+    return this.game.getInventoryAmount(resourceId);
   }
 }

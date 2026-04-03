@@ -1,11 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, ElementRef, OnDestroy, input, output, viewChild } from '@angular/core';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
 import { GameMessagesService } from '../../i18n/game-messages';
 import {
   AutoMiner,
-  ItemCost,
   ItemId,
   Planet,
   Recipe,
@@ -26,12 +25,44 @@ interface TabDef {
   standalone: true,
   imports: [CommonModule, FormatNumberPipe],
   templateUrl: './upgrade-panel.component.html',
-  styleUrl: './upgrade-panel.component.css',
 })
-export class UpgradePanelComponent {
+export class UpgradePanelComponent implements OnDestroy {
+  readonly mobileOpen = input(false);
+  readonly closeRequested = output<void>();
   activeTab: Tab = 'upgrades';
+  inventoryPanelHeight: number | null = null;
+  isResizingInventory = false;
 
   readonly tabs: TabDef[];
+  readonly panelShell = viewChild.required<ElementRef<HTMLElement>>('panelShell');
+  readonly inventorySection = viewChild.required<ElementRef<HTMLElement>>('inventorySection');
+  readonly tabBar = viewChild.required<ElementRef<HTMLElement>>('tabBar');
+
+  private resizeStartY = 0;
+  private resizeStartHeight = 0;
+  private readonly inventoryMinHeight = 180;
+  private readonly contentMinHeight = 220;
+  private readonly handleHeight = 16;
+  private readonly onInventoryResizeMove = (event: PointerEvent): void => {
+    if (!this.isResizingInventory) {
+      return;
+    }
+
+    const delta = event.clientY - this.resizeStartY;
+    this.inventoryPanelHeight = this.clampInventoryHeight(this.resizeStartHeight + delta);
+  };
+
+  private readonly stopInventoryResize = (): void => {
+    if (!this.isResizingInventory) {
+      return;
+    }
+
+    this.isResizingInventory = false;
+    document.body.style.userSelect = '';
+    window.removeEventListener('pointermove', this.onInventoryResizeMove);
+    window.removeEventListener('pointerup', this.stopInventoryResize);
+    window.removeEventListener('pointercancel', this.stopInventoryResize);
+  };
 
   constructor(
     public game: GameService,
@@ -44,6 +75,10 @@ export class UpgradePanelComponent {
       { key: 'automation', label: tabMessages.automation },
       { key: 'launch', label: tabMessages.launch },
     ];
+  }
+
+  ngOnDestroy(): void {
+    this.stopInventoryResize();
   }
 
   get resources(): ResourceDef[] {
@@ -76,6 +111,18 @@ export class UpgradePanelComponent {
 
   get state() {
     return this.game.getState();
+  }
+
+  get panelGridRows(): string | null {
+    if (this.inventoryPanelHeight === null) {
+      return null;
+    }
+
+    return `${this.inventoryPanelHeight}px ${this.handleHeight}px auto minmax(0, 1fr)`;
+  }
+
+  get activeTabLabel(): string {
+    return this.tabs.find(tab => tab.key === this.activeTab)?.label ?? this.tabs[0].label;
   }
 
   getResourceUpgrades(resourceId: ResourceDef['id']): ResourceUpgrade[] {
@@ -289,6 +336,32 @@ export class UpgradePanelComponent {
       : this.copy.messages.ui.upgradePanel.discover;
   }
 
+  startInventoryResize(event: PointerEvent): void {
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const currentHeight =
+      this.inventoryPanelHeight ??
+      Math.round(this.inventorySection().nativeElement.getBoundingClientRect().height);
+
+    this.resizeStartY = event.clientY;
+    this.resizeStartHeight = currentHeight;
+    this.inventoryPanelHeight = this.clampInventoryHeight(currentHeight);
+    this.isResizingInventory = true;
+
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', this.onInventoryResizeMove);
+    window.addEventListener('pointerup', this.stopInventoryResize);
+    window.addEventListener('pointercancel', this.stopInventoryResize);
+  }
+
+  resetInventoryPanelHeight(): void {
+    this.inventoryPanelHeight = null;
+  }
+
   buyUpgrade(upgrade: ResourceUpgrade): void {
     this.game.buyUpgrade(upgrade.id);
   }
@@ -313,15 +386,14 @@ export class UpgradePanelComponent {
     this.game.travelToPlanet(planet.id);
   }
 
-  trackById(_: number, item: { id: string }): string {
-    return item.id;
-  }
+  private clampInventoryHeight(height: number): number {
+    const panelHeight = this.panelShell().nativeElement.getBoundingClientRect().height;
+    const tabBarHeight = this.tabBar().nativeElement.getBoundingClientRect().height;
+    const maxHeight = Math.max(
+      this.inventoryMinHeight,
+      panelHeight - tabBarHeight - this.handleHeight - this.contentMinHeight,
+    );
 
-  trackByCost(_: number, item: ItemCost): string {
-    return `${item.itemId}-${item.amount}`;
-  }
-
-  trackByText(_: number, item: string): string {
-    return item;
+    return Math.round(Math.min(Math.max(height, this.inventoryMinHeight), maxHeight));
   }
 }

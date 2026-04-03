@@ -18,12 +18,12 @@ interface MineralNode {
   standalone: true,
   imports: [CommonModule, FormatNumberPipe],
   templateUrl: './planet-view.component.html',
-  styleUrl: './planet-view.component.css',
 })
 export class PlanetViewComponent implements OnInit {
   floatingTexts: FloatingText[] = [];
   mineralNodes: MineralNode[] = [];
   mineAnimating = false;
+  cargoCollapsed = false;
 
   private readonly destroyRef = inject(DestroyRef);
   private floatId = 0;
@@ -78,6 +78,16 @@ export class PlanetViewComponent implements OnInit {
     });
   }
 
+  get cargoToggleLabel(): string {
+    return this.cargoCollapsed
+      ? this.copy.messages.ui.planetView.expandCargoHold
+      : this.copy.messages.ui.planetView.collapseCargoHold;
+  }
+
+  get hasUnlockedCargoHold(): boolean {
+    return this.game.hasUnlockedCrafting();
+  }
+
   onMineClick(event: MouseEvent): void {
     const gained = this.game.mineActiveResource();
     this.spawnFloatingText(event, gained);
@@ -100,16 +110,8 @@ export class PlanetViewComponent implements OnInit {
     return this.game.getPlanetMultiplier(this.currentPlanet.id, resourceId);
   }
 
-  trackByFloatId(_: number, item: FloatingText): number {
-    return item.id;
-  }
-
-  trackById(_: number, item: { id: string }): string {
-    return item.id;
-  }
-
-  trackByIndex(index: number): number {
-    return index;
+  toggleCargoCollapsed(): void {
+    this.cargoCollapsed = !this.cargoCollapsed;
   }
 
   private spawnFloatingText(event: MouseEvent, value: number): void {

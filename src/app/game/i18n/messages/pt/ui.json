@@ -8,6 +8,10 @@
     "clicks": "{value} cliques",
     "shipLaunched": "Nave lançada",
     "shipParts": "Partes da nave {built}/{total}",
+    "showResources": "Mostrar Recursos",
+    "hideResources": "Esconder Recursos",
+    "openMenu": "Menu",
+    "closeMenu": "Fechar Menu",
     "settings": "Definições",
     "reset": "Reiniciar"
   },
@@ -16,6 +20,8 @@
     "manualMining": "Mineração Manual",
     "manualMiningDescription": "Só um modo de mineração pode estar ativo de cada vez. Muda o foco quando uma cadeia se tornar o gargalo.",
     "sharedCargoHold": "Armazém Partilhado",
+    "expandCargoHold": "Expandir Armazém",
+    "collapseCargoHold": "Recolher Armazém",
     "localAuto": "Auto local",
     "perSecond": "{value}/seg"
   },
@@ -52,6 +58,8 @@
     "built": "Construído",
     "launchShip": "Lançar Primeira Nave",
     "shipLaunched": "Primeira Nave Lançada",
+    "drawerTitle": "Operações",
+    "close": "Fechar",
     "planetRoutes": "Rotas Planetárias",
     "launchRequired": "Lançamento necessário",
     "current": "Atual",

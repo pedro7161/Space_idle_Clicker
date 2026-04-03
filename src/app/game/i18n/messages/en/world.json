@@ -2,7 +2,7 @@
   "planets": {
     "solara": {
       "name": "Solara Basin",
-      "description": "The hostile starting world. Balanced yields, weak infrastructure, no margin for waste."
+      "description": "The safe starting world. Balanced yields, light infrastructure, and a stable environment to learn the basics."
     },
     "ferros": {
       "name": "Ferros Cradle",
