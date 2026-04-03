@@ -92,6 +92,29 @@ Supported persistence features:
 
 There is no backend database at the moment.
 
+## Testing
+
+The project uses Karma with Jasmine for unit testing. Tests run in Firefox Headless by default (configured in `karma.conf.js`).
+
+To run the full test suite:
+
+```bash
+npm test
+```
+
+Test coverage includes:
+
+- `FormatNumberPipe` — number formatting thresholds (K, M, B, T suffixes)
+- `GameService` — core game logic: initialization, mining, upgrades, crafting, auto miners, ship parts, planet travel, save/load/export/import, reset, visibility checks, affordability, and progress scoring
+- `AppComponent` — root component creation and router outlet rendering
+- `GameComponent` — start screen flow, fresh start, reset dialog, settings dialog, mobile panel toggles, save import handling, and destroy lifecycle
+- `StatsHeaderComponent` — resource display, active resource stats, label generation, and mobile toggle labels
+- `PlanetViewComponent` — mineral node generation, mining click handling, floating text spawning, mine animation, cargo hold toggle, resource/crafted amounts, and planet multipliers
+- `UpgradePanelComponent` — tab structure, inventory labels/colors, upgrade/craft/automation delegation, ship part building, planet travel, and all label generators
+- `ResetDialogComponent` — confirm/cancel output emissions and backdrop click handling
+- `SettingsDialogComponent` — input binding, feedback updates, import/export/locale change emissions, and file download
+- `SaveTransferDialogComponent` — export value binding, import emission, clipboard copy success/failure feedback
+
 ## Deployment
 
 The project is configured for GitHub Pages deployment.
