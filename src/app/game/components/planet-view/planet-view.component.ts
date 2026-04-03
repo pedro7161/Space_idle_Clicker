@@ -18,7 +18,6 @@ interface MineralNode {
   standalone: true,
   imports: [CommonModule, FormatNumberPipe],
   templateUrl: './planet-view.component.html',
-  styleUrl: './planet-view.component.css',
 })
 export class PlanetViewComponent implements OnInit {
   floatingTexts: FloatingText[] = [];
@@ -99,19 +98,6 @@ export class PlanetViewComponent implements OnInit {
   getPlanetMultiplier(resourceId: ResourceDef['id']): number {
     return this.game.getPlanetMultiplier(this.currentPlanet.id, resourceId);
   }
-
-  trackByFloatId(_: number, item: FloatingText): number {
-    return item.id;
-  }
-
-  trackById(_: number, item: { id: string }): string {
-    return item.id;
-  }
-
-  trackByIndex(index: number): number {
-    return index;
-  }
-
   private spawnFloatingText(event: MouseEvent, value: number): void {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const pipe = new FormatNumberPipe();

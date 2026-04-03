@@ -21,7 +21,6 @@ import { SupportedLocale } from './i18n/game-messages';
     SettingsDialogComponent,
   ],
   templateUrl: './game.component.html',
-  styleUrl: './game.component.css',
 })
 export class GameComponent implements OnDestroy {
   hasStarted = false;

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GameMessagesService, SupportedLocale } from '../../i18n/game-messages';
 
@@ -8,17 +8,16 @@ import { GameMessagesService, SupportedLocale } from '../../i18n/game-messages';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './settings-dialog.component.html',
-  styleUrl: './settings-dialog.component.css',
 })
 export class SettingsDialogComponent {
-  @Input({ required: true }) exportCode = '';
-  @Input({ required: true }) exportFileContents = '';
-  @Input({ required: true }) currentLocale!: SupportedLocale;
-  @Input({ required: true }) localeOptions: Array<{ id: SupportedLocale; label: string }> = [];
-  @Output() closed = new EventEmitter<void>();
-  @Output() importRequested = new EventEmitter<string>();
-  @Output() localeChanged = new EventEmitter<SupportedLocale>();
-  @Output() resetRequested = new EventEmitter<void>();
+  readonly exportCode = input.required<string>();
+  readonly exportFileContents = input.required<string>();
+  readonly currentLocale = input.required<SupportedLocale>();
+  readonly localeOptions = input.required<Array<{ id: SupportedLocale; label: string }>>();
+  readonly closed = output<void>();
+  readonly importRequested = output<string>();
+  readonly localeChanged = output<SupportedLocale>();
+  readonly resetRequested = output<void>();
 
   importValue = '';
   feedbackMessage = '';
@@ -28,7 +27,7 @@ export class SettingsDialogComponent {
 
   async copyExportCode(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(this.exportCode);
+      await navigator.clipboard.writeText(this.exportCode());
       this.setFeedback(this.copy.messages.ui.saveTransferDialog.copySuccess, 'success');
     } catch {
       this.setFeedback(this.copy.messages.ui.saveTransferDialog.copyError, 'error');
@@ -36,7 +35,7 @@ export class SettingsDialogComponent {
   }
 
   exportSaveFile(): void {
-    const blob = new Blob([this.exportFileContents], { type: 'application/json' });
+    const blob = new Blob([this.exportFileContents()], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;

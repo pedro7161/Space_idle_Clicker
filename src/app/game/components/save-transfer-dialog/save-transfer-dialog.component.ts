@@ -1,19 +1,18 @@
-import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GameMessagesService } from '../../i18n/game-messages';
 
 @Component({
   selector: 'app-save-transfer-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './save-transfer-dialog.component.html',
   styleUrl: './save-transfer-dialog.component.css',
 })
 export class SaveTransferDialogComponent {
-  @Input({ required: true }) exportValue = '';
-  @Output() importRequested = new EventEmitter<string>();
-  @Output() closed = new EventEmitter<void>();
+  readonly exportValue = input.required<string>();
+  readonly importRequested = output<string>();
+  readonly closed = output<void>();
 
   importValue = '';
   feedbackMessage = '';
@@ -23,7 +22,7 @@ export class SaveTransferDialogComponent {
 
   async copyExport(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(this.exportValue);
+      await navigator.clipboard.writeText(this.exportValue());
       this.setFeedback(this.copy.messages.ui.saveTransferDialog.copySuccess, 'success');
     } catch {
       this.setFeedback(this.copy.messages.ui.saveTransferDialog.copyError, 'error');

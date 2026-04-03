@@ -1,43 +1,65 @@
-<header class="header">
-  <div class="title-block">
-    <div class="eyebrow">{{ copy.messages.ui.statsHeader.eyebrow }}</div>
-    <div class="title-row">
-      <h1>{{ copy.messages.ui.statsHeader.title }}</h1>
-      <span class="planet-chip" [style.borderColor]="currentPlanet.color">
+<header
+  class="grid gap-4 border-b border-[var(--border-color)] bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(12,18,32,0.94)),var(--panel-noise)] px-4 py-[1.1rem] shadow-[0_12px_40px_rgba(2,6,23,0.24)] min-[1100px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] min-[1100px]:items-center min-[1600px]:gap-6 min-[1600px]:px-6 min-[1600px]:py-5 min-[1920px]:px-8 max-[720px]:p-4"
+>
+  <div class="min-w-0">
+    <div class="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">
+      {{ copy.messages.ui.statsHeader.eyebrow }}
+    </div>
+    <div class="mb-1 mt-0.5 flex flex-wrap items-center gap-3">
+      <h1 class="m-0 text-[1.9rem] leading-none tracking-[-0.04em] text-slate-50 min-[1600px]:text-[2.25rem] min-[1920px]:text-[2.55rem]">
+        {{ copy.messages.ui.statsHeader.title }}
+      </h1>
+      <span
+        class="rounded-full border bg-white/[0.03] px-3 py-1 text-[0.76rem] font-semibold text-slate-300 min-[1600px]:px-3.5 min-[1600px]:py-1.5 min-[1600px]:text-[0.82rem]"
+        [style.borderColor]="currentPlanet.color"
+      >
         {{ currentPlanet.name }}
       </span>
     </div>
-    <p>{{ currentPlanet.description }}</p>
+    <p class="m-0 max-w-[42rem] text-[0.88rem] leading-[1.45] text-slate-400 min-[1600px]:max-w-[54rem] min-[1600px]:text-[0.95rem]">
+      {{ currentPlanet.description }}
+    </p>
   </div>
 
-  <div class="resource-strip">
-    <div
-      *ngFor="let resource of resources; trackBy: trackById"
-      class="resource-card"
-      [class.active]="resource.id === activeResource.id"
-      [style.borderColor]="resource.color"
-    >
-      <span class="resource-icon" [style.color]="resource.color">{{ resource.icon }}</span>
-      <span class="resource-copy">
-        <strong>{{ resource.name }}</strong>
-        <span>{{ getAmount(resource.id) | formatNumber }}</span>
-      </span>
-    </div>
+  <div class="grid grid-cols-1 gap-2 min-[720px]:grid-cols-3 min-[1600px]:gap-3">
+    @for (resource of resources; track resource.id) {
+      <div
+        class="flex items-center gap-2.5 rounded-2xl border px-4 py-3 min-[1600px]:gap-3.5 min-[1600px]:rounded-[1.15rem] min-[1600px]:px-5 min-[1600px]:py-4"
+        [ngClass]="resource.id === activeResource.id
+          ? 'bg-white/[0.06] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]'
+          : 'bg-white/[0.03]'"
+        [style.borderColor]="resource.color"
+      >
+        <span
+          class="inline-flex h-8 w-8 items-center justify-center rounded-[0.7rem] bg-white/[0.05] text-[0.76rem] font-bold tracking-[0.04em] min-[1600px]:h-10 min-[1600px]:w-10 min-[1600px]:rounded-[0.85rem] min-[1600px]:text-[0.88rem]"
+          [style.color]="resource.color"
+        >
+          {{ resource.icon }}
+        </span>
+        <span class="flex min-w-0 flex-col gap-0.5">
+          <strong class="text-[0.82rem] text-slate-50 min-[1600px]:text-[0.92rem]">{{ resource.name }}</strong>
+          <span class="text-[0.78rem] text-slate-400 min-[1600px]:text-[0.84rem]">{{ getAmount(resource.id) | formatNumber }}</span>
+        </span>
+      </div>
+    }
   </div>
 
-  <div class="status-block">
-    <div class="focus-line">{{ miningLabel }}</div>
-    <div class="rate-line">
+  <div class="grid gap-1 text-left min-[1100px]:justify-items-end min-[1100px]:text-right">
+    <div class="text-[0.88rem] font-bold text-slate-50 min-[1600px]:text-[0.96rem]">{{ miningLabel }}</div>
+    <div class="flex flex-wrap gap-3 text-[0.78rem] text-slate-400 min-[1100px]:justify-end min-[1600px]:text-[0.84rem]">
       <span>{{ clickRateLabel }}</span>
       <span>{{ autoRateLabel }}</span>
     </div>
-    <div class="meta-line">
+    <div class="flex flex-wrap gap-3 text-[0.78rem] text-slate-400 min-[1100px]:justify-end min-[1600px]:text-[0.84rem]">
       <span>{{ shipStatus }}</span>
       <span>{{ totalClicksLabel }}</span>
     </div>
-    <div class="action-row">
-      <button class="settings-btn" (click)="settingsRequested.emit()">
-        <span class="settings-btn__icon" aria-hidden="true">⚙</span>
+    <div class="mt-1 flex min-[1100px]:justify-end">
+      <button
+        class="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border border-blue-400/35 bg-blue-800/30 px-4 py-2.5 text-[0.76rem] font-bold text-blue-100 shadow-[inset_0_0_0_1px_rgba(191,219,254,0.08)] transition hover:-translate-y-px hover:bg-blue-700/35 min-[1600px]:gap-2.5 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-5 min-[1600px]:py-3 min-[1600px]:text-[0.84rem]"
+        (click)="settingsRequested.emit()"
+      >
+        <span aria-hidden="true" class="text-[0.95rem] leading-none min-[1600px]:text-[1.05rem]">⚙</span>
         <span>{{ copy.messages.ui.statsHeader.settings }}</span>
       </button>
     </div>

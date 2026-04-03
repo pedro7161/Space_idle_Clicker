@@ -1,86 +1,114 @@
-<div class="planet-view" [style.background]="currentPlanet.bgGradient">
-  <div class="stars"></div>
+<div class="relative grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden p-5 min-[1600px]:p-6 min-[1920px]:p-7 max-[820px]:p-4" [style.background]="currentPlanet.bgGradient">
+  <div class="space-stars pointer-events-none absolute inset-0 opacity-90"></div>
   <div
-    class="surface"
+    class="pointer-events-none absolute inset-x-0 bottom-0 h-[28%]"
     [style.background]="'linear-gradient(to top, ' + currentPlanet.color + '55, transparent)'"
   ></div>
 
-  <section class="top-bar">
-    <div class="resource-switcher">
-      <button
-        *ngFor="let resource of resources; trackBy: trackById"
-        class="resource-button"
-        [class.active]="resource.id === activeResource.id"
-        [style.borderColor]="resource.id === activeResource.id ? resource.color : null"
-        (click)="setActiveResource(resource.id); $event.stopPropagation()"
-      >
-        <span class="resource-button__icon" [style.color]="resource.color">{{ resource.icon }}</span>
-        <span class="resource-button__copy">
-          <strong>{{ resource.name }}</strong>
-          <span>
-            {{ getResourceAmount(resource.id) | formatNumber }}
-            · x{{ getPlanetMultiplier(resource.id) }}
+  <section class="relative z-10 flex flex-col gap-4 min-[1200px]:flex-row min-[1200px]:items-start min-[1200px]:justify-between min-[1600px]:gap-6">
+    <div class="grid w-full gap-3 min-[820px]:grid-cols-2 min-[1200px]:max-w-[52rem] min-[1600px]:max-w-[62rem] min-[1900px]:max-w-[72rem] min-[1400px]:grid-cols-3 min-[1600px]:gap-4">
+      @for (resource of resources; track resource.id) {
+        <button
+          class="flex items-center gap-3 rounded-[1.1rem] border px-4 py-3 text-left text-slate-300 backdrop-blur-xl transition hover:-translate-y-px min-[1600px]:gap-4 min-[1600px]:rounded-[1.25rem] min-[1600px]:px-5 min-[1600px]:py-4"
+          [ngClass]="resource.id === activeResource.id
+            ? 'bg-white/[0.09] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]'
+            : 'bg-[rgba(8,15,26,0.56)] hover:bg-[rgba(8,15,26,0.7)]'"
+          [style.borderColor]="resource.id === activeResource.id ? resource.color : null"
+          (click)="setActiveResource(resource.id); $event.stopPropagation()"
+        >
+          <span
+            class="inline-flex h-9 w-9 items-center justify-center rounded-[0.8rem] bg-white/[0.05] text-[0.82rem] font-bold min-[1600px]:h-11 min-[1600px]:w-11 min-[1600px]:rounded-[0.95rem] min-[1600px]:text-[0.95rem]"
+            [style.color]="resource.color"
+          >
+            {{ resource.icon }}
           </span>
-        </span>
-      </button>
+          <span class="flex flex-col gap-0.5">
+            <strong class="text-[0.84rem] text-slate-50 min-[1600px]:text-[0.96rem]">{{ resource.name }}</strong>
+            <span class="text-[0.74rem] text-slate-400 min-[1600px]:text-[0.84rem]">
+              {{ getResourceAmount(resource.id) | formatNumber }}
+              · x{{ getPlanetMultiplier(resource.id) }}
+            </span>
+          </span>
+        </button>
+      }
     </div>
 
-    <aside class="planet-panel">
-      <div class="planet-panel__eyebrow">{{ copy.messages.ui.planetView.currentSite }}</div>
-      <strong>{{ currentPlanet.name }}</strong>
-      <p>{{ currentPlanet.description }}</p>
+    <aside class="w-full rounded-[1.1rem] border border-white/10 bg-[rgba(8,15,26,0.62)] px-4 py-4 backdrop-blur-xl min-[1200px]:w-[min(20rem,100%)] min-[1600px]:w-[min(24rem,100%)] min-[1600px]:rounded-[1.3rem] min-[1600px]:px-5 min-[1600px]:py-5">
+      <div class="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400 min-[1600px]:text-[0.76rem]">{{ copy.messages.ui.planetView.currentSite }}</div>
+      <strong class="mt-1 block text-base text-slate-50 min-[1600px]:text-[1.15rem]">{{ currentPlanet.name }}</strong>
+      <p class="mt-1.5 text-[0.82rem] leading-[1.45] text-slate-400 min-[1600px]:text-[0.9rem] min-[1600px]:leading-[1.55]">{{ currentPlanet.description }}</p>
     </aside>
   </section>
 
-  <div class="mine-area" [class.mine-pulse]="mineAnimating" (click)="onMineClick($event)">
-    <div class="mine-core">
-      <div class="mine-core__eyebrow">{{ copy.messages.ui.planetView.manualMining }}</div>
-      <h2>{{ activeResource.name }}</h2>
-      <p>{{ copy.messages.ui.planetView.manualMiningDescription }}</p>
-      <div class="mine-core__yield" [style.color]="activeResource.color">
+  <div class="relative my-4 grid flex-1 place-items-center cursor-pointer" [class.mine-pulse]="mineAnimating" (click)="onMineClick($event)">
+    <div
+      class="relative z-10 w-[min(32rem,88%)] rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.08),transparent_50%),rgba(8,15,26,0.62)] px-8 py-8 text-center shadow-[0_30px_80px_rgba(2,6,23,0.45),inset_0_0_80px_rgba(255,255,255,0.025)] backdrop-blur-xl min-[1600px]:w-[min(38rem,72%)] min-[1600px]:rounded-[2.35rem] min-[1600px]:px-10 min-[1600px]:py-10 min-[1900px]:w-[min(44rem,68%)] min-[1900px]:px-12 min-[1900px]:py-11 max-[820px]:w-full max-[820px]:px-5 max-[820px]:py-6"
+    >
+      <div class="text-[0.74rem] uppercase tracking-[0.2em] text-slate-400 min-[1600px]:text-[0.82rem]">
+        {{ copy.messages.ui.planetView.manualMining }}
+      </div>
+      <h2 class="mb-2 mt-1 text-[clamp(2.2rem,5vw,3.8rem)] leading-[0.95] tracking-[-0.06em] text-slate-50 min-[1600px]:text-[clamp(2.8rem,4vw,4.8rem)]">
+        {{ activeResource.name }}
+      </h2>
+      <p class="mx-auto max-w-[28rem] text-[0.92rem] leading-[1.6] text-slate-400 min-[1600px]:max-w-[32rem] min-[1600px]:text-[1rem]">
+        {{ copy.messages.ui.planetView.manualMiningDescription }}
+      </p>
+      <div class="mt-5 text-[clamp(2.2rem,5vw,3.6rem)] font-bold tracking-[-0.05em] min-[1600px]:mt-6 min-[1600px]:text-[clamp(2.9rem,4.5vw,4.5rem)]" [style.color]="activeResource.color">
         +{{ activeClickYield | formatNumber }}
       </div>
     </div>
 
-    <div
-      *ngFor="let node of mineralNodes; trackBy: trackByIndex"
-      class="mineral-node"
-      [style.left.%]="node.x"
-      [style.top.%]="node.y"
-      [style.width.px]="node.size"
-      [style.height.px]="node.size"
-      [style.backgroundColor]="activeResource.mineralColor"
-      [style.animationDelay.s]="node.delay"
-    ></div>
+    @for (node of mineralNodes; track $index) {
+      <div
+        class="mineral-node"
+        [style.left.%]="node.x"
+        [style.top.%]="node.y"
+        [style.width.px]="node.size"
+        [style.height.px]="node.size"
+        [style.color]="activeResource.mineralColor"
+        [style.backgroundColor]="activeResource.mineralColor"
+        [style.animationDelay.s]="node.delay"
+      ></div>
+    }
 
-    <div
-      *ngFor="let item of floatingTexts; trackBy: trackByFloatId"
-      class="floating-text"
-      [style.left.px]="item.x"
-      [style.top.px]="item.y"
-      [style.color]="activeResource.mineralColor"
-    >
-      {{ item.value }}
-    </div>
+    @for (item of floatingTexts; track item.id) {
+      <div
+        class="floating-text"
+        [style.left.px]="item.x"
+        [style.top.px]="item.y"
+        [style.color]="activeResource.mineralColor"
+      >
+        {{ item.value }}
+      </div>
+    }
   </div>
 
-  <section class="bottom-bar">
-    <div class="cargo-panel">
-      <div class="cargo-panel__title">{{ copy.messages.ui.planetView.sharedCargoHold }}</div>
-      <div class="crafted-list">
-        <div *ngFor="let item of craftedItems; trackBy: trackById" class="crafted-chip">
-          <span class="crafted-chip__icon" [style.color]="item.color">{{ item.icon }}</span>
-          <span class="crafted-chip__copy">
-            <strong>{{ item.name }}</strong>
-            <span>{{ getCraftedAmount(item.id) | formatNumber }}</span>
-          </span>
+  <section class="relative z-10 flex flex-col gap-4 min-[1200px]:flex-row min-[1200px]:items-start min-[1200px]:justify-between min-[1600px]:gap-6">
+    <div class="flex min-h-0 max-h-56 flex-1 flex-col overflow-hidden rounded-[1.1rem] border border-white/10 bg-[rgba(8,15,26,0.62)] px-4 py-4 backdrop-blur-xl max-[820px]:max-h-72 min-[1600px]:max-h-64 min-[1600px]:rounded-[1.3rem] min-[1600px]:px-5 min-[1600px]:py-5">
+      <div class="mb-3 text-[0.8rem] uppercase tracking-[0.14em] text-slate-400 min-[1600px]:text-[0.86rem]">{{ copy.messages.ui.planetView.sharedCargoHold }}</div>
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+        <div class="grid gap-3 min-[820px]:grid-cols-2 min-[1400px]:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] min-[1600px]:gap-4 min-[1900px]:grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
+          @for (item of craftedItems; track item.id) {
+            <div class="flex items-center gap-3 rounded-[0.9rem] bg-white/[0.04] px-3.5 py-3 min-[1600px]:gap-4 min-[1600px]:rounded-[1rem] min-[1600px]:px-4 min-[1600px]:py-3.5">
+              <span
+                class="inline-flex h-8 w-8 items-center justify-center rounded-[0.65rem] bg-white/[0.05] text-[0.75rem] font-bold min-[1600px]:h-9 min-[1600px]:w-9 min-[1600px]:rounded-[0.75rem] min-[1600px]:text-[0.82rem]"
+                [style.color]="item.color"
+              >
+                {{ item.icon }}
+              </span>
+              <span class="flex flex-col gap-0.5">
+                <strong class="text-[0.8rem] text-slate-50 min-[1600px]:text-[0.88rem]">{{ item.name }}</strong>
+                <span class="text-[0.74rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getCraftedAmount(item.id) | formatNumber }}</span>
+              </span>
+            </div>
+          }
         </div>
       </div>
     </div>
 
-    <div class="status-pill">
-      <span>{{ copy.messages.ui.planetView.localAuto }}</span>
-      <strong>{{ localAutoLabel }}</strong>
+    <div class="grid min-w-[11rem] gap-0.5 rounded-[1.1rem] border border-white/10 bg-[rgba(8,15,26,0.62)] px-4 py-4 text-slate-400 backdrop-blur-xl min-[1200px]:w-full min-[1200px]:max-w-[11rem] min-[1600px]:max-w-[13rem] min-[1600px]:rounded-[1.3rem] min-[1600px]:px-5 min-[1600px]:py-5">
+      <span class="text-sm min-[1600px]:text-[0.95rem]">{{ copy.messages.ui.planetView.localAuto }}</span>
+      <strong class="text-base text-slate-50 min-[1600px]:text-[1.2rem]">{{ localAutoLabel }}</strong>
     </div>
   </section>
 </div>

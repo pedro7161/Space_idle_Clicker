@@ -1,63 +1,97 @@
-<section *ngIf="!hasStarted" class="start-screen">
-  <div class="start-screen__panel">
-    <div class="start-screen__eyebrow">{{ copy.messages.ui.startScreen.eyebrow }}</div>
-    <h1>{{ copy.messages.ui.startScreen.title }}</h1>
-    <p>{{ copy.messages.ui.startScreen.description }}</p>
-
-    <div *ngIf="hasSavedGame" class="start-screen__pill">
-      {{ copy.messages.ui.startScreen.saveDetected }}
-    </div>
-
-    <div class="start-screen__actions">
-      <button class="start-screen__primary" (click)="startGame()">
-        {{ copy.messages.ui.startScreen.start }}
-      </button>
-
-      <button *ngIf="hasSavedGame" class="start-screen__secondary" (click)="startFresh()">
-        {{ copy.messages.ui.startScreen.newRun }}
-      </button>
-
-      <label class="start-screen__secondary start-screen__import">
-        {{ copy.messages.ui.startScreen.importFile }}
-        <input type="file" accept=".json,.txt" (change)="importSaveFile($event)" />
-      </label>
-    </div>
-
-    <p
-      *ngIf="startScreenMessage"
-      class="start-screen__message"
-      [class.success]="startScreenTone === 'success'"
-      [class.error]="startScreenTone === 'error'"
+<div class="flex h-screen flex-col overflow-hidden text-slate-300">
+  @if (!hasStarted) {
+    <section
+      class="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.16),transparent_25%),linear-gradient(180deg,#0a0f18_0%,#06090f_100%)] p-6 min-[1600px]:p-8"
     >
-      {{ startScreenMessage }}
-    </p>
-  </div>
-</section>
+      <div
+        class="w-full max-w-[38rem] rounded-[1.5rem] border border-slate-400/20 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_35%),rgba(8,15,26,0.82)] p-8 shadow-[0_32px_90px_rgba(2,6,23,0.48)] min-[1600px]:max-w-[44rem] min-[1600px]:p-10 max-[720px]:p-6"
+      >
+        <div class="text-[0.72rem] uppercase tracking-[0.18em] text-slate-400">
+          {{ copy.messages.ui.startScreen.eyebrow }}
+        </div>
+        <h1 class="mb-3 mt-1 text-[clamp(2.8rem,8vw,4.6rem)] leading-[0.95] tracking-[-0.06em] text-slate-50 min-[1600px]:text-[clamp(3.2rem,6vw,5.1rem)]">
+          {{ copy.messages.ui.startScreen.title }}
+        </h1>
+        <p class="m-0 max-w-[32rem] text-[0.95rem] leading-7 text-slate-400 min-[1600px]:max-w-[36rem] min-[1600px]:text-[1rem]">
+          {{ copy.messages.ui.startScreen.description }}
+        </p>
 
-<ng-container *ngIf="hasStarted">
-  <app-stats-header (settingsRequested)="openSettingsDialog()"></app-stats-header>
+        @if (hasSavedGame) {
+          <div
+            class="mt-4 inline-flex rounded-full bg-emerald-500/12 px-3 py-1.5 text-[0.78rem] font-bold text-emerald-300"
+          >
+            {{ copy.messages.ui.startScreen.saveDetected }}
+          </div>
+        }
 
-  <div class="main">
-    <app-planet-view></app-planet-view>
-    <app-upgrade-panel></app-upgrade-panel>
-  </div>
+        <div class="mt-6 flex flex-wrap gap-3 max-[720px]:flex-col">
+          <button
+            class="inline-flex min-w-40 items-center justify-center rounded-2xl border border-blue-400/35 bg-blue-500/18 px-4 py-3 text-[0.85rem] font-bold text-blue-100 transition hover:-translate-y-px hover:bg-blue-500/28"
+            (click)="startGame()"
+          >
+            {{ copy.messages.ui.startScreen.start }}
+          </button>
 
-  <app-reset-dialog
-    *ngIf="showResetDialog"
-    (confirmed)="onResetConfirmed()"
-    (cancelled)="showResetDialog = false"
-  ></app-reset-dialog>
+          @if (hasSavedGame) {
+            <button
+              class="inline-flex min-w-40 items-center justify-center rounded-2xl border border-slate-400/20 bg-white/5 px-4 py-3 text-[0.85rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/10"
+              (click)="startFresh()"
+            >
+              {{ copy.messages.ui.startScreen.newRun }}
+            </button>
+          }
 
-  <app-settings-dialog
-    *ngIf="showSettingsDialog"
-    #settingsDialog
-    [exportCode]="exportSaveValue"
-    [exportFileContents]="exportSaveFileContents"
-    [currentLocale]="copy.currentLocale"
-    [localeOptions]="copy.localeOptions"
-    (closed)="showSettingsDialog = false"
-    (importRequested)="handleImport(settingsDialog, $event)"
-    (localeChanged)="changeLanguage(settingsDialog, $event)"
-    (resetRequested)="requestResetFromSettings()"
-  ></app-settings-dialog>
-</ng-container>
+          <label
+            class="relative inline-flex min-w-40 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-slate-400/20 bg-white/5 px-4 py-3 text-[0.85rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/10"
+          >
+            {{ copy.messages.ui.startScreen.importFile }}
+            <input class="absolute inset-0 cursor-pointer opacity-0" type="file" accept=".json,.txt" (change)="importSaveFile($event)" />
+          </label>
+        </div>
+
+        @if (startScreenMessage) {
+          <p
+            class="mt-4 text-[0.84rem]"
+            [ngClass]="{
+              'text-emerald-300': startScreenTone === 'success',
+              'text-rose-300': startScreenTone === 'error',
+              'text-slate-400': startScreenTone === 'neutral'
+            }"
+          >
+            {{ startScreenMessage }}
+          </p>
+        }
+      </div>
+    </section>
+  }
+
+  @if (hasStarted) {
+    <app-stats-header (settingsRequested)="openSettingsDialog()"></app-stats-header>
+
+    <div class="grid min-h-0 flex-1 overflow-hidden grid-cols-1 min-[960px]:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)] min-[1600px]:grid-cols-[minmax(0,1fr)_minmax(30rem,36rem)] min-[1920px]:grid-cols-[minmax(0,1fr)_minmax(34rem,40rem)]">
+      <app-planet-view class="block h-full min-h-0"></app-planet-view>
+      <app-upgrade-panel class="block h-full min-h-0 overflow-hidden"></app-upgrade-panel>
+    </div>
+
+    @if (showResetDialog) {
+      <app-reset-dialog
+        (confirmed)="onResetConfirmed()"
+        (cancelled)="showResetDialog = false"
+      ></app-reset-dialog>
+    }
+
+    @if (showSettingsDialog) {
+      <app-settings-dialog
+        #settingsDialog
+        [exportCode]="exportSaveValue"
+        [exportFileContents]="exportSaveFileContents"
+        [currentLocale]="copy.currentLocale"
+        [localeOptions]="copy.localeOptions"
+        (closed)="showSettingsDialog = false"
+        (importRequested)="handleImport(settingsDialog, $event)"
+        (localeChanged)="changeLanguage(settingsDialog, $event)"
+        (resetRequested)="requestResetFromSettings()"
+      ></app-settings-dialog>
+    }
+  }
+</div>

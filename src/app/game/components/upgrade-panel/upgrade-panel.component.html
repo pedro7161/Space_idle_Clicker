@@ -1,236 +1,383 @@
-<aside class="panel-shell">
-  <section class="inventory-panel">
-    <div class="inventory-header">
-      <div>
-        <span class="eyebrow">{{ copy.messages.ui.upgradePanel.inventoryEyebrow }}</span>
-        <h2>{{ copy.messages.ui.upgradePanel.inventoryTitle }}</h2>
-      </div>
-      <span class="planet-name">{{ currentPlanet.name }}</span>
-    </div>
-
-    <div class="inventory-group">
-      <h3>{{ getInventoryGroupTitle('raw') }}</h3>
-      <div class="inventory-grid">
-        <div *ngFor="let resource of resources; trackBy: trackById" class="inventory-chip">
-          <span class="inventory-chip__icon" [style.color]="resource.color">{{ resource.icon }}</span>
-          <span class="inventory-chip__copy">
-            <strong>{{ resource.name }}</strong>
-            <span>{{ getItemAmount(resource.id) | formatNumber }}</span>
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <div class="inventory-group">
-      <h3>{{ getInventoryGroupTitle('crafted') }}</h3>
-      <div class="inventory-grid">
-        <div *ngFor="let item of craftedItems; trackBy: trackById" class="inventory-chip">
-          <span class="inventory-chip__icon" [style.color]="item.color">{{ item.icon }}</span>
-          <span class="inventory-chip__copy">
-            <strong>{{ item.name }}</strong>
-            <span>{{ getItemAmount(item.id) | formatNumber }}</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <nav class="tab-bar">
-    <button
-      *ngFor="let tab of tabs"
-      class="tab"
-      [class.active]="activeTab === tab.key"
-      (click)="activeTab = tab.key"
+<aside class="flex h-full min-h-0 w-full shrink-0 overflow-hidden border-t border-[var(--border-color)] bg-[rgba(10,16,28,0.96)] min-[960px]:w-[min(30rem,100%)] min-[1600px]:w-[min(36rem,100%)] min-[1920px]:w-[min(40rem,100%)] min-[960px]:border-l min-[960px]:border-t-0">
+  <div
+    #panelShell
+    class="grid min-h-0 w-full grid-rows-[auto_1rem_auto_minmax(0,1fr)]"
+    [style.gridTemplateRows]="panelGridRows"
+  >
+    <section
+      #inventorySection
+      class="min-h-0 overflow-y-auto bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),rgba(255,255,255,0.01)] p-4 min-[1600px]:p-5"
     >
-      {{ tab.label }}
-    </button>
-  </nav>
-
-  <div class="tab-content">
-    <section *ngIf="activeTab === 'upgrades'" class="stack">
-      <div *ngFor="let resource of resources; trackBy: trackById" class="group">
-        <div class="group-header">
-          <h3>{{ getResourceUpgradeTitle(resource) }}</h3>
-          <span>{{ getPlanetYieldLabel(resource) }}</span>
-        </div>
-
-        <div *ngIf="getResourceUpgrades(resource.id).length === 0" class="empty-state">
-          {{ getMineMoreToUnlockLabel(resource) }}
-        </div>
-
-        <div *ngFor="let upgrade of getResourceUpgrades(resource.id); trackBy: trackById" class="card">
-          <div class="card-icon">{{ upgrade.icon }}</div>
-          <div class="card-copy">
-            <div class="card-title">
-              <strong>{{ upgrade.name }}</strong>
-              <span>{{ getUpgradeLevelLabel(upgrade) }}</span>
-            </div>
-            <p>{{ upgrade.description }}</p>
-
-            <div class="cost-row">
-              <span
-                *ngFor="let cost of game.getUpgradeCost(upgrade); trackBy: trackByCost"
-                class="cost-pill"
-                [style.borderColor]="getItemColor(cost.itemId)"
-              >
-                {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
-              </span>
-            </div>
-          </div>
-
-          <button
-            class="action-btn"
-            [disabled]="getUpgradeLevel(upgrade) >= upgrade.maxLevel || !game.canAfford(game.getUpgradeCost(upgrade))"
-            (click)="buyUpgrade(upgrade)"
-          >
-            {{ copy.messages.ui.upgradePanel.upgrade }}
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <section *ngIf="activeTab === 'crafting'" class="stack">
-      <div *ngIf="visibleRecipes.length === 0" class="empty-state wide">
-        {{ copy.messages.ui.upgradePanel.craftingUnlockHint }}
-      </div>
-
-      <div *ngFor="let recipe of visibleRecipes; trackBy: trackById" class="card">
-        <div class="card-icon">{{ recipe.icon }}</div>
-        <div class="card-copy">
-          <div class="card-title">
-            <strong>{{ recipe.name }}</strong>
-            <span>{{ getCraftOutputLabel(recipe) }}</span>
-          </div>
-          <p>{{ recipe.description }}</p>
-          <div class="cost-row">
-            <span
-              *ngFor="let ingredient of recipe.ingredients; trackBy: trackByCost"
-              class="cost-pill"
-              [style.borderColor]="getItemColor(ingredient.itemId)"
-            >
-              {{ getItemLabel(ingredient.itemId) }} {{ ingredient.amount | formatNumber }}
-            </span>
-          </div>
-        </div>
-        <button class="action-btn" [disabled]="!game.canAfford(recipe.ingredients)" (click)="craft(recipe)">{{ copy.messages.ui.upgradePanel.craft }}</button>
-      </div>
-    </section>
-
-    <section *ngIf="activeTab === 'automation'" class="stack">
-      <div *ngIf="visibleAutoMiners.length === 0" class="empty-state wide">
-        {{ copy.messages.ui.upgradePanel.automationUnlockHint }}
-      </div>
-
-      <div *ngFor="let resource of resources; trackBy: trackById" class="group">
-        <div class="group-header">
-          <h3>{{ getResourceAutomationTitle(resource) }}</h3>
-          <span>{{ getAutomationOutputHereLabel(resource) }}</span>
-        </div>
-
-        <div *ngIf="getMinersForResource(resource.id).length === 0" class="empty-state">
-          <p>{{ getAutomationUnlockTitle(resource) }}</p>
-          <span
-            *ngFor="let requirement of getAutomationUnlockRequirements(resource); trackBy: trackByText"
-            class="empty-state__requirement"
-          >
-            {{ requirement }}
+      <div class="mb-3.5 flex items-start justify-between gap-3">
+        <div>
+          <span class="block text-[0.68rem] uppercase tracking-[0.18em] text-slate-400">
+            {{ copy.messages.ui.upgradePanel.inventoryEyebrow }}
           </span>
+          <h2 class="mt-1 text-[1.15rem] text-slate-50 min-[1600px]:text-[1.35rem]">{{ copy.messages.ui.upgradePanel.inventoryTitle }}</h2>
         </div>
+        <span class="rounded-full bg-white/[0.05] px-3 py-1.5 text-[0.74rem] font-semibold text-slate-300 min-[1600px]:px-3.5 min-[1600px]:py-2 min-[1600px]:text-[0.82rem]">
+          {{ currentPlanet.name }}
+        </span>
+      </div>
 
-        <div *ngFor="let miner of getMinersForResource(resource.id); trackBy: trackById" class="card">
-          <div class="card-icon">{{ miner.icon }}</div>
-          <div class="card-copy">
-            <div class="card-title">
-              <strong>{{ miner.name }}</strong>
-              <span>x{{ getAutoMinerCount(miner) }}</span>
-            </div>
-            <p>{{ miner.description }}</p>
-            <div class="subline" *ngIf="getAutoMinerCount(miner) > 0">
-              {{ getAutomationOutputOnPlanetLabel(miner) }}
-            </div>
-            <div class="cost-row">
+      <div>
+        <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 min-[1600px]:text-[0.88rem]">
+          {{ getInventoryGroupTitle('raw') }}
+        </h3>
+        <div class="mt-2 grid gap-2 min-[960px]:grid-cols-1 min-[1200px]:grid-cols-2 min-[1600px]:gap-3">
+          @for (resource of resources; track resource.id) {
+            <div class="flex items-center gap-3 rounded-2xl bg-white/[0.04] px-3 py-3 min-[1600px]:gap-4 min-[1600px]:rounded-[1.15rem] min-[1600px]:px-4 min-[1600px]:py-3.5">
               <span
-                *ngFor="let cost of game.getAutoMinerCost(miner); trackBy: trackByCost"
-                class="cost-pill"
-                [style.borderColor]="getItemColor(cost.itemId)"
+                class="inline-flex h-[1.9rem] w-[1.9rem] items-center justify-center rounded-[0.65rem] bg-white/[0.05] text-[0.72rem] font-bold min-[1600px]:h-9 min-[1600px]:w-9 min-[1600px]:rounded-[0.8rem] min-[1600px]:text-[0.82rem]"
+                [style.color]="resource.color"
               >
-                {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                {{ resource.icon }}
+              </span>
+              <span class="flex min-w-0 flex-col gap-px">
+                <strong class="text-[0.76rem] text-slate-50 min-[1600px]:text-[0.86rem]">{{ resource.name }}</strong>
+                <span class="text-[0.72rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getItemAmount(resource.id) | formatNumber }}</span>
               </span>
             </div>
-          </div>
-          <button class="action-btn" [disabled]="!game.canAfford(game.getAutoMinerCost(miner))" (click)="buyAutoMiner(miner)">{{ copy.messages.ui.upgradePanel.build }}</button>
+          }
+        </div>
+      </div>
+
+      <div class="mt-3.5">
+        <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 min-[1600px]:text-[0.88rem]">
+          {{ getInventoryGroupTitle('crafted') }}
+        </h3>
+        <div class="mt-2 grid gap-2 min-[960px]:grid-cols-1 min-[1200px]:grid-cols-2 min-[1600px]:gap-3">
+          @for (item of craftedItems; track item.id) {
+            <div class="flex items-center gap-3 rounded-2xl bg-white/[0.04] px-3 py-3 min-[1600px]:gap-4 min-[1600px]:rounded-[1.15rem] min-[1600px]:px-4 min-[1600px]:py-3.5">
+              <span
+                class="inline-flex h-[1.9rem] w-[1.9rem] items-center justify-center rounded-[0.65rem] bg-white/[0.05] text-[0.72rem] font-bold min-[1600px]:h-9 min-[1600px]:w-9 min-[1600px]:rounded-[0.8rem] min-[1600px]:text-[0.82rem]"
+                [style.color]="item.color"
+              >
+                {{ item.icon }}
+              </span>
+              <span class="flex min-w-0 flex-col gap-px">
+                <strong class="text-[0.76rem] text-slate-50 min-[1600px]:text-[0.86rem]">{{ item.name }}</strong>
+                <span class="text-[0.72rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getItemAmount(item.id) | formatNumber }}</span>
+              </span>
+            </div>
+          }
         </div>
       </div>
     </section>
 
-    <section *ngIf="activeTab === 'launch'" class="stack">
-      <div class="group">
-        <div class="group-header">
-          <h3>{{ copy.messages.ui.upgradePanel.shipAssembly }}</h3>
-          <span>{{ getShipAssemblyProgressLabel() }}</span>
-        </div>
+    <div
+      class="group relative h-4 cursor-row-resize touch-none select-none bg-[rgba(10,16,28,0.96)]"
+      role="separator"
+      aria-orientation="horizontal"
+      (pointerdown)="startInventoryResize($event)"
+      (dblclick)="resetInventoryPanelHeight()"
+    >
+      <div class="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/8"></div>
+      <div
+        class="pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-500/60 transition group-hover:bg-slate-300/80 min-[1600px]:h-2 min-[1600px]:w-20"
+        [ngClass]="isResizingInventory ? 'bg-slate-200/95' : ''"
+      ></div>
+    </div>
 
-        <div *ngFor="let part of shipParts; trackBy: trackById" class="card">
-          <div class="card-icon">{{ part.icon }}</div>
-          <div class="card-copy">
-            <div class="card-title">
-              <strong>{{ part.name }}</strong>
-              <span *ngIf="game.isShipPartBuilt(part.id)">{{ copy.messages.ui.upgradePanel.built }}</span>
-            </div>
-            <p>{{ part.description }}</p>
-            <div class="cost-row">
-              <span
-                *ngFor="let cost of part.cost; trackBy: trackByCost"
-                class="cost-pill"
-                [style.borderColor]="getItemColor(cost.itemId)"
-              >
-                {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
-              </span>
-            </div>
-          </div>
-          <button class="action-btn" [disabled]="!canBuildShipPart(part)" (click)="buildShipPart(part)">
-            {{ game.isShipPartBuilt(part.id) ? copy.messages.ui.upgradePanel.built : copy.messages.ui.upgradePanel.build }}
-          </button>
-        </div>
-
-        <button class="launch-btn" [disabled]="state.shipLaunched || !game.canLaunchShip()" (click)="launchShip()">
-          {{ getLaunchButtonLabel() }}
+    <nav #tabBar class="grid grid-cols-4 gap-1 border-y border-[var(--border-color)] px-4 py-3 min-[1600px]:gap-2 min-[1600px]:px-5 min-[1600px]:py-4">
+      @for (tab of tabs; track tab.key) {
+        <button
+          class="rounded-[0.85rem] border px-2 py-2.5 text-[0.76rem] font-bold transition min-[1600px]:rounded-[1rem] min-[1600px]:px-3 min-[1600px]:py-3 min-[1600px]:text-[0.88rem]"
+          [ngClass]="activeTab === tab.key
+            ? 'border-white/10 bg-white/[0.05] text-slate-50'
+            : 'border-transparent bg-transparent text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'"
+          (click)="activeTab = tab.key"
+        >
+          {{ tab.label }}
         </button>
-      </div>
+      }
+    </nav>
 
-      <div class="group">
-        <div class="group-header">
-          <h3>{{ copy.messages.ui.upgradePanel.planetRoutes }}</h3>
-          <span *ngIf="!state.shipLaunched">{{ copy.messages.ui.upgradePanel.launchRequired }}</span>
-        </div>
+    <div class="min-h-0 overflow-y-auto overscroll-contain p-4 min-[1600px]:p-5">
+      @if (activeTab === 'upgrades') {
+        <section class="grid gap-4 min-[1600px]:gap-5">
+          @for (resource of resources; track resource.id) {
+            <div class="grid gap-3 min-[1600px]:gap-4">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 min-[1600px]:text-[0.88rem]">
+                  {{ getResourceUpgradeTitle(resource) }}
+                </h3>
+                <span class="text-[0.73rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getPlanetYieldLabel(resource) }}</span>
+              </div>
 
-        <div *ngFor="let planet of planets; trackBy: trackById" class="card planet-card">
-          <div class="card-icon" [style.color]="planet.color">●</div>
-          <div class="card-copy">
-            <div class="card-title">
-              <strong>{{ planet.name }}</strong>
-              <span *ngIf="getPlanetStatusLabel(planet)">{{ getPlanetStatusLabel(planet) }}</span>
+              @if (getResourceUpgrades(resource.id).length === 0) {
+                <div class="grid gap-1 rounded-2xl bg-white/[0.03] px-4 py-3 text-[0.76rem] text-slate-400 min-[1600px]:rounded-[1.15rem] min-[1600px]:px-5 min-[1600px]:py-4 min-[1600px]:text-[0.82rem]">
+                  {{ getMineMoreToUnlockLabel(resource) }}
+                </div>
+              }
+
+              @for (upgrade of getResourceUpgrades(resource.id); track upgrade.id) {
+                <div
+                  class="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 min-[640px]:grid-cols-[auto_1fr_auto] min-[640px]:items-start min-[1600px]:gap-4 min-[1600px]:rounded-[1.2rem] min-[1600px]:p-5"
+                >
+                  <div class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-[0.75rem] font-bold text-slate-50 min-[1600px]:h-10 min-[1600px]:w-10 min-[1600px]:text-[0.82rem]">
+                    {{ upgrade.icon }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center justify-between gap-3">
+                      <strong class="text-[0.86rem] text-slate-50 min-[1600px]:text-[0.96rem]">{{ upgrade.name }}</strong>
+                      <span class="text-[0.72rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getUpgradeLevelLabel(upgrade) }}</span>
+                    </div>
+                    <p class="mt-1 text-[0.78rem] leading-[1.45] text-slate-300 min-[1600px]:text-[0.84rem] min-[1600px]:leading-[1.55]">{{ upgrade.description }}</p>
+
+                    <div class="mt-2 flex flex-wrap gap-2 min-[1600px]:gap-2.5">
+                      @for (cost of game.getUpgradeCost(upgrade); track cost.itemId + '-' + cost.amount) {
+                        <span
+                          class="rounded-full border px-2 py-1 text-[0.7rem] text-slate-300 min-[1600px]:px-2.5 min-[1600px]:py-1.5 min-[1600px]:text-[0.76rem]"
+                          [style.borderColor]="getItemColor(cost.itemId)"
+                        >
+                          {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+
+                  <button
+                    class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.75rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-4 min-[1600px]:py-3 min-[1600px]:text-[0.82rem]"
+                    [disabled]="getUpgradeLevel(upgrade) >= upgrade.maxLevel || !game.canAfford(game.getUpgradeCost(upgrade))"
+                    (click)="buyUpgrade(upgrade)"
+                  >
+                    {{ copy.messages.ui.upgradePanel.upgrade }}
+                  </button>
+                </div>
+              }
             </div>
-            <p>{{ planet.description }}</p>
-            <div class="cost-row" *ngIf="planet.travelCost.length > 0 && !game.isPlanetDiscovered(planet.id)">
-              <span
-                *ngFor="let cost of planet.travelCost; trackBy: trackByCost"
-                class="cost-pill"
-                [style.borderColor]="getItemColor(cost.itemId)"
+          }
+        </section>
+      }
+
+      @if (activeTab === 'crafting') {
+        <section class="grid gap-4 min-[1600px]:gap-5">
+          @if (visibleRecipes.length === 0) {
+            <div class="grid gap-1 rounded-2xl bg-white/[0.03] p-4 text-[0.76rem] text-slate-400 min-[1600px]:rounded-[1.15rem] min-[1600px]:p-5 min-[1600px]:text-[0.82rem]">
+              {{ copy.messages.ui.upgradePanel.craftingUnlockHint }}
+            </div>
+          }
+
+          @for (recipe of visibleRecipes; track recipe.id) {
+            <div
+              class="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 min-[640px]:grid-cols-[auto_1fr_auto] min-[640px]:items-start min-[1600px]:gap-4 min-[1600px]:rounded-[1.2rem] min-[1600px]:p-5"
+            >
+              <div class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-[0.75rem] font-bold text-slate-50 min-[1600px]:h-10 min-[1600px]:w-10 min-[1600px]:text-[0.82rem]">
+                {{ recipe.icon }}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center justify-between gap-3">
+                  <strong class="text-[0.86rem] text-slate-50 min-[1600px]:text-[0.96rem]">{{ recipe.name }}</strong>
+                  <span class="text-[0.72rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getCraftOutputLabel(recipe) }}</span>
+                </div>
+                <p class="mt-1 text-[0.78rem] leading-[1.45] text-slate-300 min-[1600px]:text-[0.84rem] min-[1600px]:leading-[1.55]">{{ recipe.description }}</p>
+                <div class="mt-2 flex flex-wrap gap-2 min-[1600px]:gap-2.5">
+                  @for (ingredient of recipe.ingredients; track ingredient.itemId + '-' + ingredient.amount) {
+                    <span
+                      class="rounded-full border px-2 py-1 text-[0.7rem] text-slate-300 min-[1600px]:px-2.5 min-[1600px]:py-1.5 min-[1600px]:text-[0.76rem]"
+                      [style.borderColor]="getItemColor(ingredient.itemId)"
+                    >
+                      {{ getItemLabel(ingredient.itemId) }} {{ ingredient.amount | formatNumber }}
+                    </span>
+                  }
+                </div>
+              </div>
+              <button
+                class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.75rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-4 min-[1600px]:py-3 min-[1600px]:text-[0.82rem]"
+                [disabled]="!game.canAfford(recipe.ingredients)"
+                (click)="craft(recipe)"
               >
-                {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
-              </span>
+                {{ copy.messages.ui.upgradePanel.craft }}
+              </button>
             </div>
+          }
+        </section>
+      }
+
+      @if (activeTab === 'automation') {
+        <section class="grid gap-4 min-[1600px]:gap-5">
+          @if (visibleAutoMiners.length === 0) {
+            <div class="grid gap-1 rounded-2xl bg-white/[0.03] p-4 text-[0.76rem] text-slate-400 min-[1600px]:rounded-[1.15rem] min-[1600px]:p-5 min-[1600px]:text-[0.82rem]">
+              {{ copy.messages.ui.upgradePanel.automationUnlockHint }}
+            </div>
+          }
+
+          @for (resource of resources; track resource.id) {
+            <div class="grid gap-3 min-[1600px]:gap-4">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 min-[1600px]:text-[0.88rem]">
+                  {{ getResourceAutomationTitle(resource) }}
+                </h3>
+                <span class="text-[0.73rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getAutomationOutputHereLabel(resource) }}</span>
+              </div>
+
+              @if (getMinersForResource(resource.id).length === 0) {
+                <div class="grid gap-1 rounded-2xl bg-white/[0.03] px-4 py-3 text-[0.76rem] text-slate-400 min-[1600px]:rounded-[1.15rem] min-[1600px]:px-5 min-[1600px]:py-4 min-[1600px]:text-[0.82rem]">
+                  <p class="m-0 font-semibold text-slate-300 min-[1600px]:text-[0.88rem]">{{ getAutomationUnlockTitle(resource) }}</p>
+                  @for (requirement of getAutomationUnlockRequirements(resource); track requirement) {
+                    <span>{{ requirement }}</span>
+                  }
+                </div>
+              }
+
+              @for (miner of getMinersForResource(resource.id); track miner.id) {
+                <div
+                  class="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 min-[640px]:grid-cols-[auto_1fr_auto] min-[640px]:items-start min-[1600px]:gap-4 min-[1600px]:rounded-[1.2rem] min-[1600px]:p-5"
+                >
+                  <div class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-[0.75rem] font-bold text-slate-50 min-[1600px]:h-10 min-[1600px]:w-10 min-[1600px]:text-[0.82rem]">
+                    {{ miner.icon }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center justify-between gap-3">
+                      <strong class="text-[0.86rem] text-slate-50 min-[1600px]:text-[0.96rem]">{{ miner.name }}</strong>
+                      <span class="text-[0.72rem] text-slate-400 min-[1600px]:text-[0.8rem]">x{{ getAutoMinerCount(miner) }}</span>
+                    </div>
+                    <p class="mt-1 text-[0.78rem] leading-[1.45] text-slate-300 min-[1600px]:text-[0.84rem] min-[1600px]:leading-[1.55]">{{ miner.description }}</p>
+                    @if (getAutoMinerCount(miner) > 0) {
+                      <div class="mt-1.5 text-[0.72rem] text-slate-400 min-[1600px]:text-[0.8rem]">
+                        {{ getAutomationOutputOnPlanetLabel(miner) }}
+                      </div>
+                    }
+                    <div class="mt-2 flex flex-wrap gap-2 min-[1600px]:gap-2.5">
+                      @for (cost of game.getAutoMinerCost(miner); track cost.itemId + '-' + cost.amount) {
+                        <span
+                          class="rounded-full border px-2 py-1 text-[0.7rem] text-slate-300 min-[1600px]:px-2.5 min-[1600px]:py-1.5 min-[1600px]:text-[0.76rem]"
+                          [style.borderColor]="getItemColor(cost.itemId)"
+                        >
+                          {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                  <button
+                    class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.75rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-4 min-[1600px]:py-3 min-[1600px]:text-[0.82rem]"
+                    [disabled]="!game.canAfford(game.getAutoMinerCost(miner))"
+                    (click)="buyAutoMiner(miner)"
+                  >
+                    {{ copy.messages.ui.upgradePanel.build }}
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (activeTab === 'launch') {
+        <section class="grid gap-4">
+          <div class="grid gap-3">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">
+                {{ copy.messages.ui.upgradePanel.shipAssembly }}
+              </h3>
+              <span class="text-[0.73rem] text-slate-400">{{ getShipAssemblyProgressLabel() }}</span>
+            </div>
+
+            @for (part of shipParts; track part.id) {
+              <div
+                class="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 min-[640px]:grid-cols-[auto_1fr_auto] min-[640px]:items-start"
+              >
+                <div class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-[0.75rem] font-bold text-slate-50">
+                  {{ part.icon }}
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center justify-between gap-3">
+                    <strong class="text-[0.86rem] text-slate-50">{{ part.name }}</strong>
+                    @if (game.isShipPartBuilt(part.id)) {
+                      <span class="text-[0.72rem] text-slate-400">
+                        {{ copy.messages.ui.upgradePanel.built }}
+                      </span>
+                    }
+                  </div>
+                  <p class="mt-1 text-[0.78rem] leading-[1.45] text-slate-300">{{ part.description }}</p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    @for (cost of part.cost; track cost.itemId + '-' + cost.amount) {
+                      <span
+                        class="rounded-full border px-2 py-1 text-[0.7rem] text-slate-300"
+                        [style.borderColor]="getItemColor(cost.itemId)"
+                      >
+                        {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                      </span>
+                    }
+                  </div>
+                </div>
+                <button
+                  class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.75rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+                  [disabled]="!canBuildShipPart(part)"
+                  (click)="buildShipPart(part)"
+                >
+                  {{ game.isShipPartBuilt(part.id) ? copy.messages.ui.upgradePanel.built : copy.messages.ui.upgradePanel.build }}
+                </button>
+              </div>
+            }
+
+            <button
+              class="inline-flex w-full items-center justify-center rounded-[0.85rem] border border-emerald-400/30 bg-emerald-500/15 px-4 py-3 text-sm font-bold text-emerald-100 transition hover:-translate-y-px hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-45"
+              [disabled]="state.shipLaunched || !game.canLaunchShip()"
+              (click)="launchShip()"
+            >
+              {{ getLaunchButtonLabel() }}
+            </button>
           </div>
-          <button
-            class="action-btn"
-            [disabled]="!game.canTravelToPlanet(planet.id)"
-            (click)="travelToPlanet(planet)"
-          >
-            {{ getPlanetActionLabel(planet) }}
-          </button>
-        </div>
-      </div>
-    </section>
+
+          <div class="grid gap-3">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">
+                {{ copy.messages.ui.upgradePanel.planetRoutes }}
+              </h3>
+              @if (!state.shipLaunched) {
+                <span class="text-[0.73rem] text-slate-400">
+                  {{ copy.messages.ui.upgradePanel.launchRequired }}
+                </span>
+              }
+            </div>
+
+            @for (planet of planets; track planet.id) {
+              <div
+                class="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 min-[640px]:grid-cols-[auto_1fr_auto] min-[640px]:items-start"
+              >
+                <div
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-[1.1rem] font-bold"
+                  [style.color]="planet.color"
+                >
+                  ●
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center justify-between gap-3">
+                    <strong class="text-[0.86rem] text-slate-50">{{ planet.name }}</strong>
+                    @if (getPlanetStatusLabel(planet)) {
+                      <span class="text-[0.72rem] text-slate-400">
+                        {{ getPlanetStatusLabel(planet) }}
+                      </span>
+                    }
+                  </div>
+                  <p class="mt-1 text-[0.78rem] leading-[1.45] text-slate-300">{{ planet.description }}</p>
+                  @if (planet.travelCost.length > 0 && !game.isPlanetDiscovered(planet.id)) {
+                    <div class="mt-2 flex flex-wrap gap-2">
+                      @for (cost of planet.travelCost; track cost.itemId + '-' + cost.amount) {
+                        <span
+                          class="rounded-full border px-2 py-1 text-[0.7rem] text-slate-300"
+                          [style.borderColor]="getItemColor(cost.itemId)"
+                        >
+                          {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                        </span>
+                      }
+                    </div>
+                  }
+                </div>
+                <button
+                  class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.75rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+                  [disabled]="!game.canTravelToPlanet(planet.id)"
+                  (click)="travelToPlanet(planet)"
+                >
+                  {{ getPlanetActionLabel(planet) }}
+                </button>
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </div>
   </div>
 </aside>
