@@ -20,6 +20,30 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: '0.5.1',
+    releasedAt: '2026-04-03',
+    title: {
+      en: 'Save Migration Safeguards',
+      pt: 'Proteções de Migração de Saves',
+    },
+    summary: {
+      en: 'Older local saves are now promoted into the current storage version automatically when the game starts.',
+      pt: 'Os saves locais antigos passam agora a ser promovidos automaticamente para a versão atual do armazenamento quando o jogo arranca.',
+    },
+    items: [
+      {
+        type: 'fixed',
+        en: 'When a new save key version is introduced, matching progress from older local saves is now carried into the current save instead of starting over.',
+        pt: 'Quando é introduzida uma nova versão da chave de save, o progresso compatível dos saves locais antigos passa agora para o save atual em vez de recomeçar.',
+      },
+      {
+        type: 'fixed',
+        en: 'Old versioned save entries are removed only after the current save is written successfully.',
+        pt: 'As entradas antigas versionadas só são removidas depois de o save atual ser escrito com sucesso.',
+      },
+    ],
+  },
+  {
     version: '0.5.0',
     releasedAt: '2026-04-03',
     title: {
