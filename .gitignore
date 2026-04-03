@@ -3,6 +3,7 @@ dist/
 .angular/
 node_modules/
 .claude/
+.codex
 
 # Environment
 .env

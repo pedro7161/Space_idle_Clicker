@@ -35,6 +35,9 @@
       <span>{{ shipStatus }}</span>
       <span>{{ totalClicks | formatNumber }} clicks</span>
     </div>
-    <button class="reset-btn" (click)="resetRequested.emit()">Reset</button>
+    <div class="action-row">
+      <button class="save-btn" (click)="saveTransferRequested.emit()">Save Data</button>
+      <button class="reset-btn" (click)="resetRequested.emit()">Reset</button>
+    </div>
   </div>
 </header>
