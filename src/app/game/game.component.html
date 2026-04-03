@@ -66,11 +66,32 @@
   }
 
   @if (hasStarted) {
-    <app-stats-header (settingsRequested)="openSettingsDialog()"></app-stats-header>
+    <app-stats-header
+      [mobileResourcesExpanded]="showMobileResources"
+      [mobileMenuOpen]="showMobilePanel"
+      (settingsRequested)="openSettingsDialog()"
+      (mobileResourcesToggleRequested)="toggleMobileResources()"
+      (mobileMenuToggleRequested)="toggleMobilePanel()"
+    ></app-stats-header>
 
-    <div class="grid min-h-0 flex-1 overflow-hidden grid-cols-1 min-[960px]:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)] min-[1600px]:grid-cols-[minmax(0,1fr)_minmax(30rem,36rem)] min-[1920px]:grid-cols-[minmax(0,1fr)_minmax(34rem,40rem)]">
-      <app-planet-view class="block h-full min-h-0"></app-planet-view>
-      <app-upgrade-panel class="block h-full min-h-0 overflow-hidden"></app-upgrade-panel>
+    <div class="relative min-h-0 flex-1 overflow-hidden">
+      <div class="relative grid h-full min-h-0 overflow-hidden grid-cols-1 min-[960px]:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)] min-[1600px]:grid-cols-[minmax(0,1fr)_minmax(30rem,36rem)] min-[1920px]:grid-cols-[minmax(0,1fr)_minmax(34rem,40rem)]">
+        <app-planet-view class="block h-full min-h-0"></app-planet-view>
+        <app-upgrade-panel
+          class="block h-full min-h-0 overflow-hidden"
+          [mobileOpen]="showMobilePanel"
+          (closeRequested)="closeMobilePanel()"
+        ></app-upgrade-panel>
+      </div>
+
+      @if (showMobilePanel) {
+        <button
+          class="absolute inset-0 z-20 bg-slate-950/60 backdrop-blur-[1px] min-[960px]:hidden"
+          type="button"
+          aria-label="Close menu"
+          (click)="closeMobilePanel()"
+        ></button>
+      }
     </div>
 
     @if (showResetDialog) {

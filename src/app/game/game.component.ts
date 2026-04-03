@@ -29,6 +29,8 @@ export class GameComponent implements OnDestroy {
   exportSaveValue = '';
   exportSaveFileContents = '';
   showSettingsDialog = false;
+  showMobilePanel = false;
+  showMobileResources = false;
   startScreenMessage = '';
   startScreenTone: 'neutral' | 'success' | 'error' = 'neutral';
 
@@ -89,9 +91,22 @@ export class GameComponent implements OnDestroy {
   }
 
   openSettingsDialog(): void {
+    this.showMobilePanel = false;
     this.exportSaveValue = this.game.exportSave();
     this.exportSaveFileContents = this.game.exportSaveFileContents();
     this.showSettingsDialog = true;
+  }
+
+  toggleMobilePanel(): void {
+    this.showMobilePanel = !this.showMobilePanel;
+  }
+
+  closeMobilePanel(): void {
+    this.showMobilePanel = false;
+  }
+
+  toggleMobileResources(): void {
+    this.showMobileResources = !this.showMobileResources;
   }
 
   requestResetFromSettings(): void {

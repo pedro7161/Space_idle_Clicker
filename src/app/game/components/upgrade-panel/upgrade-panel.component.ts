@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, input, output, viewChild } from '@angular/core';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
 import { GameMessagesService } from '../../i18n/game-messages';
@@ -27,6 +27,8 @@ interface TabDef {
   templateUrl: './upgrade-panel.component.html',
 })
 export class UpgradePanelComponent implements OnDestroy {
+  readonly mobileOpen = input(false);
+  readonly closeRequested = output<void>();
   activeTab: Tab = 'upgrades';
   inventoryPanelHeight: number | null = null;
   isResizingInventory = false;
@@ -117,6 +119,10 @@ export class UpgradePanelComponent implements OnDestroy {
     }
 
     return `${this.inventoryPanelHeight}px ${this.handleHeight}px auto minmax(0, 1fr)`;
+  }
+
+  get activeTabLabel(): string {
+    return this.tabs.find(tab => tab.key === this.activeTab)?.label ?? this.tabs[0].label;
   }
 
   getResourceUpgrades(resourceId: ResourceDef['id']): ResourceUpgrade[] {

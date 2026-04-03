@@ -8,6 +8,10 @@
     "clicks": "{value} clicks",
     "shipLaunched": "Ship launched",
     "shipParts": "Ship parts {built}/{total}",
+    "showResources": "Show Resources",
+    "hideResources": "Hide Resources",
+    "openMenu": "Menu",
+    "closeMenu": "Close Menu",
     "settings": "Settings",
     "reset": "Reset"
   },
@@ -16,6 +20,8 @@
     "manualMining": "Manual Mining",
     "manualMiningDescription": "Only one mining mode can be active at a time. Switch focus when a chain becomes the bottleneck.",
     "sharedCargoHold": "Shared Cargo Hold",
+    "expandCargoHold": "Expand Cargo Hold",
+    "collapseCargoHold": "Collapse Cargo Hold",
     "localAuto": "Local auto",
     "perSecond": "{value}/sec"
   },
@@ -52,6 +58,8 @@
     "built": "Built",
     "launchShip": "Launch First Ship",
     "shipLaunched": "First Ship Launched",
+    "drawerTitle": "Operations",
+    "close": "Close",
     "planetRoutes": "Planet Routes",
     "launchRequired": "Launch required",
     "current": "Current",

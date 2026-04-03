@@ -1,4 +1,4 @@
-<div class="relative grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden p-5 min-[1600px]:p-6 min-[1920px]:p-7 max-[820px]:p-4" [style.background]="currentPlanet.bgGradient">
+<div class="relative grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden px-5 pt-5 pb-0 min-[1600px]:px-6 min-[1600px]:pt-6 min-[1600px]:pb-0 min-[1920px]:px-7 min-[1920px]:pt-7 min-[1920px]:pb-0 max-[820px]:px-4 max-[820px]:pt-4 max-[820px]:pb-0" [style.background]="currentPlanet.bgGradient">
   <div class="space-stars pointer-events-none absolute inset-0 opacity-90"></div>
   <div
     class="pointer-events-none absolute inset-x-0 bottom-0 h-[28%]"
@@ -83,30 +83,56 @@
     }
   </div>
 
-  <section class="relative z-10 flex flex-col gap-4 min-[1200px]:flex-row min-[1200px]:items-start min-[1200px]:justify-between min-[1600px]:gap-6">
-    <div class="flex min-h-0 max-h-56 flex-1 flex-col overflow-hidden rounded-[1.1rem] border border-white/10 bg-[rgba(8,15,26,0.62)] px-4 py-4 backdrop-blur-xl max-[820px]:max-h-72 min-[1600px]:max-h-64 min-[1600px]:rounded-[1.3rem] min-[1600px]:px-5 min-[1600px]:py-5">
-      <div class="mb-3 text-[0.8rem] uppercase tracking-[0.14em] text-slate-400 min-[1600px]:text-[0.86rem]">{{ copy.messages.ui.planetView.sharedCargoHold }}</div>
-      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-        <div class="grid gap-3 min-[820px]:grid-cols-2 min-[1400px]:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] min-[1600px]:gap-4 min-[1900px]:grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
-          @for (item of craftedItems; track item.id) {
-            <div class="flex items-center gap-3 rounded-[0.9rem] bg-white/[0.04] px-3.5 py-3 min-[1600px]:gap-4 min-[1600px]:rounded-[1rem] min-[1600px]:px-4 min-[1600px]:py-3.5">
-              <span
-                class="inline-flex h-8 w-8 items-center justify-center rounded-[0.65rem] bg-white/[0.05] text-[0.75rem] font-bold min-[1600px]:h-9 min-[1600px]:w-9 min-[1600px]:rounded-[0.75rem] min-[1600px]:text-[0.82rem]"
-                [style.color]="item.color"
-              >
-                {{ item.icon }}
-              </span>
-              <span class="flex flex-col gap-0.5">
-                <strong class="text-[0.8rem] text-slate-50 min-[1600px]:text-[0.88rem]">{{ item.name }}</strong>
-                <span class="text-[0.74rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getCraftedAmount(item.id) | formatNumber }}</span>
-              </span>
+  <section class="relative z-10 flex min-h-0 flex-col gap-4 min-[1200px]:flex-row min-[1200px]:items-end min-[1200px]:justify-between min-[1600px]:gap-6">
+    @if (hasUnlockedCargoHold) {
+      <div
+        class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[1.1rem] rounded-b-none border border-white/10 bg-[rgba(8,15,26,0.62)] backdrop-blur-xl transition-[height] duration-200 min-[1600px]:rounded-t-[1.3rem] min-[1600px]:rounded-b-none"
+        [ngClass]="cargoCollapsed
+          ? 'h-[3.9rem] min-[1600px]:h-[4.3rem]'
+          : 'h-[clamp(11rem,24vh,15rem)] max-[820px]:h-[min(18rem,38vh)] min-[1600px]:h-[clamp(12rem,25vh,17rem)]'"
+      >
+        <div class="flex items-center justify-between gap-3 px-4 py-3 min-[1600px]:px-5 min-[1600px]:py-3.5">
+          <div class="min-w-0">
+            <div class="text-[0.8rem] uppercase tracking-[0.14em] text-slate-400 min-[1600px]:text-[0.86rem]">
+              {{ copy.messages.ui.planetView.sharedCargoHold }}
             </div>
-          }
+          </div>
+          <button
+            class="inline-flex h-9 w-9 items-center justify-center rounded-[0.75rem] border border-white/10 bg-white/[0.04] text-[0.95rem] font-bold text-slate-100 transition hover:bg-white/[0.08] min-[1600px]:h-10 min-[1600px]:w-10 min-[1600px]:rounded-[0.85rem] min-[1600px]:text-[1rem]"
+            type="button"
+            [attr.aria-expanded]="!cargoCollapsed"
+            [attr.aria-label]="cargoToggleLabel"
+            [attr.title]="cargoToggleLabel"
+            (click)="toggleCargoCollapsed()"
+          >
+            <span aria-hidden="true">{{ cargoCollapsed ? '↑' : '↓' }}</span>
+          </button>
         </div>
-      </div>
-    </div>
 
-    <div class="grid min-w-[11rem] gap-0.5 rounded-[1.1rem] border border-white/10 bg-[rgba(8,15,26,0.62)] px-4 py-4 text-slate-400 backdrop-blur-xl min-[1200px]:w-full min-[1200px]:max-w-[11rem] min-[1600px]:max-w-[13rem] min-[1600px]:rounded-[1.3rem] min-[1600px]:px-5 min-[1600px]:py-5">
+        @if (!cargoCollapsed) {
+          <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pr-3 min-[1600px]:px-5 min-[1600px]:pb-5 min-[1600px]:pr-4">
+            <div class="grid gap-3 min-[820px]:grid-cols-2 min-[1400px]:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] min-[1600px]:gap-4 min-[1900px]:grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]">
+              @for (item of craftedItems; track item.id) {
+                <div class="flex items-center gap-3 rounded-[0.9rem] bg-white/[0.04] px-3.5 py-3 min-[1600px]:gap-4 min-[1600px]:rounded-[1rem] min-[1600px]:px-4 min-[1600px]:py-3.5">
+                  <span
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-[0.65rem] bg-white/[0.05] text-[0.75rem] font-bold min-[1600px]:h-9 min-[1600px]:w-9 min-[1600px]:rounded-[0.75rem] min-[1600px]:text-[0.82rem]"
+                    [style.color]="item.color"
+                  >
+                    {{ item.icon }}
+                  </span>
+                  <span class="flex flex-col gap-0.5">
+                    <strong class="text-[0.8rem] text-slate-50 min-[1600px]:text-[0.88rem]">{{ item.name }}</strong>
+                    <span class="text-[0.74rem] text-slate-400 min-[1600px]:text-[0.8rem]">{{ getCraftedAmount(item.id) | formatNumber }}</span>
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="mb-[10px] grid min-w-[11rem] gap-0.5 rounded-[1.1rem] border border-white/10 bg-[rgba(8,15,26,0.62)] px-4 py-4 text-slate-400 backdrop-blur-xl min-[1200px]:ml-auto min-[1200px]:w-full min-[1200px]:max-w-[11rem] min-[1600px]:max-w-[13rem] min-[1600px]:rounded-[1.3rem] min-[1600px]:px-5 min-[1600px]:py-5">
       <span class="text-sm min-[1600px]:text-[0.95rem]">{{ copy.messages.ui.planetView.localAuto }}</span>
       <strong class="text-base text-slate-50 min-[1600px]:text-[1.2rem]">{{ localAutoLabel }}</strong>
     </div>

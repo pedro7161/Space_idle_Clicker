@@ -1,4 +1,4 @@
-import { Component, output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
@@ -12,7 +12,11 @@ import { GameMessagesService } from '../../i18n/game-messages';
   templateUrl: './stats-header.component.html',
 })
 export class StatsHeaderComponent {
+  readonly mobileResourcesExpanded = input(false);
+  readonly mobileMenuOpen = input(false);
   readonly settingsRequested = output<void>();
+  readonly mobileResourcesToggleRequested = output<void>();
+  readonly mobileMenuToggleRequested = output<void>();
 
   constructor(
     public game: GameService,
@@ -80,6 +84,18 @@ export class StatsHeaderComponent {
     return this.copy.format(this.copy.messages.ui.statsHeader.clicks, {
       value: new FormatNumberPipe().transform(this.totalClicks),
     });
+  }
+
+  get mobileResourcesLabel(): string {
+    return this.mobileResourcesExpanded()
+      ? this.copy.messages.ui.statsHeader.hideResources
+      : this.copy.messages.ui.statsHeader.showResources;
+  }
+
+  get mobileMenuLabel(): string {
+    return this.mobileMenuOpen()
+      ? this.copy.messages.ui.statsHeader.closeMenu
+      : this.copy.messages.ui.statsHeader.openMenu;
   }
 
   getAmount(resourceId: ResourceDef['id']): number {
