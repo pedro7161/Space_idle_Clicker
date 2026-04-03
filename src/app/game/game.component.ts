@@ -6,7 +6,8 @@ import { PlanetViewComponent } from './components/planet-view/planet-view.compon
 import { UpgradePanelComponent } from './components/upgrade-panel/upgrade-panel.component';
 import { ResetDialogComponent } from './components/reset-dialog/reset-dialog.component';
 import { GameMessagesService } from './i18n/game-messages';
-import { SaveTransferDialogComponent } from './components/save-transfer-dialog/save-transfer-dialog.component';
+import { SettingsDialogComponent } from './components/settings-dialog/settings-dialog.component';
+import { SupportedLocale } from './i18n/game-messages';
 
 @Component({
   selector: 'app-game',
@@ -17,7 +18,7 @@ import { SaveTransferDialogComponent } from './components/save-transfer-dialog/s
     PlanetViewComponent,
     UpgradePanelComponent,
     ResetDialogComponent,
-    SaveTransferDialogComponent,
+    SettingsDialogComponent,
   ],
   templateUrl: './game.component.html',
   styleUrl: './game.component.css',
@@ -26,8 +27,9 @@ export class GameComponent implements OnDestroy {
   hasStarted = false;
   hasSavedGame = false;
   showResetDialog = false;
-  showSaveTransferDialog = false;
   exportSaveValue = '';
+  exportSaveFileContents = '';
+  showSettingsDialog = false;
   startScreenMessage = '';
   startScreenTone: 'neutral' | 'success' | 'error' = 'neutral';
 
@@ -87,19 +89,38 @@ export class GameComponent implements OnDestroy {
     }
   }
 
-  openSaveTransferDialog(): void {
+  openSettingsDialog(): void {
     this.exportSaveValue = this.game.exportSave();
-    this.showSaveTransferDialog = true;
+    this.exportSaveFileContents = this.game.exportSaveFileContents();
+    this.showSettingsDialog = true;
   }
 
-  handleImport(dialog: SaveTransferDialogComponent, raw: string): void {
+  requestResetFromSettings(): void {
+    this.showSettingsDialog = false;
+    this.showResetDialog = true;
+  }
+
+  handleImport(dialog: SettingsDialogComponent, raw: string): void {
     const result = this.game.importSave(raw);
     if (result.ok) {
       this.exportSaveValue = this.game.exportSave();
+      this.exportSaveFileContents = this.game.exportSaveFileContents();
       dialog.updateFeedback(this.copy.messages.ui.saveTransferDialog.importSuccess, 'success');
       return;
     }
 
     dialog.updateFeedback(result.error, 'error');
+  }
+
+  changeLanguage(dialog: SettingsDialogComponent, locale: SupportedLocale): void {
+    if (locale === this.copy.currentLocale) {
+      return;
+    }
+
+    this.copy.setLocale(locale);
+    dialog.updateFeedback(this.copy.messages.ui.settingsDialog.languageUpdated, 'success');
+    setTimeout(() => {
+      window.location.reload();
+    }, 250);
   }
 }

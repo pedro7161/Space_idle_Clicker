@@ -35,10 +35,7 @@
 </section>
 
 <ng-container *ngIf="hasStarted">
-  <app-stats-header
-    (resetRequested)="showResetDialog = true"
-    (saveTransferRequested)="openSaveTransferDialog()"
-  ></app-stats-header>
+  <app-stats-header (settingsRequested)="openSettingsDialog()"></app-stats-header>
 
   <div class="main">
     <app-planet-view></app-planet-view>
@@ -51,11 +48,16 @@
     (cancelled)="showResetDialog = false"
   ></app-reset-dialog>
 
-  <app-save-transfer-dialog
-    *ngIf="showSaveTransferDialog"
-    #saveTransferDialog
-    [exportValue]="exportSaveValue"
-    (closed)="showSaveTransferDialog = false"
-    (importRequested)="handleImport(saveTransferDialog, $event)"
-  ></app-save-transfer-dialog>
+  <app-settings-dialog
+    *ngIf="showSettingsDialog"
+    #settingsDialog
+    [exportCode]="exportSaveValue"
+    [exportFileContents]="exportSaveFileContents"
+    [currentLocale]="copy.currentLocale"
+    [localeOptions]="copy.localeOptions"
+    (closed)="showSettingsDialog = false"
+    (importRequested)="handleImport(settingsDialog, $event)"
+    (localeChanged)="changeLanguage(settingsDialog, $event)"
+    (resetRequested)="requestResetFromSettings()"
+  ></app-settings-dialog>
 </ng-container>

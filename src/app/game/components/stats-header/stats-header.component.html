@@ -36,8 +36,10 @@
       <span>{{ totalClicksLabel }}</span>
     </div>
     <div class="action-row">
-      <button class="save-btn" (click)="saveTransferRequested.emit()">{{ copy.messages.ui.statsHeader.saveData }}</button>
-      <button class="reset-btn" (click)="resetRequested.emit()">{{ copy.messages.ui.statsHeader.reset }}</button>
+      <button class="settings-btn" (click)="settingsRequested.emit()">
+        <span class="settings-btn__icon" aria-hidden="true">⚙</span>
+        <span>{{ copy.messages.ui.statsHeader.settings }}</span>
+      </button>
     </div>
   </div>
 </header>

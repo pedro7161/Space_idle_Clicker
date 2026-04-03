@@ -13,8 +13,7 @@ import { GameMessagesService } from '../../i18n/game-messages';
   styleUrl: './stats-header.component.css',
 })
 export class StatsHeaderComponent {
-  @Output() resetRequested = new EventEmitter<void>();
-  @Output() saveTransferRequested = new EventEmitter<void>();
+  @Output() settingsRequested = new EventEmitter<void>();
 
   constructor(
     public game: GameService,

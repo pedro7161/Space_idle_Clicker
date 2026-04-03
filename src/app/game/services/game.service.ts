@@ -229,6 +229,12 @@ export class GameService {
     return this.encodeSavePayload(this.state);
   }
 
+  exportSaveFileContents(): string {
+    this.state.lastTickAt = Date.now();
+    this.save();
+    return JSON.stringify(this.state, null, 2);
+  }
+
   importSave(raw: string): { ok: true } | { ok: false; error: string } {
     const trimmed = raw.trim();
     if (!trimmed) {

@@ -1,0 +1,20 @@
+{
+  "planets": {
+    "solara": {
+      "name": "Bacia Solara",
+      "description": "O mundo inicial hostil. Rendimentos equilibrados, infraestruturas fracas e nenhuma margem para desperdício."
+    },
+    "ferros": {
+      "name": "Berço de Ferros",
+      "description": "Um mundo metálico onde as veias de ferrite são densas, mas os depósitos de combustível são escassos."
+    },
+    "verdara": {
+      "name": "Deriva Verdara",
+      "description": "Uma atmosfera volátil torna o oxigénio fácil de recolher e a ferrite mais difícil de extrair com limpeza."
+    },
+    "cinder": {
+      "name": "Extensão Cinder",
+      "description": "Um planeta de cinzas abrasadoras onde o carbono é abundante e tudo o resto resiste."
+    }
+  }
+}
