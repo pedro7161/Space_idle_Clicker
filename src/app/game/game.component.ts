@@ -6,6 +6,7 @@ import { PlanetViewComponent } from './components/planet-view/planet-view.compon
 import { UpgradePanelComponent } from './components/upgrade-panel/upgrade-panel.component';
 import { ResetDialogComponent } from './components/reset-dialog/reset-dialog.component';
 import { GameMessagesService } from './i18n/game-messages';
+import { SaveTransferDialogComponent } from './components/save-transfer-dialog/save-transfer-dialog.component';
 
 @Component({
   selector: 'app-game',
@@ -16,6 +17,7 @@ import { GameMessagesService } from './i18n/game-messages';
     PlanetViewComponent,
     UpgradePanelComponent,
     ResetDialogComponent,
+    SaveTransferDialogComponent,
   ],
   templateUrl: './game.component.html',
   styleUrl: './game.component.css',
@@ -24,6 +26,8 @@ export class GameComponent implements OnDestroy {
   hasStarted = false;
   hasSavedGame = false;
   showResetDialog = false;
+  showSaveTransferDialog = false;
+  exportSaveValue = '';
   startScreenMessage = '';
   startScreenTone: 'neutral' | 'success' | 'error' = 'neutral';
 
@@ -81,5 +85,21 @@ export class GameComponent implements OnDestroy {
     } finally {
       input.value = '';
     }
+  }
+
+  openSaveTransferDialog(): void {
+    this.exportSaveValue = this.game.exportSave();
+    this.showSaveTransferDialog = true;
+  }
+
+  handleImport(dialog: SaveTransferDialogComponent, raw: string): void {
+    const result = this.game.importSave(raw);
+    if (result.ok) {
+      this.exportSaveValue = this.game.exportSave();
+      dialog.updateFeedback(this.copy.messages.ui.saveTransferDialog.importSuccess, 'success');
+      return;
+    }
+
+    dialog.updateFeedback(result.error, 'error');
   }
 }

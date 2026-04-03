@@ -25,6 +25,7 @@ import {
 } from '../models';
 
 const SAVE_KEY = 'space-idle-save-v2';
+const SAVE_TRANSFER_PREFIX = 'frontier-miner-save:';
 const SAVE_INTERVAL_MS = 10_000;
 const TICK_INTERVAL_MS = 200;
 const SAVE_VERSION = 2;
@@ -222,28 +223,27 @@ export class GameService {
     return !!localStorage.getItem(SAVE_KEY);
   }
 
+  exportSave(): string {
+    this.state.lastTickAt = Date.now();
+    this.save();
+    return this.encodeSavePayload(this.state);
+  }
+
   importSave(raw: string): { ok: true } | { ok: false; error: string } {
     const trimmed = raw.trim();
     if (!trimmed) {
-      return { ok: false, error: 'empty' };
+      return { ok: false, error: 'Paste a save string before importing.' };
     }
 
     try {
-      const parsed = JSON.parse(trimmed) as Partial<GameState>;
-      const merged = this.mergeWithDefaults(parsed);
-      merged.lastTickAt = Date.now();
-      this.state = merged;
-      localStorage.setItem(SAVE_KEY, JSON.stringify(merged));
-
-      if (this.initialized) {
-        this.emit();
-      } else {
-        this.state$.next(merged);
-      }
-
+      const parsed = this.decodeSavePayload(trimmed);
+      this.state = this.mergeWithDefaults(parsed);
+      this.state.lastTickAt = Date.now();
+      this.save();
+      this.emit();
       return { ok: true };
     } catch {
-      return { ok: false, error: 'invalid' };
+      return { ok: false, error: 'That save string is invalid or from an unsupported format.' };
     }
   }
 
@@ -491,6 +491,24 @@ export class GameService {
 
   private save(): void {
     localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
+  }
+
+  private encodeSavePayload(state: GameState): string {
+    const json = JSON.stringify(state);
+    const bytes = new TextEncoder().encode(json);
+    const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('');
+    return `${SAVE_TRANSFER_PREFIX}${btoa(binary)}`;
+  }
+
+  private decodeSavePayload(raw: string): Partial<GameState> {
+    if (raw.startsWith(SAVE_TRANSFER_PREFIX)) {
+      const encoded = raw.slice(SAVE_TRANSFER_PREFIX.length);
+      const binary = atob(encoded);
+      const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes)) as Partial<GameState>;
+    }
+
+    return JSON.parse(raw) as Partial<GameState>;
   }
 
   private loadOrDefault(): GameState {

@@ -14,6 +14,7 @@ import { GameMessagesService } from '../../i18n/game-messages';
 })
 export class StatsHeaderComponent {
   @Output() resetRequested = new EventEmitter<void>();
+  @Output() saveTransferRequested = new EventEmitter<void>();
 
   constructor(
     public game: GameService,

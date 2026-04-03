@@ -1,0 +1,121 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(2, 6, 23, 0.8);
+}
+
+.dialog {
+  width: min(62rem, 100%);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(10, 16, 28, 0.98));
+  box-shadow: 0 24px 80px rgba(2, 6, 23, 0.5);
+}
+
+.dialog-header,
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.eyebrow {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+.dialog-header h2,
+.panel h3 {
+  margin: 0.2rem 0 0;
+  color: var(--text-strong);
+}
+
+.dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.panel {
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.panel p {
+  margin: 0.55rem 0 0.85rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.save-area {
+  width: 100%;
+  min-height: 16rem;
+  resize: vertical;
+  padding: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 0.9rem;
+  background: rgba(2, 6, 23, 0.55);
+  color: var(--text-soft);
+}
+
+.btn,
+.icon-btn {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn {
+  padding: 0.55rem 0.8rem;
+}
+
+.icon-btn {
+  padding: 0.45rem 0.7rem;
+}
+
+.btn-primary {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.feedback {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.feedback.success {
+  color: #86efac;
+}
+
+.feedback.error {
+  color: #fca5a5;
+}
+
+@media (max-width: 860px) {
+  .dialog-grid {
+    grid-template-columns: 1fr;
+  }
+}

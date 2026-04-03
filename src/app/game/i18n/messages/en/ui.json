@@ -8,6 +8,7 @@
     "clicks": "{value} clicks",
     "shipLaunched": "Ship launched",
     "shipParts": "Ship parts {built}/{total}",
+    "saveData": "Save Data",
     "reset": "Reset"
   },
   "planetView": {
@@ -63,6 +64,11 @@
     "question": "Reset all progress?",
     "confirm": "Yes, Reset",
     "cancel": "Cancel"
+  },
+  "saveTransferDialog": {
+    "copySuccess": "Save code copied to clipboard.",
+    "copyError": "Clipboard access failed. Copy the save code manually.",
+    "importSuccess": "Save imported successfully."
   },
   "startScreen": {
     "eyebrow": "Frontier Deployment",

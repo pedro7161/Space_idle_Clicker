@@ -35,6 +35,9 @@
       <span>{{ shipStatus }}</span>
       <span>{{ totalClicksLabel }}</span>
     </div>
-    <button class="reset-btn" (click)="resetRequested.emit()">{{ copy.messages.ui.statsHeader.reset }}</button>
+    <div class="action-row">
+      <button class="save-btn" (click)="saveTransferRequested.emit()">{{ copy.messages.ui.statsHeader.saveData }}</button>
+      <button class="reset-btn" (click)="resetRequested.emit()">{{ copy.messages.ui.statsHeader.reset }}</button>
+    </div>
   </div>
 </header>
