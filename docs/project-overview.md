@@ -129,7 +129,8 @@ Test coverage includes:
 
 ## Deployment
 
-The project is configured for GitHub Pages deployment.
+The project is configured for GitHub Pages deployment through GitHub Actions.
+The Pages workflow runs after the `Tests` workflow succeeds on pushes to `main`.
 
 Relevant scripts:
 
@@ -141,6 +142,7 @@ npm run deploy:pages
 Base path:
 
 - `/Space_idle_Clicker/`
+- Workflow: `.github/workflows/deploy-pages.yml`
 
 ## Roadmap Direction
 

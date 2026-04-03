@@ -69,7 +69,10 @@ npm run build
 
 ## GitHub Pages
 
-This repository includes a GitHub Pages build/deploy flow:
+This repository deploys to GitHub Pages through GitHub Actions after the `Tests`
+workflow succeeds on pushes to `main`.
+
+Relevant local scripts:
 
 ```bash
 npm run build:pages
@@ -79,6 +82,7 @@ npm run deploy:pages
 The Pages build uses the repository base path:
 
 - `/Space_idle_Clicker/`
+- GitHub workflow: [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml)
 
 ## Project Docs
 
