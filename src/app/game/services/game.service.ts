@@ -48,8 +48,6 @@ export class GameService {
   private tickInterval: ReturnType<typeof setInterval> | null = null;
   private saveInterval: ReturnType<typeof setInterval> | null = null;
 
-  readonly state$ = new BehaviorSubject<GameState>(this.buildDefaultState());
-
   readonly resources = RESOURCE_DEFS;
   readonly craftedItems = CRAFTED_DEFS;
   readonly upgrades = RESOURCE_UPGRADES;
@@ -57,6 +55,8 @@ export class GameService {
   readonly recipes = RECIPES;
   readonly planets = PLANETS;
   readonly shipParts = SHIP_PARTS;
+
+  readonly state$ = new BehaviorSubject<GameState>(this.buildDefaultState());
 
   init(): void {
     if (this.initialized) {
@@ -217,6 +217,10 @@ export class GameService {
     localStorage.removeItem(SAVE_KEY);
     this.state = this.buildDefaultState();
     this.emit();
+  }
+
+  hasSavedGame(): boolean {
+    return !!localStorage.getItem(SAVE_KEY);
   }
 
   exportSave(): string {

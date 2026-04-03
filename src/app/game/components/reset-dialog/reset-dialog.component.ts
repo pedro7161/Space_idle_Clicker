@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Output } from '@angular/core';
+import { GameMessagesService } from '../../i18n/game-messages';
 
 @Component({
   selector: 'app-reset-dialog',
@@ -9,4 +10,6 @@ import { Component, EventEmitter, Output } from '@angular/core';
 export class ResetDialogComponent {
   @Output() confirmed = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
+
+  constructor(public copy: GameMessagesService) {}
 }

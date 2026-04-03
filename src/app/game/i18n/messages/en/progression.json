@@ -1,0 +1,62 @@
+{
+  "upgradeTemplates": {
+    "cutters": {
+      "name": "Cutters",
+      "description": "Raise manual extraction strength for this resource on the current planet."
+    },
+    "survey": {
+      "name": "Survey Mapping",
+      "description": "Improve all yield for this resource on the current planet."
+    },
+    "lattice": {
+      "name": "Process Lattice",
+      "description": "Add a late-game efficiency layer for the same resource chain."
+    }
+  },
+  "automationTemplates": {
+    "rig": {
+      "name": "Field Rig",
+      "description": "A rugged extractor that keeps a basic stream running on this planet."
+    },
+    "array": {
+      "name": "Extraction Array",
+      "description": "A stabilized automation platform tuned to this resource chain."
+    }
+  },
+  "recipes": {
+    "condensed-carbon": {
+      "name": "Condense Carbon",
+      "description": "Compress raw carbon into a denser, more useful fuel block."
+    },
+    "refined-metal": {
+      "name": "Refine Metal",
+      "description": "Purify ferrite into standardized structural metal."
+    },
+    "oxygen-cells": {
+      "name": "Pack Oxygen Cells",
+      "description": "Stabilize oxygen into portable pressure and fuel cells."
+    },
+    "mechanical-parts": {
+      "name": "Assemble Mechanical Parts",
+      "description": "Combine refined material into machine-grade moving components."
+    },
+    "basic-circuits": {
+      "name": "Print Basic Circuits",
+      "description": "Build simple control boards for miners and ship systems."
+    }
+  },
+  "shipParts": {
+    "hull": {
+      "name": "Hull Frame",
+      "description": "A pressure-rated shell strong enough to survive launch."
+    },
+    "thrusters": {
+      "name": "Thruster Stack",
+      "description": "A patched propulsion system that can escape the first planet."
+    },
+    "guidance": {
+      "name": "Guidance Core",
+      "description": "Primitive avionics good enough for short interplanetary routes."
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "planets": {
+    "solara": {
+      "name": "Solara Basin",
+      "description": "The hostile starting world. Balanced yields, weak infrastructure, no margin for waste."
+    },
+    "ferros": {
+      "name": "Ferros Cradle",
+      "description": "A metallic world where ferrite veins are dense but fuel-bearing deposits are scarce."
+    },
+    "verdara": {
+      "name": "Verdara Drift",
+      "description": "A volatile atmosphere makes oxygen easy to harvest and ferrite harder to pull cleanly."
+    },
+    "cinder": {
+      "name": "Cinder Span",
+      "description": "An ash-choked furnace planet where carbon is plentiful and everything else fights back."
+    }
+  }
+}

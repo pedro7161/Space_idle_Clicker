@@ -2,14 +2,14 @@
   <section class="inventory-panel">
     <div class="inventory-header">
       <div>
-        <span class="eyebrow">Shared Inventory</span>
-        <h2>Cargo Ledger</h2>
+        <span class="eyebrow">{{ copy.messages.ui.upgradePanel.inventoryEyebrow }}</span>
+        <h2>{{ copy.messages.ui.upgradePanel.inventoryTitle }}</h2>
       </div>
       <span class="planet-name">{{ currentPlanet.name }}</span>
     </div>
 
     <div class="inventory-group">
-      <h3>Raw</h3>
+      <h3>{{ getInventoryGroupTitle('raw') }}</h3>
       <div class="inventory-grid">
         <div *ngFor="let resource of resources; trackBy: trackById" class="inventory-chip">
           <span class="inventory-chip__icon" [style.color]="resource.color">{{ resource.icon }}</span>
@@ -22,7 +22,7 @@
     </div>
 
     <div class="inventory-group">
-      <h3>Crafted</h3>
+      <h3>{{ getInventoryGroupTitle('crafted') }}</h3>
       <div class="inventory-grid">
         <div *ngFor="let item of craftedItems; trackBy: trackById" class="inventory-chip">
           <span class="inventory-chip__icon" [style.color]="item.color">{{ item.icon }}</span>
@@ -50,12 +50,12 @@
     <section *ngIf="activeTab === 'upgrades'" class="stack">
       <div *ngFor="let resource of resources; trackBy: trackById" class="group">
         <div class="group-header">
-          <h3>{{ resource.name }} Upgrades</h3>
-          <span>x{{ game.getPlanetMultiplier(currentPlanet.id, resource.id) }} on {{ currentPlanet.name }}</span>
+          <h3>{{ getResourceUpgradeTitle(resource) }}</h3>
+          <span>{{ getPlanetYieldLabel(resource) }}</span>
         </div>
 
         <div *ngIf="getResourceUpgrades(resource.id).length === 0" class="empty-state">
-          Mine more {{ resource.name.toLowerCase() }} to unlock this path.
+          {{ getMineMoreToUnlockLabel(resource) }}
         </div>
 
         <div *ngFor="let upgrade of getResourceUpgrades(resource.id); trackBy: trackById" class="card">
@@ -63,7 +63,7 @@
           <div class="card-copy">
             <div class="card-title">
               <strong>{{ upgrade.name }}</strong>
-              <span>Lv. {{ getUpgradeLevel(upgrade) }}/{{ upgrade.maxLevel }}</span>
+              <span>{{ getUpgradeLevelLabel(upgrade) }}</span>
             </div>
             <p>{{ upgrade.description }}</p>
 
@@ -83,7 +83,7 @@
             [disabled]="getUpgradeLevel(upgrade) >= upgrade.maxLevel || !game.canAfford(game.getUpgradeCost(upgrade))"
             (click)="buyUpgrade(upgrade)"
           >
-            Upgrade
+            {{ copy.messages.ui.upgradePanel.upgrade }}
           </button>
         </div>
       </div>
@@ -91,7 +91,7 @@
 
     <section *ngIf="activeTab === 'crafting'" class="stack">
       <div *ngIf="visibleRecipes.length === 0" class="empty-state wide">
-        Crafting unlocks once enough raw extraction has happened to support refinement.
+        {{ copy.messages.ui.upgradePanel.craftingUnlockHint }}
       </div>
 
       <div *ngFor="let recipe of visibleRecipes; trackBy: trackById" class="card">
@@ -99,7 +99,7 @@
         <div class="card-copy">
           <div class="card-title">
             <strong>{{ recipe.name }}</strong>
-            <span>+{{ recipe.outputAmount }} {{ getItemLabel(recipe.outputId) }}</span>
+            <span>{{ getCraftOutputLabel(recipe) }}</span>
           </div>
           <p>{{ recipe.description }}</p>
           <div class="cost-row">
@@ -112,25 +112,29 @@
             </span>
           </div>
         </div>
-        <button class="action-btn" [disabled]="!game.canAfford(recipe.ingredients)" (click)="craft(recipe)">
-          Craft
-        </button>
+        <button class="action-btn" [disabled]="!game.canAfford(recipe.ingredients)" (click)="craft(recipe)">{{ copy.messages.ui.upgradePanel.craft }}</button>
       </div>
     </section>
 
     <section *ngIf="activeTab === 'automation'" class="stack">
       <div *ngIf="visibleAutoMiners.length === 0" class="empty-state wide">
-        Automation opens after the early manual loop starts feeding refined materials.
+        {{ copy.messages.ui.upgradePanel.automationUnlockHint }}
       </div>
 
       <div *ngFor="let resource of resources; trackBy: trackById" class="group">
         <div class="group-header">
-          <h3>{{ resource.name }} Automation</h3>
-          <span>{{ game.getAutoRateForPlanetResource(currentPlanet.id, resource.id) | formatNumber }}/sec here</span>
+          <h3>{{ getResourceAutomationTitle(resource) }}</h3>
+          <span>{{ getAutomationOutputHereLabel(resource) }}</span>
         </div>
 
         <div *ngIf="getMinersForResource(resource.id).length === 0" class="empty-state">
-          No automation unlocked for this resource yet.
+          <p>{{ getAutomationUnlockTitle(resource) }}</p>
+          <span
+            *ngFor="let requirement of getAutomationUnlockRequirements(resource); trackBy: trackByText"
+            class="empty-state__requirement"
+          >
+            {{ requirement }}
+          </span>
         </div>
 
         <div *ngFor="let miner of getMinersForResource(resource.id); trackBy: trackById" class="card">
@@ -142,7 +146,7 @@
             </div>
             <p>{{ miner.description }}</p>
             <div class="subline" *ngIf="getAutoMinerCount(miner) > 0">
-              {{ getAutoMinerOutput(miner) | formatNumber }}/sec on {{ currentPlanet.name }}
+              {{ getAutomationOutputOnPlanetLabel(miner) }}
             </div>
             <div class="cost-row">
               <span
@@ -154,9 +158,7 @@
               </span>
             </div>
           </div>
-          <button class="action-btn" [disabled]="!game.canAfford(game.getAutoMinerCost(miner))" (click)="buyAutoMiner(miner)">
-            Build
-          </button>
+          <button class="action-btn" [disabled]="!game.canAfford(game.getAutoMinerCost(miner))" (click)="buyAutoMiner(miner)">{{ copy.messages.ui.upgradePanel.build }}</button>
         </div>
       </div>
     </section>
@@ -164,8 +166,8 @@
     <section *ngIf="activeTab === 'launch'" class="stack">
       <div class="group">
         <div class="group-header">
-          <h3>Ship Assembly</h3>
-          <span>{{ state.builtShipPartIds.length }}/{{ shipParts.length }} complete</span>
+          <h3>{{ copy.messages.ui.upgradePanel.shipAssembly }}</h3>
+          <span>{{ getShipAssemblyProgressLabel() }}</span>
         </div>
 
         <div *ngFor="let part of shipParts; trackBy: trackById" class="card">
@@ -173,7 +175,7 @@
           <div class="card-copy">
             <div class="card-title">
               <strong>{{ part.name }}</strong>
-              <span *ngIf="game.isShipPartBuilt(part.id)">Built</span>
+              <span *ngIf="game.isShipPartBuilt(part.id)">{{ copy.messages.ui.upgradePanel.built }}</span>
             </div>
             <p>{{ part.description }}</p>
             <div class="cost-row">
@@ -187,19 +189,19 @@
             </div>
           </div>
           <button class="action-btn" [disabled]="!canBuildShipPart(part)" (click)="buildShipPart(part)">
-            {{ game.isShipPartBuilt(part.id) ? 'Built' : 'Build' }}
+            {{ game.isShipPartBuilt(part.id) ? copy.messages.ui.upgradePanel.built : copy.messages.ui.upgradePanel.build }}
           </button>
         </div>
 
         <button class="launch-btn" [disabled]="state.shipLaunched || !game.canLaunchShip()" (click)="launchShip()">
-          {{ state.shipLaunched ? 'First Ship Launched' : 'Launch First Ship' }}
+          {{ getLaunchButtonLabel() }}
         </button>
       </div>
 
       <div class="group">
         <div class="group-header">
-          <h3>Planet Routes</h3>
-          <span *ngIf="!state.shipLaunched">Launch required</span>
+          <h3>{{ copy.messages.ui.upgradePanel.planetRoutes }}</h3>
+          <span *ngIf="!state.shipLaunched">{{ copy.messages.ui.upgradePanel.launchRequired }}</span>
         </div>
 
         <div *ngFor="let planet of planets; trackBy: trackById" class="card planet-card">
@@ -207,8 +209,7 @@
           <div class="card-copy">
             <div class="card-title">
               <strong>{{ planet.name }}</strong>
-              <span *ngIf="planet.id === currentPlanet.id">Current</span>
-              <span *ngIf="planet.id !== currentPlanet.id && game.isPlanetDiscovered(planet.id)">Discovered</span>
+              <span *ngIf="getPlanetStatusLabel(planet)">{{ getPlanetStatusLabel(planet) }}</span>
             </div>
             <p>{{ planet.description }}</p>
             <div class="cost-row" *ngIf="planet.travelCost.length > 0 && !game.isPlanetDiscovered(planet.id)">
@@ -226,7 +227,7 @@
             [disabled]="!game.canTravelToPlanet(planet.id)"
             (click)="travelToPlanet(planet)"
           >
-            {{ planet.id === currentPlanet.id ? 'Here' : game.isPlanetDiscovered(planet.id) ? 'Travel' : 'Discover' }}
+            {{ getPlanetActionLabel(planet) }}
           </button>
         </div>
       </div>

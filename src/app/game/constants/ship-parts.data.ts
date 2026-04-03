@@ -1,10 +1,13 @@
 import { ShipPart } from '../models';
+import { GAME_MESSAGES } from '../i18n/game-messages';
+
+const shipPartMessages = GAME_MESSAGES.progression.shipParts;
 
 export const SHIP_PARTS: ShipPart[] = [
   {
     id: 'hull',
-    name: 'Hull Frame',
-    description: 'A pressure-rated shell strong enough to survive launch.',
+    name: shipPartMessages.hull.name,
+    description: shipPartMessages.hull.description,
     cost: [
       { itemId: 'refinedMetal', amount: 8 },
       { itemId: 'mechanicalParts', amount: 4 },
@@ -14,8 +17,8 @@ export const SHIP_PARTS: ShipPart[] = [
   },
   {
     id: 'thrusters',
-    name: 'Thruster Stack',
-    description: 'A patched propulsion system that can escape the first planet.',
+    name: shipPartMessages.thrusters.name,
+    description: shipPartMessages.thrusters.description,
     cost: [
       { itemId: 'condensedCarbon', amount: 6 },
       { itemId: 'oxygenCells', amount: 6 },
@@ -26,8 +29,8 @@ export const SHIP_PARTS: ShipPart[] = [
   },
   {
     id: 'guidance',
-    name: 'Guidance Core',
-    description: 'Primitive avionics good enough for short interplanetary routes.',
+    name: shipPartMessages.guidance.name,
+    description: shipPartMessages.guidance.description,
     cost: [
       { itemId: 'basicCircuits', amount: 4 },
       { itemId: 'refinedMetal', amount: 4 },

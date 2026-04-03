@@ -1,23 +1,61 @@
-<app-stats-header
-  (resetRequested)="showResetDialog = true"
-  (saveTransferRequested)="openSaveTransferDialog()"
-></app-stats-header>
+<section *ngIf="!hasStarted" class="start-screen">
+  <div class="start-screen__panel">
+    <div class="start-screen__eyebrow">{{ copy.messages.ui.startScreen.eyebrow }}</div>
+    <h1>{{ copy.messages.ui.startScreen.title }}</h1>
+    <p>{{ copy.messages.ui.startScreen.description }}</p>
 
-<div class="main">
-  <app-planet-view></app-planet-view>
-  <app-upgrade-panel></app-upgrade-panel>
-</div>
+    <div *ngIf="hasSavedGame" class="start-screen__pill">
+      {{ copy.messages.ui.startScreen.saveDetected }}
+    </div>
 
-<app-reset-dialog
-  *ngIf="showResetDialog"
-  (confirmed)="onResetConfirmed()"
-  (cancelled)="showResetDialog = false"
-></app-reset-dialog>
+    <div class="start-screen__actions">
+      <button class="start-screen__primary" (click)="startGame()">
+        {{ copy.messages.ui.startScreen.start }}
+      </button>
 
-<app-save-transfer-dialog
-  *ngIf="showSaveTransferDialog"
-  #saveTransferDialog
-  [exportValue]="exportSaveValue"
-  (closed)="showSaveTransferDialog = false"
-  (importRequested)="handleImport(saveTransferDialog, $event)"
-></app-save-transfer-dialog>
+      <button *ngIf="hasSavedGame" class="start-screen__secondary" (click)="startFresh()">
+        {{ copy.messages.ui.startScreen.newRun }}
+      </button>
+
+      <label class="start-screen__secondary start-screen__import">
+        {{ copy.messages.ui.startScreen.importFile }}
+        <input type="file" accept=".json,.txt" (change)="importSaveFile($event)" />
+      </label>
+    </div>
+
+    <p
+      *ngIf="startScreenMessage"
+      class="start-screen__message"
+      [class.success]="startScreenTone === 'success'"
+      [class.error]="startScreenTone === 'error'"
+    >
+      {{ startScreenMessage }}
+    </p>
+  </div>
+</section>
+
+<ng-container *ngIf="hasStarted">
+  <app-stats-header
+    (resetRequested)="showResetDialog = true"
+    (saveTransferRequested)="openSaveTransferDialog()"
+  ></app-stats-header>
+
+  <div class="main">
+    <app-planet-view></app-planet-view>
+    <app-upgrade-panel></app-upgrade-panel>
+  </div>
+
+  <app-reset-dialog
+    *ngIf="showResetDialog"
+    (confirmed)="onResetConfirmed()"
+    (cancelled)="showResetDialog = false"
+  ></app-reset-dialog>
+
+  <app-save-transfer-dialog
+    *ngIf="showSaveTransferDialog"
+    #saveTransferDialog
+    [exportValue]="exportSaveValue"
+    (closed)="showSaveTransferDialog = false"
+    (importRequested)="handleImport(saveTransferDialog, $event)"
+  ></app-save-transfer-dialog>
+</ng-container>

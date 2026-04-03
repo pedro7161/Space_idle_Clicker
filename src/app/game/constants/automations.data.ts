@@ -1,4 +1,7 @@
 import { AutoMiner, ResourceId } from '../models';
+import { GAME_MESSAGES } from '../i18n/game-messages';
+
+const automationMessages = GAME_MESSAGES.progression.automationTemplates;
 
 interface MinerTemplate {
   suffix: string;
@@ -15,8 +18,8 @@ interface MinerTemplate {
 const MINER_TEMPLATES: MinerTemplate[] = [
   {
     suffix: 'rig',
-    name: 'Field Rig',
-    description: 'A rugged extractor that keeps a basic stream running on this planet.',
+    name: automationMessages.rig.name,
+    description: automationMessages.rig.description,
     perSecond: 0.8,
     baseCost: resourceId => [
       { itemId: resourceId, amount: 30 },
@@ -28,8 +31,8 @@ const MINER_TEMPLATES: MinerTemplate[] = [
   },
   {
     suffix: 'array',
-    name: 'Extraction Array',
-    description: 'A stabilized automation platform tuned to this resource chain.',
+    name: automationMessages.array.name,
+    description: automationMessages.array.description,
     perSecond: 4,
     baseCost: resourceId => [
       { itemId: resourceId, amount: 90 },
@@ -44,9 +47,9 @@ const MINER_TEMPLATES: MinerTemplate[] = [
 ];
 
 const RESOURCE_LABELS: Record<ResourceId, string> = {
-  carbon: 'Carbon',
-  ferrite: 'Ferrite',
-  oxygen: 'Oxygen',
+  carbon: GAME_MESSAGES.resources.raw.carbon.name,
+  ferrite: GAME_MESSAGES.resources.raw.ferrite.name,
+  oxygen: GAME_MESSAGES.resources.raw.oxygen.name,
 };
 
 const RESOURCE_IDS: ResourceId[] = ['carbon', 'ferrite', 'oxygen'];

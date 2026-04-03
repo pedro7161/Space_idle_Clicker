@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { GameMessagesService } from '../../i18n/game-messages';
 
 @Component({
   selector: 'app-save-transfer-dialog',
@@ -18,12 +19,14 @@ export class SaveTransferDialogComponent {
   feedbackMessage = '';
   feedbackTone: 'neutral' | 'success' | 'error' = 'neutral';
 
+  constructor(public copy: GameMessagesService) {}
+
   async copyExport(): Promise<void> {
     try {
       await navigator.clipboard.writeText(this.exportValue);
-      this.setFeedback('Save code copied to clipboard.', 'success');
+      this.setFeedback(this.copy.messages.ui.saveTransferDialog.copySuccess, 'success');
     } catch {
-      this.setFeedback('Clipboard access failed. Copy the save code manually.', 'error');
+      this.setFeedback(this.copy.messages.ui.saveTransferDialog.copyError, 'error');
     }
   }
 
