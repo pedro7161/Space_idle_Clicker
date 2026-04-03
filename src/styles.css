@@ -73,7 +73,7 @@ app-root {
 
 .floating-text {
   position: absolute;
-  z-index: 3;
+  z-index: 20;
   font-size: 1.25rem;
   font-weight: 700;
   text-shadow: 0 0 14px currentColor;

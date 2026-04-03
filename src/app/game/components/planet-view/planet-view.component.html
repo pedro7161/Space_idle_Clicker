@@ -40,9 +40,9 @@
     </aside>
   </section>
 
-  <div class="relative my-4 grid flex-1 place-items-center cursor-pointer" [class.mine-pulse]="mineAnimating" (click)="onMineClick($event)">
+  <div class="relative my-4 grid flex-1 place-items-center cursor-pointer select-none" [class.mine-pulse]="mineAnimating" (click)="onMineClick($event)">
     <div
-      class="relative z-10 w-[min(32rem,88%)] rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.08),transparent_50%),rgba(8,15,26,0.62)] px-8 py-8 text-center shadow-[0_30px_80px_rgba(2,6,23,0.45),inset_0_0_80px_rgba(255,255,255,0.025)] backdrop-blur-xl min-[1600px]:w-[min(38rem,72%)] min-[1600px]:rounded-[2.35rem] min-[1600px]:px-10 min-[1600px]:py-10 min-[1900px]:w-[min(44rem,68%)] min-[1900px]:px-12 min-[1900px]:py-11 max-[820px]:w-full max-[820px]:px-5 max-[820px]:py-6"
+      class="relative z-10 w-[min(32rem,88%)] rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.08),transparent_50%),rgba(8,15,26,0.62)] px-8 py-8 text-center shadow-[0_30px_80px_rgba(2,6,23,0.45),inset_0_0_80px_rgba(255,255,255,0.025)] backdrop-blur-xl min-[1600px]:w-[min(38rem,72%)] min-[1600px]:rounded-[2.35rem] min-[1600px]:px-10 min-[1600px]:py-10 min-[1900px]:w-[min(44rem,68%)] min-[1900px]:px-12 min-[1900px]:py-11 max-[820px]:w-full max-[820px]:px-5 max-[820px]:py-6"
     >
       <div class="text-[0.74rem] uppercase tracking-[0.2em] text-slate-400 min-[1600px]:text-[0.82rem]">
         {{ copy.messages.ui.planetView.manualMining }}
