@@ -20,6 +20,35 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: '0.6.3',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Fleet Filters and Orbital Route Targets',
+      pt: 'Filtros da Frota e Alvos de Rota Orbitais',
+    },
+    summary: {
+      en: 'Fleet Command now filters ships by activity and planet traffic, stations can act as route endpoints, and orbit spacing reads less uniformly on the map.',
+      pt: 'O Comando da Frota passa agora a filtrar naves por atividade e tráfego planetário, as estações podem servir como destinos de rota, e o espaçamento orbital fica menos uniforme no mapa.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'Route filters in Fleet Command for working ships, idle ships, docked ships, in-transit ships, and planet-specific sending or receiving traffic.',
+        pt: 'Filtros de rotas no Comando da Frota para naves em trabalho, paradas, atracadas, em trânsito, e tráfego específico de envio ou receção por planeta.',
+      },
+      {
+        type: 'added',
+        en: 'Orbital stations now act as selectable logistics endpoints with their own inventory layer, and the overview tracks stock on surfaces, stations, and ships.',
+        pt: 'As estações orbitais passam agora a servir como destinos logísticos selecionáveis com a sua própria camada de inventário, e a visão geral acompanha o stock nas superfícies, nas estações e nas naves.',
+      },
+      {
+        type: 'changed',
+        en: 'System map orbit spacing now uses uneven orbital positions so route distance labels and world spacing read less like a perfect ladder.',
+        pt: 'O espaçamento orbital no mapa do sistema passa agora a usar posições orbitais desiguais para que as distâncias das rotas e o espaçamento dos mundos pareçam menos uma escada perfeita.',
+      },
+    ],
+  },
+  {
     version: '0.6.2',
     releasedAt: '2026-04-04',
     title: {

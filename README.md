@@ -2,7 +2,7 @@
 
 Frontier Miner is a browser-based incremental resource game built with Angular.
 
-The game starts on a safe frontier world where the player manually mines raw materials, unlocks crafting, builds automation, and works toward assembling a first ship. It now pushes into a broader multi-planet production game where worlds have local inventories, raw-resource specialization, tier-gated travel, route-based shipping, orbital stations, and a late frontier built around uranium-heavy progression.
+The game starts on a safe frontier world where the player manually mines raw materials, unlocks crafting, builds automation, and works toward assembling a first ship. It now pushes into a broader multi-planet production game where worlds have local surface inventories, orbital stations hold their own stock, ships carry live cargo between endpoints, and late-frontier planets drive the uranium-tier economy.
 
 ## Game Idea
 
@@ -15,7 +15,7 @@ The core loop is:
 5. Assemble and launch the first ship.
 6. Open the operations deck to manage local resources, upgrades, crafting, automation, and launch planning in a larger workspace.
 7. Expand into a broader interplanetary economy with route-based logistics.
-8. Build orbital stations to improve cargo throughput and prepare future hub systems.
+8. Build orbital stations to create new logistics destinations, separate orbital storage, and improve cargo throughput.
 9. Push into deeper planets for titanium, rare crystal, and uranium to drive late-game scaling.
 
 The design is meant to focus on bottlenecks and tradeoffs rather than passive growth from the start. The player is expected to switch focus often depending on which material is currently blocking progress.
@@ -28,6 +28,7 @@ The current prototype includes:
 - multiple raw and crafted resources
 - specialized deep-frontier resources including copper, silica, hydrogen, titanium, rare crystal, and uranium
 - planet-local resource inventories
+- orbital-station inventories and ship cargo that hold live network stock outside the planet surface
 - staged resource upgrades that only surface the next active one or two cards at a time
 - resource and planet-based upgrades with stronger late-game scaling
 - automation unlocks
@@ -35,11 +36,11 @@ The current prototype includes:
 - ship-part construction and first-launch progression
 - multiple ship tiers with different cargo and speed tradeoffs
 - higher-tier ships required for deeper planets
-- dedicated overview workspace for network totals and per-planet stock
-- dedicated fleet management workspace
+- dedicated overview workspace for network totals plus per-planet, per-station, and fleet-cargo stock
+- dedicated fleet management workspace with route filters for activity and planet traffic
 - expandable operations workspace with dedicated resources, upgrades, crafting, automation, and launch tabs
-- repeatable ship logistics routes between planets
-- orbital station construction on discovered planets
+- repeatable ship logistics routes between planetary surfaces and orbital stations
+- orbital station construction on discovered planets with separate orbital storage
 - collapsible top command header to free vertical space
 - in-game changelog viewer
 - save/load through local storage
@@ -51,9 +52,9 @@ The current prototype includes:
 The current playable structure looks like this:
 
 1. `Solara Basin` teaches the basic loop with local mining, early crafting, automation, and first-ship assembly.
-2. The first launch unlocks fleet management and lets the player move materials between discovered planets.
+2. The first launch unlocks fleet management and lets the player move materials between discovered planets and orbital stations.
 3. Mid-system worlds specialize into chains such as copper, silica, hydrogen, and titanium.
-4. Orbital stations improve shipping efficiency and prepare planets for future hub-style logistics.
+4. Orbital stations split surface stock from orbital stock, open new route targets, and improve shipping efficiency.
 5. Deep frontier progression ends in `Helion Breach`, a highest-tier uranium world meant to justify much stronger upgrade returns.
 
 Planned direction:
@@ -67,8 +68,8 @@ Planned direction:
 ## Tech Stack
 
 - Angular 17
-- TypeScript
-- Tailwind CSS
+- TypeScript 5.2
+- Tailwind CSS 3.4
 
 ## Run Locally
 
@@ -110,4 +111,4 @@ Repo-level project documentation lives here:
 
 ## Status
 
-This project is still evolving. The current codebase already reflects the mining, overview, crafting, automation, ship-building, route logistics, orbital-station support, deep-resource planets, and uranium-tier progression loop, but broader hub systems and later-game economy layers are still in progress.
+This project is still evolving. The current codebase already reflects the mining, overview, crafting, automation, ship-building, filtered fleet command, surface-and-station route logistics, deep-resource planets, and uranium-tier progression loop, but broader hub automation and later-game economy layers are still in progress.

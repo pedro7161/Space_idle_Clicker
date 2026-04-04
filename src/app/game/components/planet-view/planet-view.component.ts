@@ -3,7 +3,7 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
-import { FloatingText, ItemId, Planet, ResourceDef } from '../../models';
+import { FloatingText, ItemId, Planet, ResourceDef, createStationLocation } from '../../models';
 import { GameMessagesService } from '../../i18n/game-messages';
 
 interface MineralNode {
@@ -106,19 +106,19 @@ export class PlanetViewComponent implements OnInit {
 
   get stationLinkedRoutesLabel(): string {
     return this.copy.format(this.copy.messages.ui.planetView.stationRoutes, {
-      count: this.game.getPlanetRouteCount(this.currentPlanet.id),
+      count: this.game.getLocationRouteCount(createStationLocation(this.currentPlanet.id)),
     });
   }
 
   get stationInboundRoutesLabel(): string {
     return this.copy.format(this.copy.messages.ui.planetView.stationInbound, {
-      count: this.game.getPlanetRouteCount(this.currentPlanet.id, 'inbound'),
+      count: this.game.getLocationRouteCount(createStationLocation(this.currentPlanet.id), 'inbound'),
     });
   }
 
   get stationOutboundRoutesLabel(): string {
     return this.copy.format(this.copy.messages.ui.planetView.stationOutbound, {
-      count: this.game.getPlanetRouteCount(this.currentPlanet.id, 'outbound'),
+      count: this.game.getLocationRouteCount(createStationLocation(this.currentPlanet.id), 'outbound'),
     });
   }
 

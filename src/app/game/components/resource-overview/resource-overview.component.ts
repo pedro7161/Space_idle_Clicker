@@ -31,6 +31,10 @@ export class ResourceOverviewComponent {
     return this.game.getDiscoveredPlanets();
   }
 
+  get trackedStations(): Planet[] {
+    return this.trackedPlanets.filter(planet => this.game.hasSpaceStation(planet.id));
+  }
+
   get totalTrackedPlanets(): number {
     return this.trackedPlanets.length;
   }
@@ -46,5 +50,25 @@ export class ResourceOverviewComponent {
 
   getPlanetAmount(itemId: ItemId, planetId: string): number {
     return this.game.getInventoryAmount(itemId, planetId);
+  }
+
+  getStationAmount(itemId: ItemId, planetId: string): number {
+    return this.game.getStationInventoryAmount(itemId, planetId);
+  }
+
+  getFleetCargoAmount(itemId: ItemId): number {
+    return this.game.getFleetCargoAmount(itemId);
+  }
+
+  getPlanetStorageLabel(planet: Planet): string {
+    return this.copy.format(this.copy.messages.ui.resourceOverview.surfaceStorage, {
+      planet: planet.name,
+    });
+  }
+
+  getStationStorageLabel(planet: Planet): string {
+    return this.copy.format(this.copy.messages.ui.resourceOverview.stationStorage, {
+      planet: planet.name,
+    });
   }
 }

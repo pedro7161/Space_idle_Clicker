@@ -2,6 +2,7 @@ export type { Automation } from './automation.model';
 export type { AutoMiner } from './auto-miner.model';
 export type { FloatingText } from './floating-text.model';
 export type { GameState } from './game-state.model';
+export type { LogisticsLocation, LogisticsLocationKind } from './logistics-location.model';
 export type { Multiplier, MultiplierType } from './multiplier.model';
 export type { Planet } from './planet.model';
 export type { Recipe } from './recipe.model';
@@ -18,3 +19,10 @@ export type {
 export type { OwnedShip, Ship, ShipRoute, ShipStatus, ShipTransit } from './ship.model';
 export type { ShipPart } from './ship-part.model';
 export type { Tool } from './tool.model';
+export {
+  createPlanetLocation,
+  createStationLocation,
+  encodeLogisticsLocation,
+  isSameLogisticsLocation,
+  parseLogisticsLocation,
+} from './logistics-location.model';

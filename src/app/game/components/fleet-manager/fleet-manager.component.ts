@@ -5,13 +5,30 @@ import { FormsModule } from '@angular/forms';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameMessagesService } from '../../i18n/game-messages';
 import { GameService } from '../../services/game.service';
-import { ItemId, OwnedShip, Planet, Ship, ShipRoute } from '../../models';
+import {
+  ItemId,
+  LogisticsLocation,
+  LogisticsLocationKind,
+  OwnedShip,
+  Planet,
+  Ship,
+  ShipRoute,
+  encodeLogisticsLocation,
+  parseLogisticsLocation,
+} from '../../models';
 
 interface RouteDraft {
-  originPlanetId: string;
-  destinationPlanetId: string;
+  originLocationId: string;
+  destinationLocationId: string;
   itemId: ItemId;
   keepMinimum: number;
+}
+
+interface RouteLocationOption {
+  id: string;
+  label: string;
+  location: LogisticsLocation;
+  planet: Planet;
 }
 
 interface MapSegment {
@@ -22,6 +39,8 @@ interface MapSegment {
 }
 
 type FleetSection = 'routes' | 'shipyard' | 'stats';
+type FleetActivityFilter = 'all' | 'working' | 'idle' | 'docked' | 'transit';
+type FleetPlanetTrafficFilter = 'any' | 'sending' | 'receiving';
 
 interface FleetSectionDef {
   key: FleetSection;
@@ -37,6 +56,9 @@ interface FleetSectionDef {
 export class FleetManagerComponent implements OnInit {
   activeSection: FleetSection = 'routes';
   currentTime = Date.now();
+  routeActivityFilter: FleetActivityFilter = 'all';
+  routePlanetFilterId = 'all';
+  routePlanetTrafficFilter: FleetPlanetTrafficFilter = 'any';
   readonly sections: FleetSectionDef[];
   readonly routeDrafts: Record<string, RouteDraft> = {};
   private readonly destroyRef = inject(DestroyRef);
@@ -61,6 +83,7 @@ export class FleetManagerComponent implements OnInit {
       .subscribe(() => {
         this.currentTime = Date.now();
         this.syncRouteDrafts();
+        this.normalizeRouteFilters();
       });
   }
 
@@ -96,8 +119,21 @@ export class FleetManagerComponent implements OnInit {
     return this.game.getState().shipRoutes.filter(route => route.enabled);
   }
 
+  get filteredMappedRoutes(): ShipRoute[] {
+    const visibleShipIds = new Set(this.filteredShips.map(ship => ship.id));
+    return this.mappedRoutes.filter(route => visibleShipIds.has(route.shipId));
+  }
+
   get transitShips(): OwnedShip[] {
     return this.ships.filter(ship => !!ship.transit);
+  }
+
+  get filteredShips(): OwnedShip[] {
+    return this.ships.filter(ship => this.matchesActivityFilter(ship) && this.matchesPlanetFilter(ship));
+  }
+
+  get filteredTransitShips(): OwnedShip[] {
+    return this.filteredShips.filter(ship => !!ship.transit);
   }
 
   get assignedShipsCount(): number {
@@ -110,6 +146,16 @@ export class FleetManagerComponent implements OnInit {
 
   get highestTier(): number {
     return this.game.getHighestOwnedShipTier();
+  }
+
+  get routeFilterPlanets(): Planet[] {
+    return this.mapPlanets;
+  }
+
+  get hasActiveRouteFilters(): boolean {
+    return this.routeActivityFilter !== 'all'
+      || this.routePlanetFilterId !== 'all'
+      || this.routePlanetTrafficFilter !== 'any';
   }
 
   get transportItems(): Array<{ id: ItemId; name: string; color: string }> {
@@ -128,7 +174,7 @@ export class FleetManagerComponent implements OnInit {
   }
 
   canConfigureRoutes(): boolean {
-    return this.discoveredPlanets.length >= 2;
+    return this.availableLocationOptions.length >= 2;
   }
 
   getShipDefinition(ship: OwnedShip): Ship {
@@ -154,15 +200,18 @@ export class FleetManagerComponent implements OnInit {
   getShipLocationLabel(ship: OwnedShip): string {
     const messages = this.copy.messages.ui.fleetManager;
     if (ship.transit) {
-      const destination = this.game.getPlanet(ship.transit.toPlanetId);
       return this.copy.format(messages.enRouteTo, {
-        planet: destination?.name ?? ship.transit.toPlanetId,
+        planet: this.getLocationLabelFromFields(ship.transit.toPlanetId, ship.transit.toKind),
       });
     }
 
-    const planet = ship.currentPlanetId ? this.game.getPlanet(ship.currentPlanetId) : null;
     return this.copy.format(messages.dockedAt, {
-      planet: planet?.name ?? this.game.getCurrentPlanet().name,
+      planet: this.getShipLocationId(ship)
+        ? this.getLocationLabelFromFields(
+          ship.currentPlanetId ?? this.game.getCurrentPlanet().id,
+          ship.currentLocationKind ?? 'planet',
+        )
+        : this.game.getCurrentPlanet().name,
     });
   }
 
@@ -223,6 +272,18 @@ export class FleetManagerComponent implements OnInit {
     });
   }
 
+  getFilteredTransitTrafficLabel(): string {
+    return this.copy.format(this.copy.messages.ui.fleetManager.mapTransitTraffic, {
+      ships: this.filteredTransitShips.length,
+    });
+  }
+
+  getVisibleShipsLabel(): string {
+    return this.copy.format(this.copy.messages.ui.fleetManager.filteredShips, {
+      ships: this.filteredShips.length,
+    });
+  }
+
   getCargoCapacityLabel(ship: Ship): string {
     return this.copy.format(this.copy.messages.ui.fleetManager.cargoCapacity, {
       capacity: ship.cargoCapacity,
@@ -253,14 +314,18 @@ export class FleetManagerComponent implements OnInit {
     return this.game.craftedItems.find(item => item.id === itemId)?.color ?? '#cbd5e1';
   }
 
-  getDestinationOptions(ship: OwnedShip): Planet[] {
+  getOriginOptions(ship: OwnedShip): RouteLocationOption[] {
+    return this.getReachableLocationOptions(ship);
+  }
+
+  getDestinationOptions(ship: OwnedShip): RouteLocationOption[] {
     const draft = this.getRouteDraft(ship);
-    return this.getReachableDestinationOptions(ship, draft.originPlanetId);
+    return this.getReachableDestinationOptions(ship, draft.originLocationId);
   }
 
   getRequiredTierLabel(ship: OwnedShip): string | null {
     const draft = this.getRouteDraft(ship);
-    const destination = this.game.getPlanet(draft.destinationPlanetId);
+    const destination = this.findLocationOption(draft.destinationLocationId)?.planet;
     const definition = this.getShipDefinition(ship);
     if (!destination || definition.tier >= destination.requiredShipTier) {
       return null;
@@ -277,13 +342,13 @@ export class FleetManagerComponent implements OnInit {
     }
 
     const draft = this.getRouteDraft(ship);
-    const origin = this.game.getPlanet(draft.originPlanetId);
-    const destination = this.game.getPlanet(draft.destinationPlanetId);
+    const origin = this.findLocationOption(draft.originLocationId);
+    const destination = this.findLocationOption(draft.destinationLocationId);
     const definition = this.getShipDefinition(ship);
     return !!origin
       && !!destination
       && origin.id !== destination.id
-      && definition.tier >= destination.requiredShipTier;
+      && definition.tier >= destination.planet.requiredShipTier;
   }
 
   buildShip(definition: Ship): void {
@@ -292,10 +357,16 @@ export class FleetManagerComponent implements OnInit {
 
   saveRoute(ship: OwnedShip): void {
     const draft = this.getRouteDraft(ship);
+    const origin = this.parseLocationId(draft.originLocationId);
+    const destination = this.parseLocationId(draft.destinationLocationId);
+    if (!origin || !destination) {
+      return;
+    }
+
     this.game.saveShipRoute({
       shipId: ship.id,
-      originPlanetId: draft.originPlanetId,
-      destinationPlanetId: draft.destinationPlanetId,
+      origin,
+      destination,
       itemId: draft.itemId,
       keepMinimum: draft.keepMinimum,
     });
@@ -317,11 +388,9 @@ export class FleetManagerComponent implements OnInit {
       return this.copy.messages.ui.fleetManager.unassigned;
     }
 
-    const origin = this.game.getPlanet(route.originPlanetId);
-    const destination = this.game.getPlanet(route.destinationPlanetId);
     return this.copy.format(this.copy.messages.ui.fleetManager.routeSummary, {
-      origin: origin?.name ?? route.originPlanetId,
-      destination: destination?.name ?? route.destinationPlanetId,
+      origin: this.getLocationLabelFromFields(route.originPlanetId, route.originKind),
+      destination: this.getLocationLabelFromFields(route.destinationPlanetId, route.destinationKind),
       item: this.getItemLabel(route.itemId),
     });
   }
@@ -342,7 +411,7 @@ export class FleetManagerComponent implements OnInit {
   }
 
   getDockedShipCount(planetId: string): number {
-    return this.ships.filter(ship => !ship.transit && ship.currentPlanetId === planetId).length;
+    return this.filteredShips.filter(ship => !ship.transit && ship.currentPlanetId === planetId).length;
   }
 
   getDockedShipLabel(planetId: string): string {
@@ -352,15 +421,15 @@ export class FleetManagerComponent implements OnInit {
   }
 
   getPlanetPositionPercent(planet: Planet | string): number {
-    const orbitIndex = typeof planet === 'string'
-      ? this.game.getPlanet(planet)?.orbitIndex ?? 0
-      : planet.orbitIndex;
+    const orbitPosition = typeof planet === 'string'
+      ? this.game.getPlanet(planet)?.orbitPosition ?? 0
+      : planet.orbitPosition;
 
-    if (this.maxOrbitIndex <= 0) {
+    if (this.maxOrbitPosition <= 0) {
       return 50;
     }
 
-    return 8 + (orbitIndex / this.maxOrbitIndex) * 84;
+    return 8 + (orbitPosition / this.maxOrbitPosition) * 84;
   }
 
   getPlanetMarkerTopPercent(index: number): number {
@@ -413,15 +482,26 @@ export class FleetManagerComponent implements OnInit {
   }
 
   getRouteMapLabel(route: ShipRoute): string {
-    const origin = this.game.getPlanet(route.originPlanetId);
-    const destination = this.game.getPlanet(route.destinationPlanetId);
     const summary = this.copy.format(this.copy.messages.ui.fleetManager.routeSummary, {
-      origin: origin?.name ?? route.originPlanetId,
-      destination: destination?.name ?? route.destinationPlanetId,
+      origin: this.getLocationLabelFromFields(route.originPlanetId, route.originKind),
+      destination: this.getLocationLabelFromFields(route.destinationPlanetId, route.destinationKind),
       item: this.getItemLabel(route.itemId),
     });
     const distance = this.getDistanceLabel(route.originPlanetId, route.destinationPlanetId);
     return distance ? `${summary} · ${distance}` : summary;
+  }
+
+  updateRoutePlanetFilter(planetId: string): void {
+    this.routePlanetFilterId = planetId;
+    if (planetId === 'all') {
+      this.routePlanetTrafficFilter = 'any';
+    }
+  }
+
+  clearRouteFilters(): void {
+    this.routeActivityFilter = 'all';
+    this.routePlanetFilterId = 'all';
+    this.routePlanetTrafficFilter = 'any';
   }
 
   updateRouteDraft<K extends keyof RouteDraft>(shipId: string, key: K, value: RouteDraft[K]): void {
@@ -455,6 +535,18 @@ export class FleetManagerComponent implements OnInit {
     });
   }
 
+  private normalizeRouteFilters(): void {
+    if (this.routePlanetFilterId === 'all') {
+      this.routePlanetTrafficFilter = 'any';
+      return;
+    }
+
+    const selectedPlanetStillVisible = this.routeFilterPlanets.some(planet => planet.id === this.routePlanetFilterId);
+    if (!selectedPlanetStillVisible) {
+      this.clearRouteFilters();
+    }
+  }
+
   private getDistanceLabel(fromPlanetId: string, toPlanetId: string): string | null {
     const distance = this.game.getPlanetDistance(fromPlanetId, toPlanetId);
     if (distance === null) {
@@ -468,55 +560,178 @@ export class FleetManagerComponent implements OnInit {
 
   private buildRouteDraft(ship: OwnedShip): RouteDraft {
     const route = this.game.getShipRoute(ship.id);
-    const originPlanetId = route?.originPlanetId ?? this.getCurrentShipPlanetId(ship);
-    const destinationPlanetId = route?.destinationPlanetId
-      ?? this.getReachableDestinationOptions(ship, originPlanetId)[0]?.id
-      ?? originPlanetId;
+    const originLocationId = route
+      ? this.encodeLocationId({
+        planetId: route.originPlanetId,
+        kind: route.originKind,
+      })
+      : this.getCurrentShipLocationId(ship);
+    const destinationLocationId = route
+      ? this.encodeLocationId({
+        planetId: route.destinationPlanetId,
+        kind: route.destinationKind,
+      })
+      : this.getReachableDestinationOptions(ship, originLocationId)[0]?.id ?? originLocationId;
 
     return this.normalizeRouteDraft(ship, {
-      originPlanetId,
-      destinationPlanetId,
+      originLocationId,
+      destinationLocationId,
       itemId: route?.itemId ?? 'carbon',
       keepMinimum: route?.keepMinimum ?? 0,
     });
   }
 
   private normalizeRouteDraft(ship: OwnedShip, draft: RouteDraft): RouteDraft {
-    const originPlanetId = this.isDiscoveredPlanet(draft.originPlanetId)
-      ? draft.originPlanetId
-      : this.getCurrentShipPlanetId(ship);
-    const destinationOptions = this.getReachableDestinationOptions(ship, originPlanetId);
-    const destinationPlanetId = destinationOptions.some(planet => planet.id === draft.destinationPlanetId)
-      ? draft.destinationPlanetId
-      : destinationOptions[0]?.id ?? originPlanetId;
+    const reachableOrigins = this.getReachableLocationOptions(ship);
+    const originLocationId = reachableOrigins.some(option => option.id === draft.originLocationId)
+      ? draft.originLocationId
+      : this.getCurrentShipLocationId(ship);
+    const destinationOptions = this.getReachableDestinationOptions(ship, originLocationId);
+    const destinationLocationId = destinationOptions.some(option => option.id === draft.destinationLocationId)
+      ? draft.destinationLocationId
+      : destinationOptions[0]?.id ?? originLocationId;
 
     return {
-      originPlanetId,
-      destinationPlanetId,
+      originLocationId,
+      destinationLocationId,
       itemId: draft.itemId,
       keepMinimum: Math.max(0, Number(draft.keepMinimum) || 0),
     };
   }
 
-  private getReachableDestinationOptions(ship: OwnedShip, originPlanetId: string): Planet[] {
+  private getReachableDestinationOptions(ship: OwnedShip, originLocationId: string): RouteLocationOption[] {
+    return this.getReachableLocationOptions(ship).filter(option => option.id !== originLocationId);
+  }
+
+  private getReachableLocationOptions(ship: OwnedShip): RouteLocationOption[] {
     const shipTier = this.getShipDefinition(ship).tier;
-    return this.discoveredPlanets.filter(planet =>
-      planet.id !== originPlanetId
-      && shipTier >= planet.requiredShipTier);
+    return this.availableLocationOptions.filter(option => shipTier >= option.planet.requiredShipTier);
   }
 
-  private getCurrentShipPlanetId(ship: OwnedShip): string {
-    return ship.currentPlanetId
-      ?? ship.transit?.toPlanetId
-      ?? this.discoveredPlanets[0]?.id
-      ?? this.game.getCurrentPlanet().id;
+  private getCurrentShipLocationId(ship: OwnedShip): string {
+    if (ship.currentPlanetId && ship.currentLocationKind) {
+      return this.encodeLocationId({
+        planetId: ship.currentPlanetId,
+        kind: ship.currentLocationKind,
+      });
+    }
+
+    if (ship.transit) {
+      return this.encodeLocationId({
+        planetId: ship.transit.toPlanetId,
+        kind: ship.transit.toKind,
+      });
+    }
+
+    return this.encodeLocationId({
+      planetId: this.discoveredPlanets[0]?.id ?? this.game.getCurrentPlanet().id,
+      kind: 'planet',
+    });
   }
 
-  private isDiscoveredPlanet(planetId: string): boolean {
-    return this.discoveredPlanets.some(planet => planet.id === planetId);
+  private getShipLocationId(ship: OwnedShip): string | null {
+    if (!ship.currentPlanetId || !ship.currentLocationKind) {
+      return null;
+    }
+
+    return this.encodeLocationId({
+      planetId: ship.currentPlanetId,
+      kind: ship.currentLocationKind,
+    });
   }
 
-  private get maxOrbitIndex(): number {
-    return this.game.planets.reduce((highest, planet) => Math.max(highest, planet.orbitIndex), 0);
+  private findLocationOption(locationId: string): RouteLocationOption | undefined {
+    return this.availableLocationOptions.find(option => option.id === locationId);
+  }
+
+  private getLocationLabel(location: LogisticsLocation): string {
+    const planetName = this.game.getPlanet(location.planetId)?.name ?? location.planetId;
+    const template = location.kind === 'station'
+      ? this.copy.messages.ui.fleetManager.locationStation
+      : this.copy.messages.ui.fleetManager.locationSurface;
+    return this.copy.format(template, {
+      planet: planetName,
+    });
+  }
+
+  private getLocationLabelFromFields(planetId: string, kind: LogisticsLocationKind): string {
+    return this.getLocationLabel({
+      planetId,
+      kind,
+    });
+  }
+
+  private parseLocationId(value: string): LogisticsLocation | null {
+    return parseLogisticsLocation(value);
+  }
+
+  private encodeLocationId(location: LogisticsLocation): string {
+    return encodeLogisticsLocation(location);
+  }
+
+  private matchesActivityFilter(ship: OwnedShip): boolean {
+    switch (this.routeActivityFilter) {
+      case 'working':
+        return !!ship.routeId;
+      case 'idle':
+        return !ship.routeId && !ship.transit;
+      case 'docked':
+        return !ship.transit;
+      case 'transit':
+        return !!ship.transit;
+      default:
+        return true;
+    }
+  }
+
+  private matchesPlanetFilter(ship: OwnedShip): boolean {
+    if (this.routePlanetFilterId === 'all') {
+      return true;
+    }
+
+    const route = this.game.getShipRoute(ship.id);
+    const planetId = this.routePlanetFilterId;
+
+    if (this.routePlanetTrafficFilter === 'sending') {
+      return route?.originPlanetId === planetId || ship.transit?.fromPlanetId === planetId;
+    }
+
+    if (this.routePlanetTrafficFilter === 'receiving') {
+      return route?.destinationPlanetId === planetId || ship.transit?.toPlanetId === planetId;
+    }
+
+    return ship.currentPlanetId === planetId
+      || route?.originPlanetId === planetId
+      || route?.destinationPlanetId === planetId
+      || ship.transit?.fromPlanetId === planetId
+      || ship.transit?.toPlanetId === planetId;
+  }
+
+  private get availableLocationOptions(): RouteLocationOption[] {
+    return this.game.getAvailableLogisticsLocations()
+      .map(location => {
+        const planet = this.game.getPlanet(location.planetId) ?? this.game.getCurrentPlanet();
+        return {
+          id: this.encodeLocationId(location),
+          label: this.getLocationLabel(location),
+          location,
+          planet,
+        };
+      })
+      .sort((left, right) => {
+        if (left.planet.orbitIndex !== right.planet.orbitIndex) {
+          return left.planet.orbitIndex - right.planet.orbitIndex;
+        }
+
+        if (left.location.kind === right.location.kind) {
+          return left.label.localeCompare(right.label);
+        }
+
+        return left.location.kind === 'planet' ? -1 : 1;
+      });
+  }
+
+  private get maxOrbitPosition(): number {
+    return this.game.planets.reduce((highest, planet) => Math.max(highest, planet.orbitPosition), 0);
   }
 }

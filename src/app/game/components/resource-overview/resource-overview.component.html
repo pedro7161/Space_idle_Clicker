@@ -69,9 +69,29 @@
                     <div class="flex items-center justify-between gap-3 text-[0.78rem]">
                       <span class="flex items-center gap-2 text-slate-300">
                         <span class="h-2.5 w-2.5 rounded-full" [style.background]="planet.color"></span>
-                        <span>{{ planet.name }}</span>
+                        <span>{{ getPlanetStorageLabel(planet) }}</span>
                       </span>
                       <span class="font-semibold text-slate-50">{{ getPlanetAmount(resource.id, planet.id) | formatNumber }}</span>
+                    </div>
+                  }
+
+                  @for (planet of trackedStations; track 'station-' + planet.id) {
+                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
+                      <span class="flex items-center gap-2 text-slate-300">
+                        <span class="inline-flex h-2.5 w-2.5 rotate-45 rounded-[0.15rem] border border-cyan-300/70 bg-cyan-400/30"></span>
+                        <span>{{ getStationStorageLabel(planet) }}</span>
+                      </span>
+                      <span class="font-semibold text-cyan-100">{{ getStationAmount(resource.id, planet.id) | formatNumber }}</span>
+                    </div>
+                  }
+
+                  @if (getFleetCargoAmount(resource.id) > 0) {
+                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
+                      <span class="flex items-center gap-2 text-slate-300">
+                        <span class="inline-flex h-2.5 w-2.5 rounded-full border border-amber-300/70 bg-amber-400/35"></span>
+                        <span>{{ copy.messages.ui.resourceOverview.fleetCargo }}</span>
+                      </span>
+                      <span class="font-semibold text-amber-100">{{ getFleetCargoAmount(resource.id) | formatNumber }}</span>
                     </div>
                   }
                 </div>
@@ -113,9 +133,29 @@
                     <div class="flex items-center justify-between gap-3 text-[0.78rem]">
                       <span class="flex items-center gap-2 text-slate-300">
                         <span class="h-2.5 w-2.5 rounded-full" [style.background]="planet.color"></span>
-                        <span>{{ planet.name }}</span>
+                        <span>{{ getPlanetStorageLabel(planet) }}</span>
                       </span>
                       <span class="font-semibold text-slate-50">{{ getPlanetAmount(item.id, planet.id) | formatNumber }}</span>
+                    </div>
+                  }
+
+                  @for (planet of trackedStations; track 'station-' + planet.id) {
+                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
+                      <span class="flex items-center gap-2 text-slate-300">
+                        <span class="inline-flex h-2.5 w-2.5 rotate-45 rounded-[0.15rem] border border-cyan-300/70 bg-cyan-400/30"></span>
+                        <span>{{ getStationStorageLabel(planet) }}</span>
+                      </span>
+                      <span class="font-semibold text-cyan-100">{{ getStationAmount(item.id, planet.id) | formatNumber }}</span>
+                    </div>
+                  }
+
+                  @if (getFleetCargoAmount(item.id) > 0) {
+                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
+                      <span class="flex items-center gap-2 text-slate-300">
+                        <span class="inline-flex h-2.5 w-2.5 rounded-full border border-amber-300/70 bg-amber-400/35"></span>
+                        <span>{{ copy.messages.ui.resourceOverview.fleetCargo }}</span>
+                      </span>
+                      <span class="font-semibold text-amber-100">{{ getFleetCargoAmount(item.id) | formatNumber }}</span>
                     </div>
                   }
                 </div>
