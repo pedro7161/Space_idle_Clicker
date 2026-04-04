@@ -20,6 +20,35 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: '0.6.2',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Fleet Maps and Route Stability',
+      pt: 'Mapas da Frota e Estabilidade das Rotas',
+    },
+    summary: {
+      en: 'Fleet Command now includes an orbit map, the ships workspace uses the full screen width, and route setup behaves reliably.',
+      pt: 'O Comando da Frota passa agora a incluir um mapa orbital, o espaço de naves usa toda a largura do ecrã, e a configuração de rotas comporta-se de forma fiável.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'A system map in Fleet Command that plots discovered planets by orbit, shows route corridors, and tracks ships in transit.',
+        pt: 'Um mapa do sistema no Comando da Frota que coloca os planetas descobertos por órbita, mostra os corredores de rota e acompanha as naves em trânsito.',
+      },
+      {
+        type: 'changed',
+        en: 'The ships workspace now expands across the full desktop layout instead of staying constrained to the left content column.',
+        pt: 'O espaço de naves passa agora a expandir-se por toda a largura do layout em desktop em vez de ficar limitado à coluna de conteúdo da esquerda.',
+      },
+      {
+        type: 'fixed',
+        en: 'Route destination dropdowns now keep the selected planet correctly and only list planets that the current ship tier can actually reach.',
+        pt: 'Os menus de destino das rotas passam agora a manter corretamente o planeta escolhido e a listar apenas os planetas que o nível atual da nave consegue realmente alcançar.',
+      },
+    ],
+  },
+  {
     version: '0.6.1',
     releasedAt: '2026-04-04',
     title: {
