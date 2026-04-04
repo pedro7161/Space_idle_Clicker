@@ -5,6 +5,7 @@ import { StatsHeaderComponent } from './components/stats-header/stats-header.com
 import { PlanetViewComponent } from './components/planet-view/planet-view.component';
 import { FleetManagerComponent } from './components/fleet-manager/fleet-manager.component';
 import { UpgradePanelComponent } from './components/upgrade-panel/upgrade-panel.component';
+import { ResourceOverviewComponent } from './components/resource-overview/resource-overview.component';
 import { ResetDialogComponent } from './components/reset-dialog/reset-dialog.component';
 import { GameMessagesService } from './i18n/game-messages';
 import { SettingsDialogComponent } from './components/settings-dialog/settings-dialog.component';
@@ -21,6 +22,7 @@ import { environment } from '../../environments/environment';
     PlanetViewComponent,
     FleetManagerComponent,
     UpgradePanelComponent,
+    ResourceOverviewComponent,
     ResetDialogComponent,
     SettingsDialogComponent,
     ChangelogDialogComponent,
@@ -29,7 +31,7 @@ import { environment } from '../../environments/environment';
 })
 export class GameComponent implements OnDestroy {
   readonly devModeEnabled = !environment.production;
-  activeWorkspace: 'surface' | 'ships' = 'surface';
+  activeWorkspace: 'surface' | 'overview' | 'operations' | 'ships' = 'surface';
   hasStarted = false;
   hasSavedGame = false;
   showResetDialog = false;
@@ -38,7 +40,7 @@ export class GameComponent implements OnDestroy {
   showSettingsDialog = false;
   showChangelogDialog = false;
   showMobilePanel = false;
-  showMobileResources = false;
+  headerCollapsed = false;
   startScreenMessage = '';
   startScreenTone: 'neutral' | 'success' | 'error' = 'neutral';
 
@@ -56,6 +58,7 @@ export class GameComponent implements OnDestroy {
   startGame(): void {
     this.game.init();
     this.activeWorkspace = 'surface';
+    this.headerCollapsed = false;
     this.hasStarted = true;
     this.hasSavedGame = this.game.hasSavedGame();
   }
@@ -69,6 +72,7 @@ export class GameComponent implements OnDestroy {
   onResetConfirmed(): void {
     this.game.resetGame();
     this.activeWorkspace = 'surface';
+    this.headerCollapsed = false;
     this.showResetDialog = false;
   }
 
@@ -121,12 +125,18 @@ export class GameComponent implements OnDestroy {
     this.activeWorkspace = this.activeWorkspace === 'ships' ? 'surface' : 'ships';
   }
 
-  closeMobilePanel(): void {
+  toggleOverviewWorkspace(): void {
     this.showMobilePanel = false;
+    this.activeWorkspace = this.activeWorkspace === 'overview' ? 'surface' : 'overview';
   }
 
-  toggleMobileResources(): void {
-    this.showMobileResources = !this.showMobileResources;
+  toggleOperationsWorkspace(): void {
+    this.showMobilePanel = false;
+    this.activeWorkspace = this.activeWorkspace === 'operations' ? 'surface' : 'operations';
+  }
+
+  closeMobilePanel(): void {
+    this.showMobilePanel = false;
   }
 
   requestResetFromSettings(): void {
@@ -137,6 +147,16 @@ export class GameComponent implements OnDestroy {
   openChangelogDialog(): void {
     this.showSettingsDialog = false;
     this.showChangelogDialog = true;
+  }
+
+  toggleHeaderVisibility(): void {
+    this.headerCollapsed = !this.headerCollapsed;
+  }
+
+  get headerToggleLabel(): string {
+    return this.headerCollapsed
+      ? this.copy.messages.ui.statsHeader.showHeader
+      : this.copy.messages.ui.statsHeader.hideHeader;
   }
 
   hasFleetAccess(): boolean {

@@ -20,31 +20,95 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    version: '0.5.2',
+    version: '0.6.1',
     releasedAt: '2026-04-04',
     title: {
-      en: 'Planet Focus Display',
-      pt: 'Vista de Foco Planetário',
+      en: 'Dev Tools and Panel Polish',
+      pt: 'Ferramentas Dev e Polimento dos Painéis',
     },
     summary: {
-      en: 'Crafting and automation now surface the resource chains that matter on the current planet, with a local focus display explaining the filter.',
-      pt: 'O fabrico e a automação passam agora a destacar as cadeias de recursos que interessam no planeta atual, com uma vista de foco local a explicar o filtro.',
+      en: 'Non-production builds now include fast progression tools, and long operation panels scroll more cleanly.',
+      pt: 'As builds não produtivas passam agora a incluir ferramentas para acelerar a progressão, e os painéis longos de operações fazem scroll de forma mais limpa.',
     },
     items: [
       {
         type: 'added',
-        en: 'A local focus display in the operations panel that lists the resource chains emphasized on the current planet.',
-        pt: 'Uma vista de foco local no painel de operações que lista as cadeias de recursos enfatizadas no planeta atual.',
+        en: 'A dev-only tools section in Settings with one-click resource grants for the current planet or every planet.',
+        pt: 'Uma secção de ferramentas apenas para dev nas Definições com atribuição de recursos num clique para o planeta atual ou para todos os planetas.',
+      },
+      {
+        type: 'fixed',
+        en: 'The settings menu now scrolls inside the dialog when the content grows beyond the viewport.',
+        pt: 'O menu de definições passa agora a fazer scroll dentro do diálogo quando o conteúdo ultrapassa a altura da janela.',
+      },
+      {
+        type: 'fixed',
+        en: 'The operations panel now leaves enough space at the bottom of long upgrade lists so completed sections remain reachable.',
+        pt: 'O painel de operações passa agora a deixar espaço suficiente no fundo das listas longas de melhorias para que as secções concluídas continuem acessíveis.',
+      },
+    ],
+  },
+  {
+    version: '0.6.0',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Deep Frontier Resources',
+      pt: 'Recursos da Fronteira Profunda',
+    },
+    summary: {
+      en: 'New planets, deeper resources, broader operations controls, and uranium-rich late-game progression now push the system deeper.',
+      pt: 'Novos planetas, recursos mais profundos, controlos de operações mais amplos e progressão tardia rica em urânio empurram o sistema para mais longe.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'Six new raw resources: copper, silica, hydrogen, titanium, rare crystal, and uranium.',
+        pt: 'Seis novos recursos brutos: cobre, sílica, hidrogénio, titânio, cristal raro e urânio.',
+      },
+      {
+        type: 'added',
+        en: 'New late-system planets with resource-specific extraction zones, ending in the uranium world Helion Breach.',
+        pt: 'Novos planetas no sistema tardio com zonas de extração específicas por recurso, terminando no mundo de urânio Rutura Helion.',
+      },
+      {
+        type: 'added',
+        en: 'Tier 4 and tier 5 ships that open deeper routes and support heavier logistics chains.',
+        pt: 'Naves de nível 4 e 5 que abrem rotas mais profundas e suportam cadeias logísticas mais pesadas.',
+      },
+      {
+        type: 'added',
+        en: 'Titanium Alloy and Reactor Cores as new advanced crafted materials for the top end of progression.',
+        pt: 'Liga de Titânio e Núcleos de Reator como novos materiais avançados para o topo da progressão.',
       },
       {
         type: 'changed',
-        en: 'The automation tab now only shows miners tied to the current planet’s strongest resource chains.',
-        pt: 'O separador de automação passa agora a mostrar apenas mineradores ligados às cadeias de recursos mais fortes do planeta atual.',
+        en: 'Planets now explicitly control which raw resources can be mined there instead of exposing every resource everywhere.',
+        pt: 'Os planetas passam agora a controlar explicitamente que recursos brutos podem ser minerados em cada local, em vez de expor tudo em todo o lado.',
       },
       {
         type: 'changed',
-        en: 'The crafting tab now reveals recipes through the same planet-focus logic, so newly relevant recipes appear where their resource chain comes online.',
-        pt: 'O separador de fabrico passa agora a revelar receitas através da mesma lógica de foco planetário, para que novas receitas relevantes apareçam onde a sua cadeia de recursos entra em cena.',
+        en: 'Uranium gained special high-impact upgrade paths so the final mining chain pays off harder than standard resource loops.',
+        pt: 'O urânio ganhou caminhos de melhoria de alto impacto para que a cadeia final de mineração compense mais do que os ciclos normais de recursos.',
+      },
+      {
+        type: 'changed',
+        en: 'Planet upgrade lists now stage only the next one or two active upgrade cards, while completed chains fade into a compact summary.',
+        pt: 'As listas de melhorias planetárias passam agora a mostrar apenas uma ou duas cartas ativas de cada vez, enquanto as cadeias concluídas esbatem para um resumo compacto.',
+      },
+      {
+        type: 'changed',
+        en: 'Operations can now expand out of the side rail into a full systems workspace with a dedicated Resources tab for the local planet ledger.',
+        pt: 'As operações podem agora expandir-se para fora da barra lateral e abrir um espaço completo de sistemas com um separador dedicado de Recursos para o registo local do planeta.',
+      },
+      {
+        type: 'changed',
+        en: 'The top command header can now be tucked away and recalled from a compact handle to free more vertical play space.',
+        pt: 'A barra superior de comando pode agora ser recolhida e recuperada a partir de uma pega compacta para libertar mais espaço vertical de jogo.',
+      },
+      {
+        type: 'changed',
+        en: 'Header resource cards were moved into a dedicated Overview workspace that shows network totals and per-planet stock in one place.',
+        pt: 'Os cartões de recursos do cabeçalho passaram para um espaço dedicado de Visão Geral que mostra os totais da rede e o stock por planeta num só local.',
       },
     ],
   },

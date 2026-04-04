@@ -36,16 +36,23 @@ describe('UpgradePanelComponent', () => {
     expect(component.tabs.map(t => t.key)).toEqual(['upgrades', 'crafting', 'automation', 'launch']);
   });
 
+  it('should add a resources tab in workspace mode', () => {
+    fixture.componentRef.setInput('layout', 'workspace');
+    fixture.detectChanges();
+
+    expect(component.tabs.map(t => t.key)).toEqual(['inventory', 'upgrades', 'crafting', 'automation', 'launch']);
+  });
+
   it('should default to upgrades tab', () => {
     expect(component.activeTab).toBe('upgrades');
   });
 
   it('should return resources from service', () => {
-    expect(component.resources.length).toBe(3);
+    expect(component.resources.length).toBe(gameService.resources.length);
   });
 
   it('should return crafted items from service', () => {
-    expect(component.craftedItems.length).toBe(5);
+    expect(component.craftedItems.length).toBe(gameService.craftedItems.length);
   });
 
   it('should return current planet', () => {
@@ -97,6 +104,28 @@ describe('UpgradePanelComponent', () => {
     const upgrades = component.getResourceUpgrades('carbon');
     expect(upgrades.length).toBeGreaterThan(0);
     expect(upgrades[0].id).toContain('carbon');
+  });
+
+  it('should only surface the next two active upgrades for a resource', () => {
+    (gameService as any).state.totalMined.carbon = 5_000;
+
+    const unlocked = component.getResourceUpgrades('carbon');
+    const active = component.getActiveResourceUpgrades('carbon');
+
+    expect(unlocked.length).toBeGreaterThan(2);
+    expect(active.length).toBe(2);
+  });
+
+  it('should move maxed upgrades into the completed faded list', () => {
+    (gameService as any).state.totalMined.carbon = 5_000;
+    const firstUpgrade = component.getResourceUpgrades('carbon')[0];
+    (gameService as any).state.upgradeLevels[`solara:${firstUpgrade.id}`] = firstUpgrade.maxLevel;
+
+    const activeIds = component.getActiveResourceUpgrades('carbon').map(upgrade => upgrade.id);
+    const completedIds = component.getCompletedResourceUpgrades('carbon').map(upgrade => upgrade.id);
+
+    expect(activeIds).not.toContain(firstUpgrade.id);
+    expect(completedIds).toContain(firstUpgrade.id);
   });
 
   it('should get upgrade level (zero initially)', () => {
@@ -169,6 +198,21 @@ describe('UpgradePanelComponent', () => {
 
   it('should return active tab label', () => {
     expect(component.activeTabLabel).toBeTruthy();
+  });
+
+  it('should return a workspace toggle label', () => {
+    expect(component.workspaceToggleLabel).toBeTruthy();
+  });
+
+  it('should leave the resources tab when returning to sidebar mode', () => {
+    fixture.componentRef.setInput('layout', 'workspace');
+    fixture.detectChanges();
+
+    component.activeTab = 'inventory';
+    fixture.componentRef.setInput('layout', 'sidebar');
+    fixture.detectChanges();
+
+    expect(component.activeTab).toBe('upgrades');
   });
 
   it('should return null panelGridRows when no custom height is set', () => {

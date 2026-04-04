@@ -137,13 +137,49 @@ describe('GameComponent', () => {
     });
   });
 
-  describe('mobile resources', () => {
-    it('should toggle showMobileResources', () => {
-      expect(component.showMobileResources).toBeFalse();
-      component.toggleMobileResources();
-      expect(component.showMobileResources).toBeTrue();
-      component.toggleMobileResources();
-      expect(component.showMobileResources).toBeFalse();
+  describe('overview workspace', () => {
+    it('should toggle to the overview workspace', () => {
+      component.startGame();
+      expect(component.activeWorkspace).toBe('surface');
+
+      component.toggleOverviewWorkspace();
+      expect(component.activeWorkspace).toBe('overview');
+
+      component.toggleOverviewWorkspace();
+      expect(component.activeWorkspace).toBe('surface');
+    });
+
+    it('should close the mobile panel when opening overview workspace', () => {
+      component.startGame();
+      component.showMobilePanel = true;
+
+      component.toggleOverviewWorkspace();
+
+      expect(component.showMobilePanel).toBeFalse();
+      expect(component.activeWorkspace).toBe('overview');
+    });
+  });
+
+  describe('operations workspace', () => {
+    it('should toggle to the operations workspace', () => {
+      component.startGame();
+      expect(component.activeWorkspace).toBe('surface');
+
+      component.toggleOperationsWorkspace();
+      expect(component.activeWorkspace).toBe('operations');
+
+      component.toggleOperationsWorkspace();
+      expect(component.activeWorkspace).toBe('surface');
+    });
+
+    it('should close the mobile panel when opening operations workspace', () => {
+      component.startGame();
+      component.showMobilePanel = true;
+
+      component.toggleOperationsWorkspace();
+
+      expect(component.showMobilePanel).toBeFalse();
+      expect(component.activeWorkspace).toBe('operations');
     });
   });
 
@@ -162,6 +198,22 @@ describe('GameComponent', () => {
       component.openChangelogDialog();
       expect(component.showSettingsDialog).toBeFalse();
       expect(component.showChangelogDialog).toBeTrue();
+    });
+  });
+
+  describe('header visibility', () => {
+    it('should toggle the header collapsed state', () => {
+      expect(component.headerCollapsed).toBeFalse();
+      component.toggleHeaderVisibility();
+      expect(component.headerCollapsed).toBeTrue();
+      component.toggleHeaderVisibility();
+      expect(component.headerCollapsed).toBeFalse();
+    });
+
+    it('should produce a header toggle label', () => {
+      expect(component.headerToggleLabel).toBeTruthy();
+      component.toggleHeaderVisibility();
+      expect(component.headerToggleLabel).toBeTruthy();
     });
   });
 

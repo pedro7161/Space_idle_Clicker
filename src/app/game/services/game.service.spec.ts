@@ -263,6 +263,7 @@ describe('GameService', () => {
     it('should return correct planet multiplier', () => {
       expect(service.getPlanetMultiplier('solara', 'carbon')).toBe(1);
       expect(service.getPlanetMultiplier('ferros', 'ferrite')).toBe(2.8);
+      expect(service.getPlanetMultiplier('solara', 'uranium')).toBe(0);
     });
 
     it('should gate undiscovered planets by owned ship tier', () => {
@@ -270,6 +271,29 @@ describe('GameService', () => {
       service.launchShip();
       expect(service.canTravelToPlanet('ferros')).toBeFalse();
       expect(service.canTravelToPlanet('cinder')).toBeFalse();
+      expect(service.canTravelToPlanet('helion')).toBeFalse();
+    });
+
+    it('should allow highest-tier planets after owning a tier five ship and paying travel cost', () => {
+      const state = (service as any).state;
+      state.shipLaunched = true;
+      state.ships = [
+        {
+          id: 'ship-99',
+          definitionId: 'singularity_ark',
+          routeId: null,
+          status: 'idle',
+          currentPlanetId: 'solara',
+          cargo: { itemId: null, amount: 0 },
+          transit: null,
+        },
+      ];
+
+      service.getPlanet('helion')!.travelCost.forEach(cost => {
+        state.planetInventories.solara[cost.itemId] = cost.amount;
+      });
+
+      expect(service.canTravelToPlanet('helion')).toBeTrue();
     });
   });
 
@@ -355,6 +379,27 @@ describe('GameService', () => {
       const solaraYield = service.getManualYield('ferrite', 'solara');
       const ferrosYield = service.getManualYield('ferrite', 'ferros');
       expect(ferrosYield).toBeGreaterThan(solaraYield);
+    });
+
+    it('should return zero for resources that are unavailable on a planet', () => {
+      expect(service.getManualYield('uranium', 'solara')).toBe(0);
+      expect(service.getManualYield('copper', 'verdara')).toBe(0);
+    });
+  });
+
+  describe('resource availability', () => {
+    beforeEach(() => service.init());
+
+    it('should expose the extractable resources for each planet', () => {
+      expect(service.getResourcesForPlanet('solara').map(resource => resource.id))
+        .toEqual(['carbon', 'ferrite', 'oxygen']);
+      expect(service.getResourcesForPlanet('helion').map(resource => resource.id))
+        .toEqual(['hydrogen', 'uranium']);
+    });
+
+    it('should reject selecting an unavailable resource on the current planet', () => {
+      service.setActiveResource('uranium');
+      expect(service.getState().activeResourceId).toBe('carbon');
     });
   });
 

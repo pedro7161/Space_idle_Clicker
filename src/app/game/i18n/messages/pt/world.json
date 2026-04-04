@@ -12,9 +12,33 @@
       "name": "Deriva Verdara",
       "description": "Uma atmosfera volátil torna o oxigénio fácil de recolher e a ferrite mais difícil de extrair com limpeza."
     },
+    "glassmere": {
+      "name": "Extensão Glassmere",
+      "description": "Uma bacia desértica ofuscante rica em dunas de sílica, com atmosfera suficiente para sustentar plataformas de exportação."
+    },
     "cinder": {
       "name": "Extensão Cinder",
       "description": "Um planeta de cinzas abrasadoras onde o carbono é abundante e tudo o resto resiste."
+    },
+    "voltaris": {
+      "name": "Espiral Voltaris",
+      "description": "Um mundo condutor envolto em tempestades, onde veios de cobre correm quentes sob um céu elétrico violento."
+    },
+    "nivalis": {
+      "name": "Deriva Nivalis",
+      "description": "Um mundo gelado e rico em gases onde bolsas de hidrogénio e geadas minerais tornam cada carga instável."
+    },
+    "titanreach": {
+      "name": "Forja Titanreach",
+      "description": "Um mundo industrial de gravidade brutal com camadas profundas de titânio e cinturões de ferrite pesada."
+    },
+    "umbra": {
+      "name": "Cofre Umbra",
+      "description": "Um mundo escuro e fraturado onde cristais raros crescem em cavernas sombrias e cada prospeção custa caro."
+    },
+    "helion": {
+      "name": "Rutura Helion",
+      "description": "O mundo de fronteira de nível mais alto. As veias irradiadas de urânio tornam-no perigoso, lucrativo e digno de preparação."
     }
   }
 }

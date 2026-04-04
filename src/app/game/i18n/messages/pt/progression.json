@@ -11,6 +11,32 @@
     "lattice": {
       "name": "Rede de Processo",
       "description": "Adiciona uma camada de eficiência de fim de jogo a esta cadeia de recurso."
+    },
+    "harmonics": {
+      "name": "Harmonização de Rendimento",
+      "description": "Sincroniza a cadeia de extração para empurrar uma produção mais ampla deste recurso."
+    },
+    "overdrive": {
+      "name": "Sobrecarga de Pulso",
+      "description": "Injeta um forte pico de extração manual para ciclos industriais mais profundos."
+    },
+    "cascade": {
+      "name": "Cascata de Núcleo Profundo",
+      "description": "Amplificação de sistema tardio para as redes de produção mais exigentes."
+    }
+  },
+  "specialUpgrades": {
+    "uranium-reactor-core": {
+      "name": "Núcleo de Reator de Urânio",
+      "description": "Conjuntos massivos de reator elevam a extração de urânio muito para além da afinação normal de rede."
+    },
+    "uranium-breeder-cycle": {
+      "name": "Ciclo Reprodutor de Urânio",
+      "description": "Um controlo fechado de reprodução transforma cada veia de urânio numa coluna energética de alto débito."
+    },
+    "uranium-criticality-overdrive": {
+      "name": "Sobrecarga de Criticalidade de Urânio",
+      "description": "Inseguro no papel e perfeito na prática. Este passo transforma o urânio num verdadeiro prémio de fim de jogo."
     }
   },
   "automationTemplates": {
@@ -43,6 +69,14 @@
     "basic-circuits": {
       "name": "Imprimir Circuitos Básicos",
       "description": "Constrói placas de controlo simples para mineiros e sistemas da nave."
+    },
+    "titanium-alloy": {
+      "name": "Forjar Liga de Titânio",
+      "description": "Mistura titânio com material estrutural refinado para cascos e estações de alta tensão."
+    },
+    "reactor-cores": {
+      "name": "Montar Núcleos de Reator",
+      "description": "Sela urânio enriquecido e reguladores cristalinos em núcleos compactos para logística de topo."
     }
   },
   "shipParts": {
@@ -75,6 +109,18 @@
     "quantum_ship": {
       "name": "Vaso Quântico",
       "description": "Um cargueiro de fim de jogo que atravessa o sistema depressa e suporta as rotas mais pesadas."
+    },
+    "phase_clipper": {
+      "name": "Clipper de Fase",
+      "description": "Um courier rápido de nível 4 feito para rasgar rotas profundas antes da chegada dos cargueiros pesados."
+    },
+    "void_freighter": {
+      "name": "Cargueiro do Vazio",
+      "description": "Um cargueiro volumoso de nível 4 que troca velocidade por verdadeiros fluxos de carga interplanetária."
+    },
+    "singularity_ark": {
+      "name": "Arca da Singularidade",
+      "description": "A primeira plataforma logística realmente de topo, forte o suficiente para abrir a fronteira do urânio."
     }
   }
 }

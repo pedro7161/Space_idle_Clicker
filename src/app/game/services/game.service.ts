@@ -79,6 +79,7 @@ export class GameService {
 
     this.initialized = true;
     this.state = this.loadOrDefault();
+    this.ensureActiveResourceAvailable();
     this.applyOfflineProgress();
     this.emit();
     this.startTick();
@@ -107,6 +108,9 @@ export class GameService {
     const resourceId = this.state.activeResourceId;
     const planetId = this.state.currentPlanetId;
     const gained = this.getManualYield(resourceId, planetId);
+    if (gained <= 0) {
+      return 0;
+    }
 
     this.addItem(resourceId, gained, planetId);
     this.state.totalClicks += 1;
@@ -117,7 +121,10 @@ export class GameService {
   }
 
   setActiveResource(resourceId: ResourceId): void {
-    if (this.state.activeResourceId === resourceId) {
+    if (
+      this.state.activeResourceId === resourceId
+      || !this.isResourceAvailableOnPlanet(this.state.currentPlanetId, resourceId)
+    ) {
       return;
     }
 
@@ -132,6 +139,10 @@ export class GameService {
     }
 
     if (!this.isUpgradeVisible(upgrade)) {
+      return false;
+    }
+
+    if (!this.isResourceAvailableOnPlanet(this.state.currentPlanetId, upgrade.resourceId)) {
       return false;
     }
 
@@ -159,6 +170,10 @@ export class GameService {
     }
 
     if (!this.isAutoMinerVisible(miner)) {
+      return false;
+    }
+
+    if (!this.isResourceAvailableOnPlanet(this.state.currentPlanetId, miner.resourceId)) {
       return false;
     }
 
@@ -337,6 +352,7 @@ export class GameService {
     }
 
     this.state.currentPlanetId = planet.id;
+    this.ensureActiveResourceAvailable();
     this.emit();
     return true;
   }
@@ -372,6 +388,7 @@ export class GameService {
     try {
       const parsed = this.decodeSavePayload(trimmed);
       this.state = mergeSavedStateWithDefaults(parsed);
+      this.ensureActiveResourceAvailable();
       this.state.lastTickAt = Date.now();
       this.save();
       this.emit();
@@ -393,6 +410,15 @@ export class GameService {
     return this.planets.find(planet => planet.id === planetId);
   }
 
+  isResourceAvailableOnPlanet(planetId: string, resourceId: ResourceId): boolean {
+    const planet = this.getPlanet(planetId);
+    return !!planet && planet.availableResourceIds.includes(resourceId);
+  }
+
+  getResourcesForPlanet(planetId: string = this.state.currentPlanetId): ResourceDef[] {
+    return this.resources.filter(resource => this.isResourceAvailableOnPlanet(planetId, resource.id));
+  }
+
   getActiveResource(): ResourceDef {
     return this.getResource(this.state.activeResourceId);
   }
@@ -411,7 +437,11 @@ export class GameService {
 
   getPlanetMultiplier(planetId: string, resourceId: ResourceId): number {
     const planet = this.getPlanet(planetId);
-    return planet?.resourceMultipliers[resourceId] ?? 1;
+    if (!planet || !this.isResourceAvailableOnPlanet(planetId, resourceId)) {
+      return 0;
+    }
+
+    return planet.resourceMultipliers[resourceId] ?? 0;
   }
 
   getPlanetAssociatedResourceIds(planetId: string = this.state.currentPlanetId): ResourceId[] {
@@ -437,6 +467,10 @@ export class GameService {
   }
 
   getManualYield(resourceId: ResourceId, planetId: string): number {
+    if (!this.isResourceAvailableOnPlanet(planetId, resourceId)) {
+      return 0;
+    }
+
     const resource = this.getResource(resourceId);
     const modifiers = this.getProductionModifiers(planetId, resourceId);
     const base = resource.basePerClick + modifiers.flatClick;
@@ -444,6 +478,10 @@ export class GameService {
   }
 
   getAutoRateForPlanetResource(planetId: string, resourceId: ResourceId): number {
+    if (!this.isResourceAvailableOnPlanet(planetId, resourceId)) {
+      return 0;
+    }
+
     const modifiers = this.getProductionModifiers(planetId, resourceId);
 
     return this.autoMiners
@@ -902,6 +940,15 @@ export class GameService {
     const created = buildNumberRecord(ALL_ITEM_IDS);
     this.state.planetInventories[planetId] = created;
     return created;
+  }
+
+  private ensureActiveResourceAvailable(): void {
+    if (this.isResourceAvailableOnPlanet(this.state.currentPlanetId, this.state.activeResourceId)) {
+      return;
+    }
+
+    const fallback = this.getResourcesForPlanet(this.state.currentPlanetId)[0] ?? this.resources[0];
+    this.state.activeResourceId = fallback.id;
   }
 
   private createShipInstance(definitionId: string, planetId: string): OwnedShip {

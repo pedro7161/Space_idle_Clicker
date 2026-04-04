@@ -49,7 +49,7 @@ export class PlanetViewComponent implements OnInit {
   }
 
   get resources(): ResourceDef[] {
-    return this.game.resources;
+    return this.game.getResourcesForPlanet(this.currentPlanet.id);
   }
 
   get currentPlanet(): Planet {
@@ -124,6 +124,10 @@ export class PlanetViewComponent implements OnInit {
 
   onMineClick(event: MouseEvent): void {
     const gained = this.game.mineActiveResource();
+    if (gained <= 0) {
+      return;
+    }
+
     this.spawnFloatingText(event, gained);
     this.triggerMineAnimation();
   }

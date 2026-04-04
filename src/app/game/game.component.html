@@ -66,32 +66,69 @@
   }
 
   @if (hasStarted) {
-    <app-stats-header
-      [mobileResourcesExpanded]="showMobileResources"
-      [mobileMenuOpen]="showMobilePanel"
-      [shipsUnlocked]="hasFleetAccess()"
-      [shipsViewActive]="activeWorkspace === 'ships'"
-      (settingsRequested)="openSettingsDialog()"
-      (shipsWorkspaceToggleRequested)="toggleShipsWorkspace()"
-      (mobileResourcesToggleRequested)="toggleMobileResources()"
-      (mobileMenuToggleRequested)="toggleMobilePanel()"
-    ></app-stats-header>
+    <div class="relative z-30 shrink-0">
+      <div
+        class="overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out"
+        [ngClass]="headerCollapsed
+          ? 'pointer-events-none max-h-0 -translate-y-8 opacity-0'
+          : 'max-h-[22rem] translate-y-0 opacity-100'"
+      >
+        <app-stats-header
+          [mobileMenuOpen]="showMobilePanel"
+          [menuAvailable]="activeWorkspace === 'surface'"
+          [overviewViewActive]="activeWorkspace === 'overview'"
+          [operationsViewActive]="activeWorkspace === 'operations'"
+          [shipsUnlocked]="hasFleetAccess()"
+          [shipsViewActive]="activeWorkspace === 'ships'"
+          (overviewWorkspaceToggleRequested)="toggleOverviewWorkspace()"
+          (operationsWorkspaceToggleRequested)="toggleOperationsWorkspace()"
+          (settingsRequested)="openSettingsDialog()"
+          (shipsWorkspaceToggleRequested)="toggleShipsWorkspace()"
+          (mobileMenuToggleRequested)="toggleMobilePanel()"
+        ></app-stats-header>
+      </div>
+
+      <button
+        class="absolute left-1/2 z-40 inline-flex -translate-x-1/2 items-center justify-center rounded-full border border-white/10 bg-slate-950/78 px-3 py-1.5 text-[0.72rem] font-bold text-slate-200 shadow-[0_12px_28px_rgba(2,6,23,0.36)] backdrop-blur-xl transition-[top,transform,background-color] duration-300 hover:bg-slate-900/90 min-[1600px]:px-3.5 min-[1600px]:py-2 min-[1600px]:text-[0.78rem]"
+        [ngClass]="headerCollapsed ? 'top-3 min-[1600px]:top-4' : 'top-full -translate-y-1/2'"
+        type="button"
+        [attr.aria-label]="headerToggleLabel"
+        [attr.title]="headerToggleLabel"
+        (click)="toggleHeaderVisibility()"
+      >
+        <span aria-hidden="true">{{ headerCollapsed ? '▾' : '▴' }}</span>
+      </button>
+    </div>
 
     <div class="relative min-h-0 flex-1 overflow-hidden">
       <div class="relative grid h-full min-h-0 overflow-hidden grid-cols-1 min-[960px]:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)] min-[1600px]:grid-cols-[minmax(0,1fr)_minmax(30rem,36rem)] min-[1920px]:grid-cols-[minmax(0,1fr)_minmax(34rem,40rem)]">
         @if (activeWorkspace === 'ships') {
           <app-fleet-manager class="block h-full min-h-0"></app-fleet-manager>
+        } @else if (activeWorkspace === 'overview') {
+          <app-resource-overview
+            class="block h-full min-h-0 min-[960px]:col-span-2"
+            (workspaceToggleRequested)="toggleOverviewWorkspace()"
+          ></app-resource-overview>
+        } @else if (activeWorkspace === 'operations') {
+          <app-upgrade-panel
+            class="block h-full min-h-0 min-[960px]:col-span-2"
+            layout="workspace"
+            (workspaceToggleRequested)="toggleOperationsWorkspace()"
+          ></app-upgrade-panel>
         } @else {
           <app-planet-view class="block h-full min-h-0"></app-planet-view>
         }
-        <app-upgrade-panel
-          class="block h-full min-h-0 overflow-hidden"
-          [mobileOpen]="showMobilePanel"
-          (closeRequested)="closeMobilePanel()"
-        ></app-upgrade-panel>
+        @if (activeWorkspace === 'surface') {
+          <app-upgrade-panel
+            class="block h-full min-h-0 overflow-hidden"
+            [mobileOpen]="showMobilePanel"
+            (closeRequested)="closeMobilePanel()"
+            (workspaceToggleRequested)="toggleOperationsWorkspace()"
+          ></app-upgrade-panel>
+        }
       </div>
 
-      @if (showMobilePanel) {
+      @if (showMobilePanel && activeWorkspace === 'surface') {
         <button
           class="absolute inset-0 z-20 bg-slate-950/60 backdrop-blur-[1px] min-[960px]:hidden"
           type="button"

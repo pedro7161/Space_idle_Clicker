@@ -11,6 +11,30 @@
     "oxygen": {
       "name": "Oxigénio",
       "description": "Um gás volátil usado para sistemas de pressão, células de combustível e suporte de vida."
+    },
+    "copper": {
+      "name": "Cobre",
+      "description": "Um metal condutor usado para distribuir energia, imprimir eletrónica e estabilizar sistemas de rotas avançadas."
+    },
+    "silica": {
+      "name": "Sílica",
+      "description": "Uma matéria mineral cortante usada em vidro, isolamento e compósitos estruturais."
+    },
+    "hydrogen": {
+      "name": "Hidrogénio",
+      "description": "Um combustível leve e volátil usado em misturas de propulsão, armazenamento criogénico e suporte de longas rotas."
+    },
+    "titanium": {
+      "name": "Titânio",
+      "description": "Um metal de alta resistência para cascos pressurizados, estruturas orbitais e hardware logístico de topo."
+    },
+    "rareCrystal": {
+      "name": "Cristal Raro",
+      "description": "Material cristalino exótico usado para focar sistemas energéticos e estabilizar tecnologia de fronteira."
+    },
+    "uranium": {
+      "name": "Urânio",
+      "description": "Um minério físsil perigoso que alimenta as melhorias mais extremas do fim de jogo e sistemas de reator."
     }
   },
   "crafted": {
@@ -33,6 +57,14 @@
     "basicCircuits": {
       "name": "Circuitos Básicos",
       "description": "Placas de controlo simples para encaminhar energia e sistemas de voo."
+    },
+    "titaniumAlloy": {
+      "name": "Liga de Titânio",
+      "description": "Uma mistura endurecida para blindagem avançada, cascos reforçados e estruturas orbitais de alta tensão."
+    },
+    "reactorCores": {
+      "name": "Núcleos de Reator",
+      "description": "Núcleos físseis compactos feitos para alimentar estações de topo, melhorias de urânio e cargas energéticas extremas."
     }
   }
 }
