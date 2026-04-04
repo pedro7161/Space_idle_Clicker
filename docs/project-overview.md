@@ -84,6 +84,7 @@ The current project includes:
 - higher-tier ships for deeper planets
 - dedicated overview workspace with network totals and per-planet, per-station, and fleet-cargo inventory breakdowns
 - dedicated ships workspace with route management, activity filters, planet-traffic filters, an expedition command deck, shipyard, ship stats views, and switchable 2D/3D map modes
+- localized game UI support for English, Portuguese, Brazilian Portuguese, Spanish, and French
 - dedicated operations workspace with resources, upgrades, crafting, automation, and launch views
 - repeatable logistics routes between discovered planetary surfaces and orbital stations
 - orbital station construction with separate orbital storage and route-efficiency bonuses
