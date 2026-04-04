@@ -653,12 +653,32 @@ export class GameService {
     return !!definition && this.state.shipLaunched && this.canAfford(definition.buildCost, this.state.currentPlanetId);
   }
 
-  getShipEtaSeconds(ship: OwnedShip): number | null {
+  getShipEtaSeconds(ship: OwnedShip, now: number = Date.now()): number | null {
     if (!ship.transit) {
       return null;
     }
 
-    return Math.max(0, Math.ceil((ship.transit.arriveAt - Date.now()) / 1000));
+    return Math.max(0, Math.ceil((ship.transit.arriveAt - now) / 1000));
+  }
+
+  getPlanetDistance(fromPlanetId: string, toPlanetId: string): number | null {
+    const fromPlanet = this.getPlanet(fromPlanetId);
+    const toPlanet = this.getPlanet(toPlanetId);
+    if (!fromPlanet || !toPlanet) {
+      return null;
+    }
+
+    return Math.abs(fromPlanet.orbitIndex - toPlanet.orbitIndex);
+  }
+
+  getShipTransitProgress(ship: OwnedShip, now: number = Date.now()): number | null {
+    if (!ship.transit) {
+      return null;
+    }
+
+    const totalDuration = Math.max(1, ship.transit.arriveAt - ship.transit.departAt);
+    const elapsed = now - ship.transit.departAt;
+    return Math.min(1, Math.max(0, elapsed / totalDuration));
   }
 
   canTravelToPlanet(planetId: string): boolean {
@@ -900,10 +920,19 @@ export class GameService {
       return BASE_TRAVEL_TIME_MS;
     }
 
-    const distance = Math.abs(fromPlanet.orbitIndex - toPlanet.orbitIndex) + 1;
+    const distance = this.getTravelDistanceFactor(fromPlanetId, toPlanetId);
     const stationMultiplier =
       this.getSpaceStationTravelMultiplier(fromPlanetId) * this.getSpaceStationTravelMultiplier(toPlanetId);
     return Math.round(((distance * BASE_TRAVEL_TIME_MS) / definition.travelSpeed) * stationMultiplier);
+  }
+
+  private getTravelDistanceFactor(fromPlanetId: string, toPlanetId: string): number {
+    const distance = this.getPlanetDistance(fromPlanetId, toPlanetId);
+    if (distance === null) {
+      return 1;
+    }
+
+    return distance + 1;
   }
 
   private getScaledCost(costs: ItemCost[], level: number, costScaling: number): ItemCost[] {

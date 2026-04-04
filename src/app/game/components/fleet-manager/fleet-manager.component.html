@@ -76,6 +76,107 @@
               </div>
             }
 
+            @if (canConfigureRoutes()) {
+              <section class="grid gap-4 rounded-[1.2rem] border border-white/10 bg-white/[0.025] p-4 min-[1600px]:p-5">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h4 class="text-[0.8rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.fleetManager.systemMap }}
+                    </h4>
+                    <p class="mt-1 text-[0.8rem] text-slate-400">
+                      {{ copy.messages.ui.fleetManager.systemMapDescription }}
+                    </p>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2">
+                    <span class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[0.72rem] font-semibold text-slate-200">
+                      {{ getPlottedPlanetsLabel() }}
+                    </span>
+                    <span class="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-3 py-1.5 text-[0.72rem] font-semibold text-cyan-100">
+                      {{ getTransitTrafficLabel() }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="overflow-x-auto overscroll-contain pb-2">
+                  <div
+                    data-testid="fleet-system-map"
+                    class="relative min-h-[19rem] min-w-[46rem] overflow-hidden rounded-[1.3rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.14),transparent_32%),linear-gradient(180deg,rgba(8,15,26,0.94)_0%,rgba(5,10,18,0.98)_100%)] px-8 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                  >
+                    <div class="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.18)_1px,transparent_0)] [background-size:24px_24px]"></div>
+                    <div class="absolute left-[8%] right-[8%] top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+
+                    @for (route of mappedRoutes; track route.id) {
+                      <div
+                        class="absolute top-1/2 h-[0.18rem] -translate-y-1/2 rounded-full opacity-75"
+                        [style.left.%]="getRouteStartPercent(route)"
+                        [style.width.%]="getRouteWidthPercent(route)"
+                        [style.backgroundColor]="getItemColor(route.itemId)"
+                        [attr.title]="getRouteMapLabel(route)"
+                      ></div>
+                    }
+
+                    @for (segment of mapSegments; track segment.from.id + '-' + segment.to.id) {
+                      <div
+                        class="absolute top-1/2 -translate-x-1/2 translate-y-[1.4rem] rounded-full border border-white/10 bg-slate-950/80 px-2.5 py-1 text-[0.68rem] font-semibold text-slate-200 shadow-[0_10px_22px_rgba(2,6,23,0.35)]"
+                        [style.left.%]="segment.midpointPercent"
+                        data-testid="fleet-route-distance"
+                      >
+                        {{ getSegmentDistanceLabel(segment) }}
+                      </div>
+                    }
+
+                    @for (planet of mapPlanets; let index = $index; track planet.id) {
+                      <div
+                        class="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+                        [style.left.%]="getPlanetPositionPercent(planet)"
+                        [style.top.%]="getPlanetMarkerTopPercent(index)"
+                      >
+                        <div
+                          class="absolute left-1/2 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-white/18 to-transparent"
+                          [ngClass]="isPlanetAboveAxis(index) ? 'top-full h-10' : 'bottom-full h-10'"
+                        ></div>
+
+                        <div class="relative min-w-[9rem] rounded-[1rem] border border-white/10 bg-slate-950/78 px-3 py-2 shadow-[0_18px_38px_rgba(2,6,23,0.34)] backdrop-blur">
+                          <div class="flex items-center gap-2">
+                            <span
+                              class="h-2.5 w-2.5 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.05)]"
+                              [style.backgroundColor]="planet.color"
+                            ></span>
+                            <span class="text-[0.78rem] font-semibold text-slate-50">{{ planet.name }}</span>
+                          </div>
+
+                          @if (getDockedShipCount(planet.id) > 0) {
+                            <div class="mt-2 inline-flex rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-[0.68rem] font-semibold text-emerald-200">
+                              {{ getDockedShipLabel(planet.id) }}
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    @for (ship of transitShips; let markerIndex = $index; track ship.id) {
+                      @if (getShipMarkerLeftPercent(ship); as markerLeft) {
+                        <div
+                          class="absolute z-20 -translate-x-1/2 -translate-y-1/2"
+                          [style.left.%]="markerLeft"
+                          [style.top.%]="getShipMarkerTopPercent(markerIndex)"
+                          data-testid="fleet-system-map-ship"
+                        >
+                          <div
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-cyan-400/35 bg-slate-950/92 text-[0.95rem] text-slate-50 shadow-[0_12px_24px_rgba(8,145,178,0.25)]"
+                            [attr.title]="getShipMapLabel(ship)"
+                          >
+                            {{ getShipDefinition(ship).icon }}
+                          </div>
+                        </div>
+                      }
+                    }
+                  </div>
+                </div>
+              </section>
+            }
+
             @for (ship of ships; track ship.id) {
               <div class="grid gap-4 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 min-[1200px]:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] min-[1600px]:p-5">
                 <div class="grid gap-3">
@@ -103,6 +204,17 @@
                   <div class="rounded-[1rem] border border-white/8 bg-slate-950/30 px-3.5 py-3 text-[0.78rem] text-slate-300">
                     {{ getRouteSummary(ship) }}
                   </div>
+
+                  @if (getRouteDistanceLabel(ship); as routeDistanceLabel) {
+                    <div class="flex flex-wrap gap-2">
+                      <span
+                        class="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 text-[0.68rem] font-semibold text-cyan-100"
+                        data-testid="fleet-route-distance"
+                      >
+                        {{ routeDistanceLabel }}
+                      </span>
+                    </div>
+                  }
 
                   <div class="grid gap-2 text-[0.78rem] text-slate-300">
                     <div>{{ getShipLocationLabel(ship) }}</div>

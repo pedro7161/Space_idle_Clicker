@@ -266,6 +266,12 @@ describe('GameService', () => {
       expect(service.getPlanetMultiplier('solara', 'uranium')).toBe(0);
     });
 
+    it('should report orbit distance between planets', () => {
+      expect(service.getPlanetDistance('solara', 'ferros')).toBe(1);
+      expect(service.getPlanetDistance('solara', 'helion')).toBe(9);
+      expect(service.getPlanetDistance('solara', 'missing')).toBeNull();
+    });
+
     it('should gate undiscovered planets by owned ship tier', () => {
       (service as any).state.builtShipPartIds = service.shipParts.map(part => part.id);
       service.launchShip();
@@ -322,6 +328,25 @@ describe('GameService', () => {
       expect(ship.cargo.itemId).toBe('carbon');
       expect(ship.cargo.amount).toBe(20);
       expect(service.getInventoryAmount('carbon', 'solara')).toBe(20);
+    });
+
+    it('should report ship transit progress on a normalized scale', () => {
+      const progress = service.getShipTransitProgress({
+        id: 'ship-progress',
+        definitionId: 'shuttle',
+        routeId: null,
+        status: 'outbound',
+        currentPlanetId: null,
+        cargo: { itemId: null, amount: 0 },
+        transit: {
+          fromPlanetId: 'solara',
+          toPlanetId: 'ferros',
+          departAt: 1_000,
+          arriveAt: 5_000,
+        },
+      }, 3_000);
+
+      expect(progress).toBe(0.5);
     });
   });
 
