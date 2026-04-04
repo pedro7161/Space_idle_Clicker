@@ -113,6 +113,20 @@ describe('SettingsDialogComponent', () => {
     expect(component.feedbackTone).toBe('error');
   });
 
+  it('should render dev tools when dev mode is enabled', () => {
+    const nativeElement = hostFixture.nativeElement as HTMLElement;
+
+    expect(nativeElement.textContent).toContain(component.copy.messages.ui.settingsDialog.devToolsTitle);
+  });
+
+  it('should hide dev tools when dev mode is disabled', () => {
+    hostFixture.componentInstance.devModeEnabled = false;
+    hostFixture.detectChanges();
+
+    const nativeElement = hostFixture.nativeElement as HTMLElement;
+    expect(nativeElement.textContent).not.toContain(component.copy.messages.ui.settingsDialog.devToolsTitle);
+  });
+
   it('should emit resetRequested output', () => {
     spyOn(component.resetRequested, 'emit');
     component.resetRequested.emit();
