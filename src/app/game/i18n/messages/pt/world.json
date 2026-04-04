@@ -40,5 +40,8 @@
       "name": "Rutura Helion",
       "description": "O mundo de fronteira de nível mais alto. As veias irradiadas de urânio tornam-no perigoso, lucrativo e digno de preparação."
     }
+  },
+  "frontier": {
+    "description": "Um mundo de fronteira marcado por prospeção, rico em {primary}, com veios de apoio de {support}. Cada expedição bem-sucedida empurra a busca mais fundo na órbita desconhecida {depth}."
   }
 }

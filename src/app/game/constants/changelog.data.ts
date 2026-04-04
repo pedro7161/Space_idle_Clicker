@@ -20,6 +20,40 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: '0.7.0',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Infinite Frontier Expeditions',
+      pt: 'Expedições da Fronteira Infinita',
+    },
+    summary: {
+      en: 'Charting the full handcrafted system now unlocks a dedicated explorer program that can keep discovering generated planets, while Fleet Command grows into both a wide 2D logistics chart and a rotatable 3D star view.',
+      pt: 'Cartografar todo o sistema artesanal passa agora a desbloquear um programa explorador dedicado que pode continuar a descobrir planetas gerados, enquanto o Comando da Frota cresce para um gráfico logístico 2D largo e uma vista estelar 3D rotativa.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'A dedicated explorer ship with separate engine and fuel upgrades that unlocks after every handcrafted planet has been discovered.',
+        pt: 'Uma nave exploradora dedicada com melhorias separadas de motor e combustível que desbloqueia depois de todos os planetas artesanais terem sido descobertos.',
+      },
+      {
+        type: 'added',
+        en: 'Repeatable expeditions that generate and permanently save new frontier planets, with each new survey costing more fuel and taking longer than the last.',
+        pt: 'Expedições repetíveis que geram e guardam permanentemente novos planetas da fronteira, com cada nova prospeção a custar mais combustível e a demorar mais do que a anterior.',
+      },
+      {
+        type: 'changed',
+        en: 'Fleet Command now includes an expedition deck plus switchable 2D and 3D system-map views, with the 2D chart staying draggable and the 3D map supporting click-drag rotation.',
+        pt: 'O Comando da Frota passa agora a incluir um painel de expedições e vistas 2D e 3D alternáveis do mapa do sistema, com o gráfico 2D a manter o arrasto e o mapa 3D a suportar rotação ao clicar e arrastar.',
+      },
+      {
+        type: 'changed',
+        en: 'Save data now persists generated planets and expedition progress so the infinite frontier survives reloads, exports, and imports.',
+        pt: 'Os dados de save passam agora a persistir os planetas gerados e o progresso das expedições para que a fronteira infinita sobreviva a recarregamentos, exportações e importações.',
+      },
+    ],
+  },
+  {
     version: '0.6.4',
     releasedAt: '2026-04-04',
     title: {

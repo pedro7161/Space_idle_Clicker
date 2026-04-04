@@ -13,9 +13,12 @@ import {
   SHIPS,
   SHIP_PARTS,
 } from '../constants';
+import { GAME_MESSAGES, formatMessage } from '../i18n/game-messages';
 import {
   AutoMiner,
+  ExpeditionState,
   GameState,
+  GeneratedPlanetSeed,
   ItemCost,
   ItemId,
   LogisticsLocation,
@@ -47,6 +50,53 @@ const SAVE_INTERVAL_MS = 10_000;
 const TICK_INTERVAL_MS = 200;
 const MAX_OFFLINE_SECONDS = 60 * 60 * 4;
 const BASE_TRAVEL_TIME_MS = 12_000;
+const EXPEDITION_BASE_DURATION_MS = 45_000;
+const EXPEDITION_DURATION_STEP_MS = 18_000;
+const EXPEDITION_BASE_FUEL_REQUIRED = 4;
+const EXPEDITION_BASE_FUEL_CAPACITY = 6;
+const EXPEDITION_FUEL_CAPACITY_STEP = 3;
+const EXPEDITION_ENGINE_SPEED_STEP = 0.35;
+const FRONTIER_REQUIRED_TIER = 5;
+const FRONTIER_ORBIT_GAPS = [2, 3, 4];
+const FRONTIER_NAME_PREFIXES = [
+  'Astra',
+  'Nova',
+  'Vesper',
+  'Orion',
+  'Kepler',
+  'Cinder',
+  'Halo',
+  'Echo',
+];
+const FRONTIER_NAME_SUFFIXES = [
+  'Reach',
+  'Drift',
+  'Spindle',
+  'Crown',
+  'Wake',
+  'Crossing',
+  'Field',
+  'Bastion',
+];
+const FRONTIER_BG_GRADIENTS = [
+  'radial-gradient(circle at 50% 120%, #1d4ed8 0%, #0f172a 55%, #020617 100%)',
+  'radial-gradient(circle at 50% 120%, #0f766e 0%, #082f49 52%, #020617 100%)',
+  'radial-gradient(circle at 50% 120%, #7c3aed 0%, #1f2937 55%, #020617 100%)',
+  'radial-gradient(circle at 50% 120%, #be123c 0%, #312e81 55%, #020617 100%)',
+];
+const FRONTIER_PRIMARY_RESOURCES: ResourceId[] = [
+  'copper',
+  'silica',
+  'hydrogen',
+  'titanium',
+  'rareCrystal',
+  'uranium',
+];
+const FRONTIER_SUPPORT_RESOURCES: ResourceId[] = [
+  'carbon',
+  'ferrite',
+  'oxygen',
+];
 
 function buildNumberRecord<T extends string>(ids: readonly T[]): Record<T, number> {
   return ids.reduce(
@@ -56,6 +106,60 @@ function buildNumberRecord<T extends string>(ids: readonly T[]): Record<T, numbe
     },
     {} as Record<T, number>,
   );
+}
+
+function getResourceDefinition(resourceId: ResourceId): ResourceDef {
+  return RESOURCE_DEFS.find(resource => resource.id === resourceId) ?? RESOURCE_DEFS[0];
+}
+
+function getUniqueResourceIds(resourceIds: ResourceId[]): ResourceId[] {
+  return Array.from(new Set(resourceIds));
+}
+
+function buildGeneratedPlanetName(sequence: number): string {
+  const prefix = FRONTIER_NAME_PREFIXES[(sequence - 1) % FRONTIER_NAME_PREFIXES.length];
+  const suffixIndex = Math.floor((sequence - 1) / FRONTIER_NAME_PREFIXES.length) + sequence - 1;
+  const suffix = FRONTIER_NAME_SUFFIXES[suffixIndex % FRONTIER_NAME_SUFFIXES.length];
+  return `${prefix} ${suffix} ${sequence}`;
+}
+
+function buildGeneratedPlanet(seed: GeneratedPlanetSeed): Planet {
+  const primaryResource = getResourceDefinition(seed.primaryResourceId);
+  const availableResourceIds = getUniqueResourceIds([
+    seed.primaryResourceId,
+    ...seed.supportResourceIds,
+  ]);
+  const resourceMultipliers = buildNumberRecord(RESOURCE_IDS);
+  resourceMultipliers[seed.primaryResourceId] = 2.9 + ((seed.sequence - 1) % 5) * 0.28;
+
+  availableResourceIds.slice(1).forEach((resourceId, index) => {
+    resourceMultipliers[resourceId] = 1.15 + (((seed.sequence + index) % 4) * 0.18) - (index * 0.08);
+  });
+
+  const supportLabel = availableResourceIds
+    .slice(1)
+    .map(resourceId => getResourceDefinition(resourceId).name)
+    .join(' / ') || primaryResource.name;
+
+  return {
+    id: seed.id,
+    name: buildGeneratedPlanetName(seed.sequence),
+    description: formatMessage(GAME_MESSAGES.world.frontier.description, {
+      primary: primaryResource.name,
+      support: supportLabel,
+      depth: seed.sequence,
+    }),
+    availableResourceIds,
+    resourceMultipliers,
+    travelCost: [],
+    requiredShipTier: FRONTIER_REQUIRED_TIER,
+    orbitIndex: seed.orbitIndex,
+    orbitPosition: seed.orbitPosition,
+    unlockedByDefault: false,
+    color: primaryResource.color,
+    mineralColor: primaryResource.mineralColor,
+    bgGradient: FRONTIER_BG_GRADIENTS[(seed.sequence - 1) % FRONTIER_BG_GRADIENTS.length],
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -70,12 +174,19 @@ export class GameService {
   readonly upgrades = RESOURCE_UPGRADES;
   readonly autoMiners = AUTO_MINERS;
   readonly recipes = RECIPES;
-  readonly planets = PLANETS;
+  readonly basePlanets = PLANETS;
   readonly shipParts = SHIP_PARTS;
   readonly shipDefinitions = SHIPS;
   readonly spaceStationBlueprints = SPACE_STATION_BLUEPRINTS;
 
   readonly state$ = new BehaviorSubject<GameState>(buildDefaultGameState());
+
+  get planets(): Planet[] {
+    return [
+      ...this.basePlanets,
+      ...(this.state?.generatedPlanets ?? []).map(planet => buildGeneratedPlanet(planet)),
+    ];
+  }
 
   init(): void {
     if (this.initialized) {
@@ -422,7 +533,7 @@ export class GameService {
   }
 
   getCurrentPlanet(): Planet {
-    return this.getPlanet(this.state.currentPlanetId) ?? PLANETS[0];
+    return this.getPlanet(this.state.currentPlanetId) ?? this.basePlanets[0];
   }
 
   getPlanet(planetId: string): Planet | undefined {
@@ -617,6 +728,181 @@ export class GameService {
 
   getDiscoveredPlanets(): Planet[] {
     return this.planets.filter(planet => this.isPlanetDiscovered(planet.id));
+  }
+
+  hasUnlockedExpeditionProgram(): boolean {
+    return this.basePlanets.every(planet => this.isPlanetDiscovered(planet.id));
+  }
+
+  hasExplorerShip(): boolean {
+    return this.state.expedition.shipBuilt;
+  }
+
+  getExplorerShipBuildCost(): ItemCost[] {
+    return [
+      { itemId: 'titaniumAlloy', amount: 6 },
+      { itemId: 'reactorCores', amount: 2 },
+      { itemId: 'rareCrystal', amount: 18 },
+      { itemId: 'hydrogen', amount: 60 },
+      { itemId: 'basicCircuits', amount: 24 },
+    ];
+  }
+
+  canBuildExplorerShip(): boolean {
+    return this.hasUnlockedExpeditionProgram()
+      && !this.state.expedition.shipBuilt
+      && this.canAfford(this.getExplorerShipBuildCost(), this.state.currentPlanetId);
+  }
+
+  buildExplorerShip(): boolean {
+    if (!this.canBuildExplorerShip()) {
+      return false;
+    }
+
+    this.spendItems(this.getExplorerShipBuildCost(), this.state.currentPlanetId);
+    this.state.expedition.shipBuilt = true;
+    this.emit();
+    return true;
+  }
+
+  getExplorerEngineUpgradeCost(): ItemCost[] {
+    const level = this.state.expedition.engineLevel;
+    return [
+      { itemId: 'hydrogen', amount: 30 + (level * 16) },
+      { itemId: 'basicCircuits', amount: 12 + (level * 6) },
+      { itemId: 'titaniumAlloy', amount: 2 + level },
+      { itemId: 'reactorCores', amount: 1 + Math.floor(level / 2) },
+    ];
+  }
+
+  canUpgradeExplorerEngine(): boolean {
+    return this.state.expedition.shipBuilt
+      && !this.state.expedition.activeMission
+      && this.canAfford(this.getExplorerEngineUpgradeCost(), this.state.currentPlanetId);
+  }
+
+  upgradeExplorerEngine(): boolean {
+    if (!this.canUpgradeExplorerEngine()) {
+      return false;
+    }
+
+    this.spendItems(this.getExplorerEngineUpgradeCost(), this.state.currentPlanetId);
+    this.state.expedition.engineLevel += 1;
+    this.emit();
+    return true;
+  }
+
+  getExplorerFuelUpgradeCost(): ItemCost[] {
+    const level = this.state.expedition.fuelLevel;
+    return [
+      { itemId: 'oxygenCells', amount: 18 + (level * 14) },
+      { itemId: 'refinedMetal', amount: 28 + (level * 18) },
+      { itemId: 'rareCrystal', amount: 8 + (level * 6) },
+      { itemId: 'titaniumAlloy', amount: 2 + level },
+    ];
+  }
+
+  canUpgradeExplorerFuel(): boolean {
+    return this.state.expedition.shipBuilt
+      && !this.state.expedition.activeMission
+      && this.canAfford(this.getExplorerFuelUpgradeCost(), this.state.currentPlanetId);
+  }
+
+  upgradeExplorerFuel(): boolean {
+    if (!this.canUpgradeExplorerFuel()) {
+      return false;
+    }
+
+    this.spendItems(this.getExplorerFuelUpgradeCost(), this.state.currentPlanetId);
+    this.state.expedition.fuelLevel += 1;
+    this.emit();
+    return true;
+  }
+
+  getExplorerTravelSpeed(): number {
+    return 1 + (this.state.expedition.engineLevel * EXPEDITION_ENGINE_SPEED_STEP);
+  }
+
+  getExplorerFuelCapacity(): number {
+    return EXPEDITION_BASE_FUEL_CAPACITY + (this.state.expedition.fuelLevel * EXPEDITION_FUEL_CAPACITY_STEP);
+  }
+
+  getNextExpeditionFuelRequired(): number {
+    return EXPEDITION_BASE_FUEL_REQUIRED + this.state.expedition.expeditionsCompleted;
+  }
+
+  getNextExpeditionDurationMs(): number {
+    const baseDuration = EXPEDITION_BASE_DURATION_MS + (this.state.expedition.expeditionsCompleted * EXPEDITION_DURATION_STEP_MS);
+    return Math.max(8_000, Math.round(baseDuration / this.getExplorerTravelSpeed()));
+  }
+
+  getNextExpeditionLaunchCost(): ItemCost[] {
+    const completed = this.state.expedition.expeditionsCompleted;
+    const fuelRequired = this.getNextExpeditionFuelRequired();
+    const costs: ItemCost[] = [
+      { itemId: 'hydrogen', amount: fuelRequired * 10 },
+      { itemId: 'oxygenCells', amount: fuelRequired * 3 },
+    ];
+
+    if (completed >= 2) {
+      costs.push({ itemId: 'basicCircuits', amount: 4 + Math.floor(completed / 2) });
+    }
+
+    if (completed >= 4) {
+      costs.push({ itemId: 'rareCrystal', amount: 6 + Math.floor(completed / 3) });
+    }
+
+    if (completed >= 7) {
+      costs.push({ itemId: 'reactorCores', amount: 1 + Math.floor((completed - 4) / 4) });
+    }
+
+    return costs;
+  }
+
+  getExpeditionTargetPlanet(): Planet {
+    const targetSequence = this.state.expedition.activeMission?.targetSequence ?? (this.state.expedition.expeditionsCompleted + 1);
+    return buildGeneratedPlanet(this.buildGeneratedPlanetSeed(targetSequence));
+  }
+
+  isExpeditionInProgress(): boolean {
+    return !!this.state.expedition.activeMission;
+  }
+
+  getExpeditionEtaSeconds(now: number = Date.now()): number | null {
+    const mission = this.state.expedition.activeMission;
+    if (!mission) {
+      return null;
+    }
+
+    return Math.max(0, Math.ceil((mission.arriveAt - now) / 1000));
+  }
+
+  canStartExpedition(): boolean {
+    const launchCost = this.getNextExpeditionLaunchCost();
+    return this.hasUnlockedExpeditionProgram()
+      && this.state.expedition.shipBuilt
+      && !this.state.expedition.activeMission
+      && this.getNextExpeditionFuelRequired() <= this.getExplorerFuelCapacity()
+      && this.canAfford(launchCost, this.state.currentPlanetId);
+  }
+
+  startExpedition(): boolean {
+    if (!this.canStartExpedition()) {
+      return false;
+    }
+
+    const now = Date.now();
+    const launchCost = this.getNextExpeditionLaunchCost();
+    this.spendItems(launchCost, this.state.currentPlanetId);
+    this.state.expedition.activeMission = {
+      targetSequence: this.state.expedition.expeditionsCompleted + 1,
+      departAt: now,
+      arriveAt: now + this.getNextExpeditionDurationMs(),
+      fuelRequired: this.getNextExpeditionFuelRequired(),
+      launchCost,
+    };
+    this.emit();
+    return true;
   }
 
   getAvailableLogisticsLocations(): LogisticsLocation[] {
@@ -828,6 +1114,7 @@ export class GameService {
     if (elapsedSeconds > 1) {
       this.applyAutoProduction(elapsedSeconds);
       this.processFleet(now);
+      this.processExpeditions(now);
     }
 
     this.state.lastTickAt = now;
@@ -974,8 +1261,30 @@ export class GameService {
 
       this.applyAutoProduction(elapsedSeconds);
       this.processFleet(now);
+      this.processExpeditions(now);
       this.emit();
     }, TICK_INTERVAL_MS);
+  }
+
+  private processExpeditions(now: number): void {
+    const mission = this.state.expedition.activeMission;
+    if (!mission || mission.arriveAt > now) {
+      return;
+    }
+
+    const seed = this.buildGeneratedPlanetSeed(mission.targetSequence);
+    if (!this.state.generatedPlanets.some(planet => planet.id === seed.id)) {
+      this.state.generatedPlanets = [...this.state.generatedPlanets, seed];
+      this.getPlanetInventory(seed.id);
+      this.getStationInventory(seed.id);
+    }
+
+    if (!this.state.discoveredPlanetIds.includes(seed.id)) {
+      this.state.discoveredPlanetIds = [...this.state.discoveredPlanetIds, seed.id];
+    }
+
+    this.state.expedition.expeditionsCompleted = Math.max(this.state.expedition.expeditionsCompleted, mission.targetSequence);
+    this.state.expedition.activeMission = null;
   }
 
   private startShipTransit(
@@ -1109,6 +1418,30 @@ export class GameService {
     return routeId;
   }
 
+  private buildGeneratedPlanetSeed(sequence: number): GeneratedPlanetSeed {
+    const existingPlanet = this.state.generatedPlanets.find(planet => planet.sequence === sequence);
+    if (existingPlanet) {
+      return existingPlanet;
+    }
+
+    const highestOrbitIndex = this.planets.reduce((highest, planet) => Math.max(highest, planet.orbitIndex), 0);
+    const highestOrbitPosition = this.planets.reduce((highest, planet) => Math.max(highest, planet.orbitPosition), 0);
+    const primaryResourceId = FRONTIER_PRIMARY_RESOURCES[(sequence - 1) % FRONTIER_PRIMARY_RESOURCES.length];
+    const supportResourceIds = getUniqueResourceIds([
+      FRONTIER_SUPPORT_RESOURCES[(sequence + 1) % FRONTIER_SUPPORT_RESOURCES.length],
+      FRONTIER_PRIMARY_RESOURCES[(sequence + 2) % FRONTIER_PRIMARY_RESOURCES.length],
+    ]).filter(resourceId => resourceId !== primaryResourceId).slice(0, 2);
+
+    return {
+      id: `frontier-${sequence}`,
+      sequence,
+      primaryResourceId,
+      supportResourceIds,
+      orbitIndex: highestOrbitIndex + 1,
+      orbitPosition: highestOrbitPosition + FRONTIER_ORBIT_GAPS[(sequence - 1) % FRONTIER_ORBIT_GAPS.length],
+    };
+  }
+
   private getSpaceStationCargoMultiplier(planetId: string): number {
     const station = this.getSpaceStation(planetId);
     if (!station) {
@@ -1194,6 +1527,19 @@ export class GameService {
           { ...inventory },
         ]),
       ),
+      generatedPlanets: this.state.generatedPlanets.map(planet => ({
+        ...planet,
+        supportResourceIds: [...planet.supportResourceIds],
+      })),
+      expedition: {
+        ...this.state.expedition,
+        activeMission: this.state.expedition.activeMission
+          ? {
+            ...this.state.expedition.activeMission,
+            launchCost: this.state.expedition.activeMission.launchCost.map(cost => ({ ...cost })),
+          }
+          : null,
+      },
       upgradeLevels: { ...this.state.upgradeLevels },
       autoMinerCounts: { ...this.state.autoMinerCounts },
       totalMined: { ...this.state.totalMined },
