@@ -1,5 +1,6 @@
 import { AutoMiner, ResourceId } from '../models';
 import { GAME_MESSAGES } from '../i18n/game-messages';
+import { RESOURCE_DEFS } from './resources.data';
 
 const automationMessages = GAME_MESSAGES.progression.automationTemplates;
 
@@ -46,13 +47,12 @@ const MINER_TEMPLATES: MinerTemplate[] = [
   },
 ];
 
-const RESOURCE_LABELS: Record<ResourceId, string> = {
-  carbon: GAME_MESSAGES.resources.raw.carbon.name,
-  ferrite: GAME_MESSAGES.resources.raw.ferrite.name,
-  oxygen: GAME_MESSAGES.resources.raw.oxygen.name,
-};
+const RESOURCE_LABELS = RESOURCE_DEFS.reduce<Record<ResourceId, string>>((labels, resource) => {
+  labels[resource.id] = resource.name;
+  return labels;
+}, {} as Record<ResourceId, string>);
 
-const RESOURCE_IDS: ResourceId[] = ['carbon', 'ferrite', 'oxygen'];
+const RESOURCE_IDS = RESOURCE_DEFS.map(resource => resource.id) as ResourceId[];
 
 export const AUTO_MINERS: AutoMiner[] = RESOURCE_IDS.flatMap(resourceId =>
   MINER_TEMPLATES.map(template => ({

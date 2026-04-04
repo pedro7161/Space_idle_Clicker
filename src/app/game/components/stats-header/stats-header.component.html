@@ -1,6 +1,6 @@
 <header class="border-b border-[var(--border-color)] bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(12,18,32,0.94)),var(--panel-noise)] shadow-[0_12px_40px_rgba(2,6,23,0.24)]">
   <div
-    class="grid gap-4 px-4 py-[1.1rem] min-[960px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] min-[960px]:items-center min-[1600px]:gap-6 min-[1600px]:px-6 min-[1600px]:py-5 min-[1920px]:px-8 max-[720px]:p-4"
+    class="grid gap-4 px-4 py-[1.1rem] min-[960px]:grid-cols-[minmax(0,1fr)_auto] min-[960px]:items-center min-[1600px]:gap-6 min-[1600px]:px-6 min-[1600px]:py-5 min-[1920px]:px-8 max-[720px]:p-4"
   >
     <div class="min-w-0">
       <div class="text-[0.7rem] uppercase tracking-[0.18em] text-slate-400">
@@ -22,10 +22,6 @@
       </p>
     </div>
 
-    <div class="hidden min-[960px]:grid min-[960px]:grid-cols-1 min-[1100px]:grid-cols-3 gap-2 min-[1600px]:gap-3">
-      <ng-container [ngTemplateOutlet]="resourceCards"></ng-container>
-    </div>
-
     <div class="grid gap-3 text-left min-[960px]:justify-items-end min-[960px]:text-right">
       <div class="grid gap-1">
         <div class="text-[0.88rem] font-bold text-slate-50 min-[1600px]:text-[0.96rem]">{{ miningLabel }}</div>
@@ -40,27 +36,44 @@
       </div>
 
       <div class="flex flex-wrap gap-2 min-[960px]:justify-end">
+        @if (menuAvailable()) {
+          <button
+            class="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[0.74rem] font-bold text-slate-100 transition hover:-translate-y-px hover:bg-white/[0.08] min-[960px]:hidden"
+            type="button"
+            [attr.aria-expanded]="mobileMenuOpen()"
+            (click)="mobileMenuToggleRequested.emit()"
+          >
+            <span aria-hidden="true" class="flex h-3.5 w-3.5 flex-col justify-between">
+              <span class="block h-px w-full rounded-full bg-current"></span>
+              <span class="block h-px w-full rounded-full bg-current"></span>
+              <span class="block h-px w-full rounded-full bg-current"></span>
+            </span>
+            <span>{{ mobileMenuLabel }}</span>
+          </button>
+        }
+
         <button
-          class="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[0.74rem] font-bold text-slate-100 transition hover:-translate-y-px hover:bg-white/[0.08] min-[960px]:hidden"
+          class="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border px-4 py-2.5 text-[0.76rem] font-bold transition min-[1600px]:gap-2.5 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-5 min-[1600px]:py-3 min-[1600px]:text-[0.84rem]"
+          [ngClass]="overviewViewActive()
+            ? 'border-violet-400/35 bg-violet-500/14 text-violet-50 shadow-[inset_0_0_0_1px_rgba(237,233,254,0.08)] hover:-translate-y-px hover:bg-violet-500/20'
+            : 'border-indigo-400/30 bg-indigo-900/22 text-indigo-100 shadow-[inset_0_0_0_1px_rgba(224,231,255,0.08)] hover:-translate-y-px hover:bg-indigo-800/28'"
           type="button"
-          [attr.aria-expanded]="mobileResourcesExpanded()"
-          (click)="mobileResourcesToggleRequested.emit()"
+          (click)="overviewWorkspaceToggleRequested.emit()"
         >
-          <span>{{ mobileResourcesLabel }}</span>
+          <span aria-hidden="true" class="text-[0.95rem] leading-none min-[1600px]:text-[1.05rem]">◎</span>
+          <span>{{ overviewButtonLabel }}</span>
         </button>
 
         <button
-          class="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-[0.74rem] font-bold text-slate-100 transition hover:-translate-y-px hover:bg-white/[0.08] min-[960px]:hidden"
+          class="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border px-4 py-2.5 text-[0.76rem] font-bold transition min-[1600px]:gap-2.5 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-5 min-[1600px]:py-3 min-[1600px]:text-[0.84rem]"
+          [ngClass]="operationsViewActive()
+            ? 'border-amber-400/35 bg-amber-500/14 text-amber-50 shadow-[inset_0_0_0_1px_rgba(254,243,199,0.08)] hover:-translate-y-px hover:bg-amber-500/20'
+            : 'border-sky-400/30 bg-sky-900/22 text-sky-100 shadow-[inset_0_0_0_1px_rgba(224,242,254,0.08)] hover:-translate-y-px hover:bg-sky-800/28'"
           type="button"
-          [attr.aria-expanded]="mobileMenuOpen()"
-          (click)="mobileMenuToggleRequested.emit()"
+          (click)="operationsWorkspaceToggleRequested.emit()"
         >
-          <span aria-hidden="true" class="flex h-3.5 w-3.5 flex-col justify-between">
-            <span class="block h-px w-full rounded-full bg-current"></span>
-            <span class="block h-px w-full rounded-full bg-current"></span>
-            <span class="block h-px w-full rounded-full bg-current"></span>
-          </span>
-          <span>{{ mobileMenuLabel }}</span>
+          <span aria-hidden="true" class="text-[0.95rem] leading-none min-[1600px]:text-[1.05rem]">⇆</span>
+          <span>{{ operationsButtonLabel }}</span>
         </button>
 
         @if (shipsUnlocked()) {
@@ -88,35 +101,4 @@
       </div>
     </div>
   </div>
-
-  @if (mobileResourcesExpanded()) {
-    <div class="border-t border-white/5 px-4 pb-4 min-[960px]:hidden">
-      <div class="grid grid-cols-1 gap-2 min-[720px]:grid-cols-3">
-        <ng-container [ngTemplateOutlet]="resourceCards"></ng-container>
-      </div>
-    </div>
-  }
 </header>
-
-<ng-template #resourceCards>
-  @for (resource of resources; track resource.id) {
-    <div
-      class="flex items-center gap-2.5 rounded-2xl border px-4 py-3 min-[1600px]:gap-3.5 min-[1600px]:rounded-[1.15rem] min-[1600px]:px-5 min-[1600px]:py-4"
-      [ngClass]="resource.id === activeResource.id
-        ? 'bg-white/[0.06] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]'
-        : 'bg-white/[0.03]'"
-      [style.borderColor]="resource.color"
-    >
-      <span
-        class="inline-flex h-8 w-8 items-center justify-center rounded-[0.7rem] bg-white/[0.05] text-[0.76rem] font-bold tracking-[0.04em] min-[1600px]:h-10 min-[1600px]:w-10 min-[1600px]:rounded-[0.85rem] min-[1600px]:text-[0.88rem]"
-        [style.color]="resource.color"
-      >
-        {{ resource.icon }}
-      </span>
-      <span class="flex min-w-0 flex-col gap-0.5">
-        <strong class="text-[0.82rem] text-slate-50 min-[1600px]:text-[0.92rem]">{{ resource.name }}</strong>
-        <span class="text-[0.78rem] text-slate-400 min-[1600px]:text-[0.84rem]">{{ getAmount(resource.id) | formatNumber }}</span>
-      </span>
-    </div>
-  }
-</ng-template>

@@ -4,6 +4,7 @@ export interface Planet {
   id: string;
   name: string;
   description: string;
+  availableResourceIds: ResourceId[];
   resourceMultipliers: Record<ResourceId, number>;
   travelCost: ItemCost[];
   requiredShipTier: number;

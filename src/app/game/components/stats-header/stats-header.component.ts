@@ -2,7 +2,6 @@ import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
-import { ResourceDef } from '../../models';
 import { GameMessagesService } from '../../i18n/game-messages';
 
 @Component({
@@ -12,13 +11,16 @@ import { GameMessagesService } from '../../i18n/game-messages';
   templateUrl: './stats-header.component.html',
 })
 export class StatsHeaderComponent {
-  readonly mobileResourcesExpanded = input(false);
+  readonly menuAvailable = input(true);
   readonly mobileMenuOpen = input(false);
+  readonly overviewViewActive = input(false);
+  readonly operationsViewActive = input(false);
   readonly shipsUnlocked = input(false);
   readonly shipsViewActive = input(false);
+  readonly overviewWorkspaceToggleRequested = output<void>();
+  readonly operationsWorkspaceToggleRequested = output<void>();
   readonly settingsRequested = output<void>();
   readonly shipsWorkspaceToggleRequested = output<void>();
-  readonly mobileResourcesToggleRequested = output<void>();
   readonly mobileMenuToggleRequested = output<void>();
 
   constructor(
@@ -26,20 +28,12 @@ export class StatsHeaderComponent {
     public copy: GameMessagesService,
   ) {}
 
-  get resources(): ResourceDef[] {
-    return this.game.resources;
-  }
-
   get currentPlanet() {
     return this.game.getCurrentPlanet();
   }
 
-  get activeResource(): ResourceDef {
+  get activeResource() {
     return this.game.getActiveResource();
-  }
-
-  get activeAmount(): number {
-    return this.game.getInventoryAmount(this.activeResource.id);
   }
 
   get perClick(): number {
@@ -92,16 +86,16 @@ export class StatsHeaderComponent {
     });
   }
 
-  get mobileResourcesLabel(): string {
-    return this.mobileResourcesExpanded()
-      ? this.copy.messages.ui.statsHeader.hideResources
-      : this.copy.messages.ui.statsHeader.showResources;
-  }
-
   get mobileMenuLabel(): string {
     return this.mobileMenuOpen()
       ? this.copy.messages.ui.statsHeader.closeMenu
       : this.copy.messages.ui.statsHeader.openMenu;
+  }
+
+  get overviewButtonLabel(): string {
+    return this.overviewViewActive()
+      ? this.copy.messages.ui.statsHeader.surface
+      : this.copy.messages.ui.statsHeader.overview;
   }
 
   get shipsButtonLabel(): string {
@@ -110,7 +104,9 @@ export class StatsHeaderComponent {
       : this.copy.messages.ui.statsHeader.ships;
   }
 
-  getAmount(resourceId: ResourceDef['id']): number {
-    return this.game.getInventoryAmount(resourceId);
+  get operationsButtonLabel(): string {
+    return this.operationsViewActive()
+      ? this.copy.messages.ui.statsHeader.surface
+      : this.copy.messages.ui.statsHeader.operations;
   }
 }

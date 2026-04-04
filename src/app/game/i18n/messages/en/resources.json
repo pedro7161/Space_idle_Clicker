@@ -11,6 +11,30 @@
     "oxygen": {
       "name": "Oxygen",
       "description": "A volatile gas used for pressure systems, fuel cells, and life support."
+    },
+    "copper": {
+      "name": "Copper",
+      "description": "A conductive metal used for routing power, printing electronics, and stabilizing late-route systems."
+    },
+    "silica": {
+      "name": "Silica",
+      "description": "A sharp mineral feedstock used for glasswork, insulation, and structural composites."
+    },
+    "hydrogen": {
+      "name": "Hydrogen",
+      "description": "A light volatile fuel used for propulsion mixes, cryogenic storage, and deep-route support."
+    },
+    "titanium": {
+      "name": "Titanium",
+      "description": "A high-strength metal for pressure hulls, station frames, and top-tier logistics hardware."
+    },
+    "rareCrystal": {
+      "name": "Rare Crystal",
+      "description": "Exotic crystalline material used to focus high-energy systems and stabilize frontier-grade tech."
+    },
+    "uranium": {
+      "name": "Uranium",
+      "description": "A hazardous fissile ore that powers the most extreme late-game upgrades and reactor systems."
     }
   },
   "crafted": {
@@ -33,6 +57,14 @@
     "basicCircuits": {
       "name": "Basic Circuits",
       "description": "Simple control boards for routing power and flight systems."
+    },
+    "titaniumAlloy": {
+      "name": "Titanium Alloy",
+      "description": "A hardened alloy blend made for advanced hull plating and high-stress orbital frameworks."
+    },
+    "reactorCores": {
+      "name": "Reactor Cores",
+      "description": "Compact fissile cores built to feed apex stations, uranium upgrades, and extreme energy loads."
     }
   }
 }

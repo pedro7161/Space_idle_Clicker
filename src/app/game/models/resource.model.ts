@@ -1,11 +1,22 @@
-export type ResourceId = 'carbon' | 'ferrite' | 'oxygen';
+export type ResourceId =
+  | 'carbon'
+  | 'ferrite'
+  | 'oxygen'
+  | 'copper'
+  | 'silica'
+  | 'hydrogen'
+  | 'titanium'
+  | 'rareCrystal'
+  | 'uranium';
 
 export type CraftedId =
   | 'condensedCarbon'
   | 'refinedMetal'
   | 'oxygenCells'
   | 'mechanicalParts'
-  | 'basicCircuits';
+  | 'basicCircuits'
+  | 'titaniumAlloy'
+  | 'reactorCores';
 
 export type ItemId = ResourceId | CraftedId;
 
