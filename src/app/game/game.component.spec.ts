@@ -135,6 +135,30 @@ describe('GameComponent', () => {
       component.toggleShipsWorkspace();
       expect(component.activeWorkspace).toBe('surface');
     });
+
+    it('should render the ships workspace full width', () => {
+      component.startGame();
+      const state = gameService.getState();
+      state.shipLaunched = true;
+      state.ships = [
+        {
+          id: 'ship-1',
+          definitionId: 'shuttle',
+          routeId: null,
+          status: 'idle',
+          currentPlanetId: state.currentPlanetId,
+          cargo: { itemId: null, amount: 0 },
+          transit: null,
+        },
+      ];
+
+      component.toggleShipsWorkspace();
+      fixture.detectChanges();
+
+      const fleetManager = fixture.nativeElement.querySelector('app-fleet-manager');
+      expect(fleetManager).toBeTruthy();
+      expect(fleetManager.className).toContain('min-[960px]:col-span-2');
+    });
   });
 
   describe('overview workspace', () => {
