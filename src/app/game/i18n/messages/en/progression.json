@@ -11,6 +11,32 @@
     "lattice": {
       "name": "Process Lattice",
       "description": "Add a late-game efficiency layer for the same resource chain."
+    },
+    "harmonics": {
+      "name": "Yield Harmonizer",
+      "description": "Synchronize the extraction chain to push broader production on this resource."
+    },
+    "overdrive": {
+      "name": "Pulse Overdrive",
+      "description": "Inject a heavy manual extraction spike for deeper industrial loops."
+    },
+    "cascade": {
+      "name": "Deep Core Cascade",
+      "description": "Late-system amplification for the most demanding production networks."
+    }
+  },
+  "specialUpgrades": {
+    "uranium-reactor-core": {
+      "name": "Uranium Reactor Core",
+      "description": "Massive reactor assemblies push uranium extraction far beyond standard lattice tuning."
+    },
+    "uranium-breeder-cycle": {
+      "name": "Uranium Breeder Cycle",
+      "description": "Closed-loop breeder control turns every uranium seam into a high-output energy backbone."
+    },
+    "uranium-criticality-overdrive": {
+      "name": "Uranium Criticality Overdrive",
+      "description": "Unsafe on paper and perfect in practice. This overdrive step turns uranium into a true late-game jackpot."
     }
   },
   "automationTemplates": {
@@ -43,6 +69,14 @@
     "basic-circuits": {
       "name": "Print Basic Circuits",
       "description": "Build simple control boards for miners and ship systems."
+    },
+    "titanium-alloy": {
+      "name": "Forge Titanium Alloy",
+      "description": "Blend titanium with refined structural stock for high-stress hull and station work."
+    },
+    "reactor-cores": {
+      "name": "Assemble Reactor Cores",
+      "description": "Seal enriched uranium and crystal regulators into compact cores for apex logistics."
     }
   },
   "shipParts": {
@@ -75,6 +109,18 @@
     "quantum_ship": {
       "name": "Quantum Vessel",
       "description": "A late-game carrier that crosses the system quickly and handles the heaviest runs."
+    },
+    "phase_clipper": {
+      "name": "Phase Clipper",
+      "description": "A fast tier-4 courier built to pierce deep routes before heavier freighters arrive."
+    },
+    "void_freighter": {
+      "name": "Void Freighter",
+      "description": "A dense tier-4 bulk hauler that trades speed for serious system-wide cargo pulls."
+    },
+    "singularity_ark": {
+      "name": "Singularity Ark",
+      "description": "The first true apex-tier logistics platform, strong enough to open the uranium frontier."
     }
   }
 }

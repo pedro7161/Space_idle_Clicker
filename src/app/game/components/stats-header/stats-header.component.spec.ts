@@ -31,23 +31,8 @@ describe('StatsHeaderComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should return all resource definitions', () => {
-    expect(component.resources.length).toBe(3);
-    expect(component.resources.map(r => r.id)).toEqual(['carbon', 'ferrite', 'oxygen']);
-  });
-
   it('should return the current planet', () => {
     expect(component.currentPlanet.id).toBe('solara');
-  });
-
-  it('should return the active resource', () => {
-    expect(component.activeResource.id).toBe('carbon');
-  });
-
-  it('should return the active resource amount', () => {
-    expect(component.activeAmount).toBe(0);
-    gameService.mineActiveResource();
-    expect(component.activeAmount).toBeGreaterThan(0);
   });
 
   it('should return perClick yield', () => {
@@ -81,19 +66,19 @@ describe('StatsHeaderComponent', () => {
     expect(component.totalClicksLabel).toBeTruthy();
   });
 
-  it('should get amount for a given resource', () => {
-    expect(component.getAmount('carbon')).toBe(0);
-  });
-
-  it('should produce mobile resources label based on input', () => {
-    expect(component.mobileResourcesLabel).toBeTruthy();
-  });
-
   it('should produce mobile menu label based on input', () => {
     expect(component.mobileMenuLabel).toBeTruthy();
   });
 
+  it('should produce an overview button label', () => {
+    expect(component.overviewButtonLabel).toBeTruthy();
+  });
+
   it('should produce a ships button label', () => {
     expect(component.shipsButtonLabel).toBeTruthy();
+  });
+
+  it('should produce an operations button label', () => {
+    expect(component.operationsButtonLabel).toBeTruthy();
   });
 });

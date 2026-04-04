@@ -12,9 +12,33 @@
       "name": "Verdara Drift",
       "description": "A volatile atmosphere makes oxygen easy to harvest and ferrite harder to pull cleanly."
     },
+    "glassmere": {
+      "name": "Glassmere Expanse",
+      "description": "A blinding desert basin rich in silica dunes, with just enough atmosphere to support export staging."
+    },
     "cinder": {
       "name": "Cinder Span",
       "description": "An ash-choked furnace planet where carbon is plentiful and everything else fights back."
+    },
+    "voltaris": {
+      "name": "Voltaris Coil",
+      "description": "A storm-wrapped conductor world where copper seams run hot beneath a violent electric sky."
+    },
+    "nivalis": {
+      "name": "Nivalis Drift",
+      "description": "A frozen gas-rich world where hydrogen pockets and bright mineral frost make every haul feel unstable."
+    },
+    "titanreach": {
+      "name": "Titanreach Forge",
+      "description": "A brutal heavy-gravity foundry world with deep titanium strata and industrial ferrite belts."
+    },
+    "umbra": {
+      "name": "Umbra Vault",
+      "description": "A dim fractured world where rare crystals grow in shadowed caverns and every survey feels expensive."
+    },
+    "helion": {
+      "name": "Helion Breach",
+      "description": "The highest-tier frontier world. Irradiated seams of uranium make it dangerous, lucrative, and worth building for."
     }
   }
 }

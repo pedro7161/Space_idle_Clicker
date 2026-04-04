@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, input, output, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, effect, input, output, viewChild } from '@angular/core';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
 import { GameMessagesService } from '../../i18n/game-messages';
@@ -13,7 +13,8 @@ import {
   ShipPart,
 } from '../../models';
 
-type Tab = 'upgrades' | 'crafting' | 'automation' | 'launch';
+type Tab = 'inventory' | 'upgrades' | 'crafting' | 'automation' | 'launch';
+type PanelLayout = 'sidebar' | 'workspace';
 
 interface TabDef {
   key: Tab;
@@ -27,16 +28,19 @@ interface TabDef {
   templateUrl: './upgrade-panel.component.html',
 })
 export class UpgradePanelComponent implements OnDestroy {
+  readonly layout = input<PanelLayout>('sidebar');
   readonly mobileOpen = input(false);
   readonly closeRequested = output<void>();
+  readonly workspaceToggleRequested = output<void>();
   activeTab: Tab = 'upgrades';
   inventoryPanelHeight: number | null = null;
   isResizingInventory = false;
 
-  readonly tabs: TabDef[];
-  readonly panelShell = viewChild.required<ElementRef<HTMLElement>>('panelShell');
-  readonly inventorySection = viewChild.required<ElementRef<HTMLElement>>('inventorySection');
-  readonly tabBar = viewChild.required<ElementRef<HTMLElement>>('tabBar');
+  private readonly sidebarTabs: TabDef[];
+  private readonly workspaceTabs: TabDef[];
+  readonly panelShell = viewChild<ElementRef<HTMLElement>>('panelShell');
+  readonly inventorySection = viewChild<ElementRef<HTMLElement>>('inventorySection');
+  readonly tabBar = viewChild<ElementRef<HTMLElement>>('tabBar');
 
   private resizeStartY = 0;
   private resizeStartHeight = 0;
@@ -69,12 +73,22 @@ export class UpgradePanelComponent implements OnDestroy {
     public copy: GameMessagesService,
   ) {
     const tabMessages = this.copy.messages.ui.upgradePanel.tabs;
-    this.tabs = [
+    this.sidebarTabs = [
       { key: 'upgrades', label: tabMessages.upgrades },
       { key: 'crafting', label: tabMessages.crafting },
       { key: 'automation', label: tabMessages.automation },
       { key: 'launch', label: tabMessages.launch },
     ];
+    this.workspaceTabs = [
+      { key: 'inventory', label: tabMessages.inventory },
+      ...this.sidebarTabs,
+    ];
+
+    effect(() => {
+      if (!this.isWorkspaceLayout && this.activeTab === 'inventory') {
+        this.activeTab = 'upgrades';
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -83,6 +97,10 @@ export class UpgradePanelComponent implements OnDestroy {
 
   get resources(): ResourceDef[] {
     return this.game.resources;
+  }
+
+  get currentPlanetResources(): ResourceDef[] {
+    return this.game.getResourcesForPlanet(this.currentPlanet.id);
   }
 
   get craftedItems() {
@@ -121,14 +139,62 @@ export class UpgradePanelComponent implements OnDestroy {
     return `${this.inventoryPanelHeight}px ${this.handleHeight}px auto minmax(0, 1fr)`;
   }
 
+  get tabs(): TabDef[] {
+    return this.isWorkspaceLayout ? this.workspaceTabs : this.sidebarTabs;
+  }
+
   get activeTabLabel(): string {
     return this.tabs.find(tab => tab.key === this.activeTab)?.label ?? this.tabs[0].label;
   }
 
+  get isWorkspaceLayout(): boolean {
+    return this.layout() === 'workspace';
+  }
+
+  get workspaceToggleLabel(): string {
+    return this.isWorkspaceLayout
+      ? this.copy.messages.ui.upgradePanel.collapseWorkspace
+      : this.copy.messages.ui.upgradePanel.expandWorkspace;
+  }
+
   getResourceUpgrades(resourceId: ResourceDef['id']): ResourceUpgrade[] {
-    return this.game.upgrades.filter(
-      upgrade => upgrade.resourceId === resourceId && this.game.isUpgradeVisible(upgrade),
-    );
+    return this.game.upgrades
+      .filter(upgrade => upgrade.resourceId === resourceId && this.game.isUpgradeVisible(upgrade))
+      .sort((left, right) => {
+        if (left.unlockAtTotal !== right.unlockAtTotal) {
+          return left.unlockAtTotal - right.unlockAtTotal;
+        }
+
+        return left.id.localeCompare(right.id);
+      });
+  }
+
+  getActiveResourceUpgrades(resourceId: ResourceDef['id']): ResourceUpgrade[] {
+    return this.getResourceUpgrades(resourceId)
+      .filter(upgrade => this.getUpgradeLevel(upgrade) < upgrade.maxLevel)
+      .slice(0, 2);
+  }
+
+  getCompletedResourceUpgrades(resourceId: ResourceDef['id']): ResourceUpgrade[] {
+    return this.getResourceUpgrades(resourceId)
+      .filter(upgrade => this.getUpgradeLevel(upgrade) >= upgrade.maxLevel);
+  }
+
+  getQueuedUpgradeCount(resourceId: ResourceDef['id']): number {
+    const unlockedInProgress = this.getResourceUpgrades(resourceId)
+      .filter(upgrade => this.getUpgradeLevel(upgrade) < upgrade.maxLevel);
+    return Math.max(0, unlockedInProgress.length - this.getActiveResourceUpgrades(resourceId).length);
+  }
+
+  getQueuedUpgradeLabel(resource: ResourceDef): string | null {
+    const count = this.getQueuedUpgradeCount(resource.id);
+    if (count <= 0) {
+      return null;
+    }
+
+    return this.copy.format(this.copy.messages.ui.upgradePanel.queuedUpgrades, {
+      count,
+    });
   }
 
   getMinersForResource(resourceId: ResourceDef['id']): AutoMiner[] {
@@ -347,7 +413,16 @@ export class UpgradePanelComponent implements OnDestroy {
   }
 
   startInventoryResize(event: PointerEvent): void {
+    if (this.isWorkspaceLayout) {
+      return;
+    }
+
     if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
+
+    const inventorySection = this.inventorySection()?.nativeElement;
+    if (!inventorySection) {
       return;
     }
 
@@ -355,7 +430,7 @@ export class UpgradePanelComponent implements OnDestroy {
 
     const currentHeight =
       this.inventoryPanelHeight ??
-      Math.round(this.inventorySection().nativeElement.getBoundingClientRect().height);
+      Math.round(inventorySection.getBoundingClientRect().height);
 
     this.resizeStartY = event.clientY;
     this.resizeStartHeight = currentHeight;
@@ -397,8 +472,14 @@ export class UpgradePanelComponent implements OnDestroy {
   }
 
   private clampInventoryHeight(height: number): number {
-    const panelHeight = this.panelShell().nativeElement.getBoundingClientRect().height;
-    const tabBarHeight = this.tabBar().nativeElement.getBoundingClientRect().height;
+    const panelShell = this.panelShell()?.nativeElement;
+    const tabBar = this.tabBar()?.nativeElement;
+    if (!panelShell || !tabBar) {
+      return Math.round(Math.max(height, this.inventoryMinHeight));
+    }
+
+    const panelHeight = panelShell.getBoundingClientRect().height;
+    const tabBarHeight = tabBar.getBoundingClientRect().height;
     const maxHeight = Math.max(
       this.inventoryMinHeight,
       panelHeight - tabBarHeight - this.handleHeight - this.contentMinHeight,
