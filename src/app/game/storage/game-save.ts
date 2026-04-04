@@ -6,11 +6,16 @@ import {
   SPACE_STATION_BLUEPRINTS,
 } from '../constants';
 import type {
+  ExpeditionMission,
+  ExpeditionState,
   GameState,
+  GeneratedPlanetSeed,
+  ItemCost,
   ItemId,
   LogisticsLocation,
   LogisticsLocationKind,
   OwnedShip,
+  ResourceId,
   ShipRoute,
   ShipStatus,
   ShipTransit,
@@ -29,7 +34,7 @@ export interface StorageLike {
   setItem(key: string, value: string): void;
 }
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SAVE_KEY_PREFIX = 'space-idle-save-v';
 export const CURRENT_SAVE_KEY = `${SAVE_KEY_PREFIX}${SAVE_VERSION}`;
 export const SAVE_TRANSFER_PREFIX = 'frontier-miner-save:';
@@ -70,6 +75,10 @@ function isItemId(value: unknown): value is ItemId {
   return typeof value === 'string' && ALL_ITEM_IDS.includes(value as ItemId);
 }
 
+function isResourceId(value: unknown): value is ResourceId {
+  return typeof value === 'string' && RESOURCE_IDS.includes(value as ResourceId);
+}
+
 function isLogisticsLocationKind(value: unknown): value is LogisticsLocationKind {
   return value === 'planet' || value === 'station';
 }
@@ -86,9 +95,10 @@ function normalizeNonNegativeNumber(value: unknown): number {
 function normalizeLocation(
   planetId: unknown,
   kind: unknown,
+  knownPlanetIds: ReadonlySet<string>,
   stationPlanetIds: ReadonlySet<string>,
 ): LogisticsLocation | null {
-  if (typeof planetId !== 'string' || !getPlanet(planetId)) {
+  if (typeof planetId !== 'string' || !knownPlanetIds.has(planetId)) {
     return null;
   }
 
@@ -105,6 +115,7 @@ function normalizeLocation(
 
 function normalizeTransit(
   value: unknown,
+  knownPlanetIds: ReadonlySet<string>,
   stationPlanetIds: ReadonlySet<string>,
 ): ShipTransit | null {
   if (!value || typeof value !== 'object') {
@@ -112,8 +123,8 @@ function normalizeTransit(
   }
 
   const transit = value as Partial<ShipTransit>;
-  const from = normalizeLocation(transit.fromPlanetId, transit.fromKind, stationPlanetIds);
-  const to = normalizeLocation(transit.toPlanetId, transit.toKind, stationPlanetIds);
+  const from = normalizeLocation(transit.fromPlanetId, transit.fromKind, knownPlanetIds, stationPlanetIds);
+  const to = normalizeLocation(transit.toPlanetId, transit.toKind, knownPlanetIds, stationPlanetIds);
   const departAt = normalizeNonNegativeNumber(transit.departAt);
   const arriveAt = normalizeNonNegativeNumber(transit.arriveAt);
 
@@ -128,6 +139,121 @@ function normalizeTransit(
     toKind: to.kind,
     departAt,
     arriveAt,
+  };
+}
+
+function buildKnownPlanetIds(generatedPlanets: GeneratedPlanetSeed[]): string[] {
+  return [
+    ...PLANETS.map(planet => planet.id),
+    ...generatedPlanets.map(planet => planet.id),
+  ];
+}
+
+function normalizeGeneratedPlanets(value: unknown): GeneratedPlanetSeed[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seenIds = new Set(PLANETS.map(planet => planet.id));
+
+  return value.flatMap(entry => {
+    if (!entry || typeof entry !== 'object') {
+      return [];
+    }
+
+    const generatedPlanet = entry as Partial<GeneratedPlanetSeed>;
+    if (
+      typeof generatedPlanet.id !== 'string'
+      || seenIds.has(generatedPlanet.id)
+      || !isResourceId(generatedPlanet.primaryResourceId)
+    ) {
+      return [];
+    }
+
+    const sequence = Math.max(1, Math.floor(normalizeNonNegativeNumber(generatedPlanet.sequence)));
+    const orbitIndex = Math.max(PLANETS.length, Math.floor(normalizeNonNegativeNumber(generatedPlanet.orbitIndex)));
+    const orbitPosition = Math.max(1, Math.floor(normalizeNonNegativeNumber(generatedPlanet.orbitPosition)));
+    const supportResourceIds = Array.isArray(generatedPlanet.supportResourceIds)
+      ? generatedPlanet.supportResourceIds.filter(isResourceId)
+      : [];
+    const normalizedSupport = Array.from(new Set(supportResourceIds))
+      .filter(resourceId => resourceId !== generatedPlanet.primaryResourceId)
+      .slice(0, 2);
+
+    seenIds.add(generatedPlanet.id);
+    return [{
+      id: generatedPlanet.id,
+      sequence,
+      primaryResourceId: generatedPlanet.primaryResourceId,
+      supportResourceIds: normalizedSupport,
+      orbitIndex,
+      orbitPosition,
+    }];
+  });
+}
+
+function normalizeItemCosts(value: unknown): ItemCost[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap(entry => {
+    if (!entry || typeof entry !== 'object') {
+      return [];
+    }
+
+    const cost = entry as Partial<ItemCost>;
+    if (!isItemId(cost.itemId)) {
+      return [];
+    }
+
+    const amount = Math.max(1, Math.floor(normalizeNonNegativeNumber(cost.amount)));
+    return [{ itemId: cost.itemId, amount }];
+  });
+}
+
+function normalizeExpeditionMission(value: unknown): ExpeditionMission | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const mission = value as Partial<ExpeditionMission>;
+  const targetSequence = Math.max(1, Math.floor(normalizeNonNegativeNumber(mission.targetSequence)));
+  const departAt = normalizeNonNegativeNumber(mission.departAt);
+  const arriveAt = normalizeNonNegativeNumber(mission.arriveAt);
+  const fuelRequired = Math.max(1, Math.floor(normalizeNonNegativeNumber(mission.fuelRequired)));
+
+  if (arriveAt < departAt) {
+    return null;
+  }
+
+  return {
+    targetSequence,
+    departAt,
+    arriveAt,
+    fuelRequired,
+    launchCost: normalizeItemCosts(mission.launchCost),
+  };
+}
+
+function normalizeExpeditionState(value: unknown): ExpeditionState {
+  if (!value || typeof value !== 'object') {
+    return {
+      shipBuilt: false,
+      engineLevel: 0,
+      fuelLevel: 0,
+      expeditionsCompleted: 0,
+      activeMission: null,
+    };
+  }
+
+  const expedition = value as Partial<ExpeditionState>;
+  return {
+    shipBuilt: !!expedition.shipBuilt,
+    engineLevel: Math.floor(normalizeNonNegativeNumber(expedition.engineLevel)),
+    fuelLevel: Math.floor(normalizeNonNegativeNumber(expedition.fuelLevel)),
+    expeditionsCompleted: Math.floor(normalizeNonNegativeNumber(expedition.expeditionsCompleted)),
+    activeMission: normalizeExpeditionMission(expedition.activeMission),
   };
 }
 
@@ -174,18 +300,29 @@ function getProgressScore(state: GameState): number {
     + state.totalClicks
     + (state.builtShipPartIds.length * 100)
     + (state.discoveredPlanetIds.length * 250)
+    + (state.generatedPlanets.length * 900)
     + (state.ships.length * 500)
     + (state.shipRoutes.length * 250)
-    + (state.spaceStations.length * 750);
+    + (state.spaceStations.length * 750)
+    + (state.expedition.expeditionsCompleted * 1_200)
+    + (state.expedition.engineLevel * 250)
+    + (state.expedition.fuelLevel * 250)
+    + (state.expedition.shipBuilt ? 1_500 : 0);
 }
 
 function isDefaultLikeState(state: GameState): boolean {
   return state.totalClicks === 0
     && RESOURCE_IDS.every(resourceId => (state.totalMined[resourceId] ?? 0) === 0)
     && state.builtShipPartIds.length === 0
+    && state.generatedPlanets.length === 0
     && state.ships.length === 0
     && state.shipRoutes.length === 0
-    && state.spaceStations.length === 0;
+    && state.spaceStations.length === 0
+    && !state.expedition.shipBuilt
+    && state.expedition.engineLevel === 0
+    && state.expedition.fuelLevel === 0
+    && state.expedition.expeditionsCompleted === 0
+    && !state.expedition.activeMission;
 }
 
 function shouldPreferLegacySave(legacyState: GameState, currentState: GameState | null): boolean {
@@ -219,6 +356,14 @@ export function buildDefaultGameState(): GameState {
       PLANETS.map(planet => planet.id),
       ALL_ITEM_IDS,
     ),
+    generatedPlanets: [],
+    expedition: {
+      shipBuilt: false,
+      engineLevel: 0,
+      fuelLevel: 0,
+      expeditionsCompleted: 0,
+      activeMission: null,
+    },
     activeResourceId: 'carbon',
     upgradeLevels: {},
     autoMinerCounts: {},
@@ -239,13 +384,16 @@ export function buildDefaultGameState(): GameState {
 
 export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState {
   const defaults = buildDefaultGameState();
+  const generatedPlanets = normalizeGeneratedPlanets(saved.generatedPlanets);
+  const knownPlanetIds = buildKnownPlanetIds(generatedPlanets);
+  const knownPlanetIdSet = new Set(knownPlanetIds);
   const currentPlanetId =
-    saved.currentPlanetId && getPlanet(saved.currentPlanetId)
+    saved.currentPlanetId && knownPlanetIdSet.has(saved.currentPlanetId)
       ? saved.currentPlanetId
       : defaults.currentPlanetId;
 
   const planetInventories = buildPlanetItemMatrix(
-    PLANETS.map(planet => planet.id),
+    knownPlanetIds,
     ALL_ITEM_IDS,
   );
 
@@ -270,7 +418,7 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
   const seenStationPlanets = new Set<string>();
   const spaceStations = (saved.spaceStations ?? []).flatMap(station => {
     if (
-      !getPlanet(station.planetId)
+      !knownPlanetIdSet.has(station.planetId)
       || !getSpaceStationBlueprint(station.blueprintId)
       || seenStationPlanets.has(station.planetId)
     ) {
@@ -285,7 +433,7 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
   });
   const stationPlanetIds = new Set(spaceStations.map(station => station.planetId));
   const stationInventories = buildPlanetItemMatrix(
-    PLANETS.map(planet => planet.id),
+    knownPlanetIds,
     ALL_ITEM_IDS,
   );
 
@@ -301,8 +449,13 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
   });
 
   const routes = (saved.shipRoutes ?? []).flatMap(route => {
-    const origin = normalizeLocation(route.originPlanetId, route.originKind, stationPlanetIds);
-    const destination = normalizeLocation(route.destinationPlanetId, route.destinationKind, stationPlanetIds);
+    const origin = normalizeLocation(route.originPlanetId, route.originKind, knownPlanetIdSet, stationPlanetIds);
+    const destination = normalizeLocation(
+      route.destinationPlanetId,
+      route.destinationKind,
+      knownPlanetIdSet,
+      stationPlanetIds,
+    );
 
     if (
       !origin
@@ -336,10 +489,11 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
       return [];
     }
 
-    const transit = normalizeTransit(ship.transit, stationPlanetIds);
+    const transit = normalizeTransit(ship.transit, knownPlanetIdSet, stationPlanetIds);
     const dockedLocation = normalizeLocation(
       ship.currentPlanetId,
       ship.currentLocationKind,
+      knownPlanetIdSet,
       stationPlanetIds,
     ) ?? createPlanetLocation(currentPlanetId);
     const cargoItemId = isItemId(ship.cargo?.itemId) ? ship.cargo.itemId : null;
@@ -362,12 +516,41 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
     return [normalizedShip];
   });
 
+  const discoveredPlanetIds = Array.from(new Set(
+    (
+      saved.discoveredPlanetIds && saved.discoveredPlanetIds.length > 0
+        ? saved.discoveredPlanetIds
+        : defaults.discoveredPlanetIds
+    ).filter(planetId => knownPlanetIdSet.has(planetId)),
+  ));
+  generatedPlanets.forEach(planet => {
+    if (!discoveredPlanetIds.includes(planet.id)) {
+      discoveredPlanetIds.push(planet.id);
+    }
+  });
+  if (!discoveredPlanetIds.includes(defaults.currentPlanetId)) {
+    discoveredPlanetIds.unshift(defaults.currentPlanetId);
+  }
+
+  const expedition = normalizeExpeditionState(saved.expedition);
+  const expeditionsCompleted = Math.max(expedition.expeditionsCompleted, generatedPlanets.length);
+  const activeMission = expedition.activeMission && expedition.activeMission.targetSequence > expeditionsCompleted
+    ? expedition.activeMission
+    : null;
+
   const merged: GameState = {
     ...defaults,
     ...saved,
     version: SAVE_VERSION,
     planetInventories,
     stationInventories,
+    generatedPlanets,
+    expedition: {
+      ...defaults.expedition,
+      ...expedition,
+      expeditionsCompleted,
+      activeMission,
+    },
     totalMined: {
       ...defaults.totalMined,
       ...(saved.totalMined ?? {}),
@@ -375,10 +558,7 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
     upgradeLevels: saved.upgradeLevels ?? defaults.upgradeLevels,
     autoMinerCounts: saved.autoMinerCounts ?? defaults.autoMinerCounts,
     builtShipPartIds: saved.builtShipPartIds ?? defaults.builtShipPartIds,
-    discoveredPlanetIds:
-      saved.discoveredPlanetIds && saved.discoveredPlanetIds.length > 0
-        ? saved.discoveredPlanetIds
-        : defaults.discoveredPlanetIds,
+    discoveredPlanetIds,
     currentPlanetId,
     ships,
     shipRoutes: routes,

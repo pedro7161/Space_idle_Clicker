@@ -1,3 +1,4 @@
+import { ExpeditionState, GeneratedPlanetSeed } from './expedition.model';
 import { ItemId, ResourceId } from './resource.model';
 import { OwnedShip, ShipRoute } from './ship.model';
 import { OwnedSpaceStation } from './space-station.model';
@@ -6,6 +7,8 @@ export interface GameState {
   version: number;
   planetInventories: Record<string, Record<ItemId, number>>;
   stationInventories: Record<string, Record<ItemId, number>>;
+  generatedPlanets: GeneratedPlanetSeed[];
+  expedition: ExpeditionState;
   activeResourceId: ResourceId;
   upgradeLevels: Record<string, number>;
   autoMinerCounts: Record<string, number>;

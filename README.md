@@ -2,7 +2,7 @@
 
 Frontier Miner is a browser-based incremental resource game built with Angular.
 
-The game starts on a safe frontier world where the player manually mines raw materials, unlocks crafting, builds automation, and works toward assembling a first ship. It now pushes into a broader multi-planet production game where worlds have local surface inventories, orbital stations hold their own stock, ships carry live cargo between endpoints, and late-frontier planets drive the uranium-tier economy.
+The game starts on a safe frontier world where the player manually mines raw materials, unlocks crafting, builds automation, and works toward assembling a first ship. It now pushes into a broader multi-planet production game where worlds have local surface inventories, orbital stations hold their own stock, ships carry live cargo between endpoints, late-frontier planets drive the uranium-tier economy, and a dedicated explorer program can keep generating new worlds beyond the handcrafted system.
 
 ## Game Idea
 
@@ -17,6 +17,7 @@ The core loop is:
 7. Expand into a broader interplanetary economy with route-based logistics.
 8. Build orbital stations to create new logistics destinations, separate orbital storage, and improve cargo throughput.
 9. Push into deeper planets for titanium, rare crystal, and uranium to drive late-game scaling.
+10. Finish charting the handcrafted system, commission an explorer skiff, and run repeatable expeditions that discover generated frontier planets with rising fuel and time costs.
 
 The design is meant to focus on bottlenecks and tradeoffs rather than passive growth from the start. The player is expected to switch focus often depending on which material is currently blocking progress.
 
@@ -37,10 +38,13 @@ The current prototype includes:
 - multiple ship tiers with different cargo and speed tradeoffs
 - higher-tier ships required for deeper planets
 - dedicated overview workspace for network totals plus per-planet, per-station, and fleet-cargo stock
-- dedicated fleet management workspace with route filters for activity and planet traffic
+- dedicated fleet management workspace with route filters, an expedition deck, and switchable 2D/3D system maps
 - expandable operations workspace with dedicated resources, upgrades, crafting, automation, and launch tabs
 - repeatable ship logistics routes between planetary surfaces and orbital stations
 - orbital station construction on discovered planets with separate orbital storage
+- dedicated explorer ship with engine and fuel upgrade paths
+- repeatable frontier expeditions that generate additional planets and persist them in the save state
+- expandable system maps with a wide draggable 2D logistics chart plus a rotatable 3D star view
 - collapsible top command header to free vertical space
 - in-game changelog viewer
 - save/load through local storage
@@ -56,6 +60,8 @@ The current playable structure looks like this:
 3. Mid-system worlds specialize into chains such as copper, silica, hydrogen, and titanium.
 4. Orbital stations split surface stock from orbital stock, open new route targets, and improve shipping efficiency.
 5. Deep frontier progression ends in `Helion Breach`, a highest-tier uranium world meant to justify much stronger upgrade returns.
+6. Once every handcrafted world is charted, the explorer program unlocks with its own ship build, speed upgrades, and fuel upgrades.
+7. Successful expeditions keep adding generated frontier planets, with each search taking longer and demanding more fuel than the last.
 
 Planned direction:
 
@@ -63,7 +69,7 @@ Planned direction:
 - stronger station and hub systems
 - richer logistics and shipping systems
 - stronger multi-planet production chains
-- more progression depth beyond the first ship
+- richer late-game systems layered on top of the infinite frontier
 
 ## Tech Stack
 
@@ -111,4 +117,4 @@ Repo-level project documentation lives here:
 
 ## Status
 
-This project is still evolving. The current codebase already reflects the mining, overview, crafting, automation, ship-building, filtered fleet command, surface-and-station route logistics, deep-resource planets, and uranium-tier progression loop, but broader hub automation and later-game economy layers are still in progress.
+This project is still evolving. The current codebase already reflects the mining, overview, crafting, automation, ship-building, filtered fleet command, surface-and-station route logistics, deep-resource planets, explorer expeditions, generated frontier planets, and switchable 2D/3D system-map loop, but broader hub automation and later-game economy layers are still in progress.

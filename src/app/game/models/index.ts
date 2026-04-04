@@ -1,5 +1,6 @@
 export type { Automation } from './automation.model';
 export type { AutoMiner } from './auto-miner.model';
+export type { ExpeditionMission, ExpeditionState, GeneratedPlanetSeed } from './expedition.model';
 export type { FloatingText } from './floating-text.model';
 export type { GameState } from './game-state.model';
 export type { LogisticsLocation, LogisticsLocationKind } from './logistics-location.model';

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FleetManagerComponent } from './fleet-manager.component';
 import { GameService } from '../../services/game.service';
+import { PLANETS } from '../../constants/planets.data';
 
 describe('FleetManagerComponent', () => {
   let fixture: ComponentFixture<FleetManagerComponent>;
@@ -125,5 +126,42 @@ describe('FleetManagerComponent', () => {
     component.updateRoutePlanetFilter('cinder');
     component.routePlanetTrafficFilter = 'any';
     expect(component.filteredShips.map(ship => ship.id)).toEqual(['ship-idle']);
+  });
+
+  it('should expand the system map into fullscreen mode', () => {
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const mapPanel = nativeElement.querySelector('[data-testid="fleet-system-map-panel"]');
+
+    expect(mapPanel?.className).not.toContain('fixed');
+
+    component.toggleSystemMapExpanded();
+    fixture.detectChanges();
+
+    expect(nativeElement.querySelector('[data-testid="fleet-system-map-panel"]')?.className).toContain('fixed');
+  });
+
+  it('should switch the system map into 3d mode', () => {
+    component.setSystemMapViewMode('3d');
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    expect(component.systemMapViewMode).toBe('3d');
+    expect(nativeElement.querySelector('[data-testid="fleet-system-map-3d"]')).toBeTruthy();
+  });
+
+  it('should show the expedition deck once every handcrafted planet is discovered', () => {
+    const state = (gameService as any).state;
+    state.discoveredPlanetIds = PLANETS.map(planet => planet.id);
+
+    component.activeSection = 'expeditions';
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(text).toContain('Expeditions');
+    expect(text).toContain('Build Explorer Ship');
+    expect(text).toContain('Next target:');
+    expect(text).toContain('0 frontier worlds');
   });
 });
