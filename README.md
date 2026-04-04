@@ -39,6 +39,7 @@ The current prototype includes:
 - higher-tier ships required for deeper planets
 - dedicated overview workspace for network totals plus per-planet, per-station, and fleet-cargo stock
 - dedicated fleet management workspace with route filters, an expedition deck, and switchable 2D/3D system maps
+- localized UI support for English, Portuguese, Brazilian Portuguese, Spanish, and French
 - expandable operations workspace with dedicated resources, upgrades, crafting, automation, and launch tabs
 - repeatable ship logistics routes between planetary surfaces and orbital stations
 - orbital station construction on discovered planets with separate orbital storage

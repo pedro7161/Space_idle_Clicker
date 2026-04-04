@@ -1,0 +1,47 @@
+{
+  "planets": {
+    "solara": {
+      "name": "Cuenca Solara",
+      "description": "El mundo inicial seguro. Rendimientos equilibrados, infraestructura ligera y un entorno estable para aprender lo básico."
+    },
+    "ferros": {
+      "name": "Cuna de Ferros",
+      "description": "Un mundo metálico donde las vetas de ferrita son densas, pero los depósitos de combustible son escasos."
+    },
+    "verdara": {
+      "name": "Deriva Verdara",
+      "description": "Una atmósfera volátil hace que el oxígeno sea fácil de recolectar y la ferrita más difícil de extraer con limpieza."
+    },
+    "glassmere": {
+      "name": "Extensión Glassmere",
+      "description": "Una cuenca desértica deslumbrante rica en dunas de sílice, con atmósfera suficiente para sostener plataformas de exportación."
+    },
+    "cinder": {
+      "name": "Extensión Cinder",
+      "description": "Un planeta de cenizas abrasadoras donde el carbono es abundante y todo lo demás se resiste."
+    },
+    "voltaris": {
+      "name": "Espiral Voltaris",
+      "description": "Un mundo conductor envuelto en tormentas, donde las vetas de cobre corren calientes bajo un cielo eléctrico violento."
+    },
+    "nivalis": {
+      "name": "Deriva Nivalis",
+      "description": "Un mundo helado y rico en gases donde las bolsas de hidrógeno y las heladas minerales hacen que cada carga se sienta inestable."
+    },
+    "titanreach": {
+      "name": "Forja Titanreach",
+      "description": "Un mundo industrial de gravedad brutal con capas profundas de titanio y cinturones de ferrita pesada."
+    },
+    "umbra": {
+      "name": "Bóveda Umbra",
+      "description": "Un mundo oscuro y fracturado donde los cristales raros crecen en cavernas sombrías y cada prospección cuesta caro."
+    },
+    "helion": {
+      "name": "Ruptura Helion",
+      "description": "El mundo de frontera de nivel más alto. Las vetas irradiadas de uranio lo vuelven peligroso, rentable y digno de preparar."
+    }
+  },
+  "frontier": {
+    "description": "Un mundo de frontera marcado por la prospección, rico en {primary}, con vetas de apoyo de {support}. Cada expedición exitosa empuja la búsqueda más adentro de la órbita desconocida {depth}."
+  }
+}

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SettingsDialogComponent } from './settings-dialog.component';
 import { Component } from '@angular/core';
+import { SupportedLocale } from '../../i18n/game-messages';
 
 @Component({
   standalone: true,
@@ -18,11 +19,14 @@ import { Component } from '@angular/core';
 class TestHostComponent {
   exportCode = 'test-export-code';
   exportFileContents = '{"test": true}';
-  currentLocale: 'en' | 'pt' = 'en';
+  currentLocale: SupportedLocale = 'en';
   devModeEnabled = true;
   localeOptions = [
     { id: 'en' as const, label: 'English' },
-    { id: 'pt' as const, label: 'Português' },
+    { id: 'pt' as const, label: 'Português (Portugal)' },
+    { id: 'pt-BR' as const, label: 'Português (Brasil)' },
+    { id: 'es' as const, label: 'Español' },
+    { id: 'fr' as const, label: 'Français' },
   ];
 }
 
@@ -87,8 +91,8 @@ describe('SettingsDialogComponent', () => {
 
   it('should emit localeChanged when onLocaleChange is called', () => {
     spyOn(component.localeChanged, 'emit');
-    component.onLocaleChange('pt');
-    expect(component.localeChanged.emit).toHaveBeenCalledWith('pt');
+    component.onLocaleChange('pt-BR');
+    expect(component.localeChanged.emit).toHaveBeenCalledWith('pt-BR');
   });
 
   it('should emit devGrantRequested when a valid dev grant is requested', () => {

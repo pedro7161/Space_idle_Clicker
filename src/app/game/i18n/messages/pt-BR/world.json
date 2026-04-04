@@ -1,0 +1,47 @@
+{
+  "planets": {
+    "solara": {
+      "name": "Bacia Solara",
+      "description": "O mundo inicial seguro. Rendimentos equilibrados, infraestrutura leve e um ambiente estável para aprender o básico."
+    },
+    "ferros": {
+      "name": "Berço de Ferros",
+      "description": "Um mundo metálico onde as veias de ferrite são densas, mas os depósitos de combustível são escassos."
+    },
+    "verdara": {
+      "name": "Deriva Verdara",
+      "description": "Uma atmosfera volátil torna o oxigênio fácil de coletar e a ferrite mais difícil de extrair com limpeza."
+    },
+    "glassmere": {
+      "name": "Extensão Glassmere",
+      "description": "Uma bacia desértica ofuscante rica em dunas de sílica, com atmosfera suficiente para sustentar plataformas de exportação."
+    },
+    "cinder": {
+      "name": "Extensão Cinder",
+      "description": "Um planeta de cinzas abrasadoras onde o carbono é abundante e tudo o resto resiste."
+    },
+    "voltaris": {
+      "name": "Espiral Voltaris",
+      "description": "Um mundo condutor envolto em tempestades, onde veios de cobre correm quentes sob um céu elétrico violento."
+    },
+    "nivalis": {
+      "name": "Deriva Nivalis",
+      "description": "Um mundo gelado e rico em gases onde bolsas de hidrogênio e geadas minerais tornam cada carga instável."
+    },
+    "titanreach": {
+      "name": "Forja Titanreach",
+      "description": "Um mundo industrial de gravidade brutal com camadas profundas de titânio e cinturões de ferrite pesada."
+    },
+    "umbra": {
+      "name": "Cofre Umbra",
+      "description": "Um mundo escuro e fraturado onde cristais raros crescem em cavernas sombrias e cada prospecção custa caro."
+    },
+    "helion": {
+      "name": "Ruptura Helion",
+      "description": "O mundo de fronteira de nível mais alto. As veias irradiadas de urânio tornam-no perigoso, lucrativo e digno de preparação."
+    }
+  },
+  "frontier": {
+    "description": "Um mundo de fronteira marcado por prospecção, rico em {primary}, com veios de apoio de {support}. Cada expedição bem-sucedida empurra a busca mais fundo na órbita desconhecida {depth}."
+  }
+}
