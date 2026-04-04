@@ -54,7 +54,7 @@
           }
         </nav>
 
-        <div class="min-h-0 overflow-y-auto overscroll-contain p-4 min-[1600px]:p-5">
+        <div class="min-h-0 overflow-y-auto overscroll-contain p-4 pb-12 min-[1600px]:p-5 min-[1600px]:pb-14">
           <ng-container [ngTemplateOutlet]="tabContentTemplate"></ng-container>
         </div>
       </div>
@@ -129,7 +129,7 @@
         }
       </nav>
 
-      <div class="min-h-0 overflow-y-auto overscroll-contain p-4 min-[1600px]:p-5">
+      <div class="min-h-0 overflow-y-auto overscroll-contain p-4 pb-12 min-[1600px]:p-5 min-[1600px]:pb-14">
         <ng-container [ngTemplateOutlet]="tabContentTemplate"></ng-container>
       </div>
     </div>
@@ -350,7 +350,7 @@
         </div>
       }
 
-      @for (resource of resources; track resource.id) {
+      @for (resource of currentPlanetResources; track resource.id) {
         <div class="grid gap-3 min-[1600px]:gap-4">
           <div class="flex items-center justify-between gap-3">
             <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 min-[1600px]:text-[0.88rem]">

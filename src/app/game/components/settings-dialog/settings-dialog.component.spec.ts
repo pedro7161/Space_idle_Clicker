@@ -11,6 +11,7 @@ import { Component } from '@angular/core';
       [exportFileContents]="exportFileContents"
       [currentLocale]="currentLocale"
       [localeOptions]="localeOptions"
+      [devModeEnabled]="devModeEnabled"
     />
   `,
 })
@@ -18,6 +19,7 @@ class TestHostComponent {
   exportCode = 'test-export-code';
   exportFileContents = '{"test": true}';
   currentLocale: 'en' | 'pt' = 'en';
+  devModeEnabled = true;
   localeOptions = [
     { id: 'en' as const, label: 'English' },
     { id: 'pt' as const, label: 'Português' },
@@ -87,6 +89,28 @@ describe('SettingsDialogComponent', () => {
     spyOn(component.localeChanged, 'emit');
     component.onLocaleChange('pt');
     expect(component.localeChanged.emit).toHaveBeenCalledWith('pt');
+  });
+
+  it('should emit devGrantRequested when a valid dev grant is requested', () => {
+    spyOn(component.devGrantRequested, 'emit');
+    component.devGrantAmount = 1500;
+
+    component.requestDevGrant('currentPlanet');
+
+    expect(component.devGrantRequested.emit).toHaveBeenCalledWith({
+      amount: 1500,
+      scope: 'currentPlanet',
+    });
+  });
+
+  it('should show feedback instead of emitting when dev grant amount is invalid', () => {
+    spyOn(component.devGrantRequested, 'emit');
+    component.devGrantAmount = 0;
+
+    component.requestDevGrant('allPlanets');
+
+    expect(component.devGrantRequested.emit).not.toHaveBeenCalled();
+    expect(component.feedbackTone).toBe('error');
   });
 
   it('should emit resetRequested output', () => {

@@ -14,13 +14,16 @@ export class SettingsDialogComponent {
   readonly exportFileContents = input.required<string>();
   readonly currentLocale = input.required<SupportedLocale>();
   readonly localeOptions = input.required<Array<{ id: SupportedLocale; label: string }>>();
+  readonly devModeEnabled = input(false);
   readonly closed = output<void>();
   readonly importRequested = output<string>();
   readonly localeChanged = output<SupportedLocale>();
   readonly resetRequested = output<void>();
   readonly changelogRequested = output<void>();
+  readonly devGrantRequested = output<{ amount: number; scope: 'currentPlanet' | 'allPlanets' }>();
 
   importValue = '';
+  devGrantAmount = 1000;
   feedbackMessage = '';
   feedbackTone: 'neutral' | 'success' | 'error' = 'neutral';
 
@@ -67,6 +70,16 @@ export class SettingsDialogComponent {
 
   onLocaleChange(locale: SupportedLocale): void {
     this.localeChanged.emit(locale);
+  }
+
+  requestDevGrant(scope: 'currentPlanet' | 'allPlanets'): void {
+    const amount = Math.floor(Number(this.devGrantAmount));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      this.setFeedback(this.copy.messages.ui.settingsDialog.devGrantError, 'error');
+      return;
+    }
+
+    this.devGrantRequested.emit({ amount, scope });
   }
 
   updateFeedback(message: string, tone: 'success' | 'error'): void {

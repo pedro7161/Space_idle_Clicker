@@ -11,6 +11,7 @@ import { GameMessagesService } from './i18n/game-messages';
 import { SettingsDialogComponent } from './components/settings-dialog/settings-dialog.component';
 import { ChangelogDialogComponent } from './components/changelog-dialog/changelog-dialog.component';
 import { SupportedLocale } from './i18n/game-messages';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-game',
@@ -29,6 +30,7 @@ import { SupportedLocale } from './i18n/game-messages';
   templateUrl: './game.component.html',
 })
 export class GameComponent implements OnDestroy {
+  readonly devModeEnabled = !environment.production;
   activeWorkspace: 'surface' | 'overview' | 'operations' | 'ships' = 'surface';
   hasStarted = false;
   hasSavedGame = false;
@@ -183,5 +185,29 @@ export class GameComponent implements OnDestroy {
     setTimeout(() => {
       window.location.reload();
     }, 250);
+  }
+
+  grantDevResources(
+    dialog: SettingsDialogComponent,
+    request: { amount: number; scope: 'currentPlanet' | 'allPlanets' },
+  ): void {
+    const granted = this.game.grantDevResources(request.amount, request.scope);
+    if (!granted) {
+      dialog.updateFeedback(this.copy.messages.ui.settingsDialog.devGrantError, 'error');
+      return;
+    }
+
+    this.exportSaveValue = this.game.exportSave();
+    this.exportSaveFileContents = this.game.exportSaveFileContents();
+    const target = request.scope === 'allPlanets'
+      ? this.copy.messages.ui.settingsDialog.devAllPlanets
+      : this.copy.messages.ui.settingsDialog.devCurrentPlanet;
+    dialog.updateFeedback(
+      this.copy.format(this.copy.messages.ui.settingsDialog.devGrantSuccess, {
+        amount: request.amount,
+        target,
+      }),
+      'success',
+    );
   }
 }

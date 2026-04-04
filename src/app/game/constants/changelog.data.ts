@@ -20,6 +20,93 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: '0.6.3',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Fleet Filters and Orbital Route Targets',
+      pt: 'Filtros da Frota e Alvos de Rota Orbitais',
+    },
+    summary: {
+      en: 'Fleet Command now filters ships by activity and planet traffic, stations can act as route endpoints, and orbit spacing reads less uniformly on the map.',
+      pt: 'O Comando da Frota passa agora a filtrar naves por atividade e tráfego planetário, as estações podem servir como destinos de rota, e o espaçamento orbital fica menos uniforme no mapa.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'Route filters in Fleet Command for working ships, idle ships, docked ships, in-transit ships, and planet-specific sending or receiving traffic.',
+        pt: 'Filtros de rotas no Comando da Frota para naves em trabalho, paradas, atracadas, em trânsito, e tráfego específico de envio ou receção por planeta.',
+      },
+      {
+        type: 'added',
+        en: 'Orbital stations now act as selectable logistics endpoints with their own inventory layer, and the overview tracks stock on surfaces, stations, and ships.',
+        pt: 'As estações orbitais passam agora a servir como destinos logísticos selecionáveis com a sua própria camada de inventário, e a visão geral acompanha o stock nas superfícies, nas estações e nas naves.',
+      },
+      {
+        type: 'changed',
+        en: 'System map orbit spacing now uses uneven orbital positions so route distance labels and world spacing read less like a perfect ladder.',
+        pt: 'O espaçamento orbital no mapa do sistema passa agora a usar posições orbitais desiguais para que as distâncias das rotas e o espaçamento dos mundos pareçam menos uma escada perfeita.',
+      },
+    ],
+  },
+  {
+    version: '0.6.2',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Fleet Maps and Route Stability',
+      pt: 'Mapas da Frota e Estabilidade das Rotas',
+    },
+    summary: {
+      en: 'Fleet Command now includes an orbit map, the ships workspace uses the full screen width, and route setup behaves reliably.',
+      pt: 'O Comando da Frota passa agora a incluir um mapa orbital, o espaço de naves usa toda a largura do ecrã, e a configuração de rotas comporta-se de forma fiável.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'A system map in Fleet Command that plots discovered planets by orbit, shows route corridors, and tracks ships in transit.',
+        pt: 'Um mapa do sistema no Comando da Frota que coloca os planetas descobertos por órbita, mostra os corredores de rota e acompanha as naves em trânsito.',
+      },
+      {
+        type: 'changed',
+        en: 'The ships workspace now expands across the full desktop layout instead of staying constrained to the left content column.',
+        pt: 'O espaço de naves passa agora a expandir-se por toda a largura do layout em desktop em vez de ficar limitado à coluna de conteúdo da esquerda.',
+      },
+      {
+        type: 'fixed',
+        en: 'Route destination dropdowns now keep the selected planet correctly and only list planets that the current ship tier can actually reach.',
+        pt: 'Os menus de destino das rotas passam agora a manter corretamente o planeta escolhido e a listar apenas os planetas que o nível atual da nave consegue realmente alcançar.',
+      },
+    ],
+  },
+  {
+    version: '0.6.1',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Dev Tools and Panel Polish',
+      pt: 'Ferramentas Dev e Polimento dos Painéis',
+    },
+    summary: {
+      en: 'Non-production builds now include fast progression tools, and long operation panels scroll more cleanly.',
+      pt: 'As builds não produtivas passam agora a incluir ferramentas para acelerar a progressão, e os painéis longos de operações fazem scroll de forma mais limpa.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'A dev-only tools section in Settings with one-click resource grants for the current planet or every planet.',
+        pt: 'Uma secção de ferramentas apenas para dev nas Definições com atribuição de recursos num clique para o planeta atual ou para todos os planetas.',
+      },
+      {
+        type: 'fixed',
+        en: 'The settings menu now scrolls inside the dialog when the content grows beyond the viewport.',
+        pt: 'O menu de definições passa agora a fazer scroll dentro do diálogo quando o conteúdo ultrapassa a altura da janela.',
+      },
+      {
+        type: 'fixed',
+        en: 'The operations panel now leaves enough space at the bottom of long upgrade lists so completed sections remain reachable.',
+        pt: 'O painel de operações passa agora a deixar espaço suficiente no fundo das listas longas de melhorias para que as secções concluídas continuem acessíveis.',
+      },
+    ],
+  },
+  {
     version: '0.6.0',
     releasedAt: '2026-04-04',
     title: {

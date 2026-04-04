@@ -8,6 +8,7 @@ export const RECIPES: Recipe[] = [
     id: 'condensed-carbon',
     name: recipeMessages['condensed-carbon'].name,
     description: recipeMessages['condensed-carbon'].description,
+    resourceIds: ['carbon'],
     ingredients: [{ itemId: 'carbon', amount: 25 }],
     outputId: 'condensedCarbon',
     outputAmount: 1,
@@ -19,6 +20,7 @@ export const RECIPES: Recipe[] = [
     id: 'refined-metal',
     name: recipeMessages['refined-metal'].name,
     description: recipeMessages['refined-metal'].description,
+    resourceIds: ['ferrite'],
     ingredients: [{ itemId: 'ferrite', amount: 25 }],
     outputId: 'refinedMetal',
     outputAmount: 1,
@@ -30,6 +32,7 @@ export const RECIPES: Recipe[] = [
     id: 'oxygen-cells',
     name: recipeMessages['oxygen-cells'].name,
     description: recipeMessages['oxygen-cells'].description,
+    resourceIds: ['oxygen'],
     ingredients: [{ itemId: 'oxygen', amount: 20 }],
     outputId: 'oxygenCells',
     outputAmount: 1,
@@ -41,6 +44,7 @@ export const RECIPES: Recipe[] = [
     id: 'mechanical-parts',
     name: recipeMessages['mechanical-parts'].name,
     description: recipeMessages['mechanical-parts'].description,
+    resourceIds: ['carbon', 'ferrite'],
     ingredients: [
       { itemId: 'refinedMetal', amount: 3 },
       { itemId: 'condensedCarbon', amount: 2 },
@@ -55,6 +59,7 @@ export const RECIPES: Recipe[] = [
     id: 'basic-circuits',
     name: recipeMessages['basic-circuits'].name,
     description: recipeMessages['basic-circuits'].description,
+    resourceIds: ['ferrite', 'oxygen'],
     ingredients: [
       { itemId: 'oxygenCells', amount: 2 },
       { itemId: 'refinedMetal', amount: 2 },
@@ -69,6 +74,7 @@ export const RECIPES: Recipe[] = [
     id: 'titanium-alloy',
     name: recipeMessages['titanium-alloy'].name,
     description: recipeMessages['titanium-alloy'].description,
+    resourceIds: ['titanium', 'ferrite', 'carbon'],
     ingredients: [
       { itemId: 'titanium', amount: 18 },
       { itemId: 'refinedMetal', amount: 4 },
@@ -84,6 +90,7 @@ export const RECIPES: Recipe[] = [
     id: 'reactor-cores',
     name: recipeMessages['reactor-cores'].name,
     description: recipeMessages['reactor-cores'].description,
+    resourceIds: ['uranium', 'rareCrystal', 'titanium', 'ferrite', 'oxygen'],
     ingredients: [
       { itemId: 'uranium', amount: 12 },
       { itemId: 'rareCrystal', amount: 8 },

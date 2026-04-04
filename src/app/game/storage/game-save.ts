@@ -8,8 +8,14 @@ import {
 import type {
   GameState,
   ItemId,
+  LogisticsLocation,
+  LogisticsLocationKind,
   OwnedShip,
+  ShipRoute,
+  ShipStatus,
+  ShipTransit,
 } from '../models';
+import { createPlanetLocation, isSameLogisticsLocation } from '../models';
 
 export type LegacySavedState = Partial<GameState> & {
   inventory?: Record<ItemId, number>;
@@ -23,7 +29,7 @@ export interface StorageLike {
   setItem(key: string, value: string): void;
 }
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SAVE_KEY_PREFIX = 'space-idle-save-v';
 export const CURRENT_SAVE_KEY = `${SAVE_KEY_PREFIX}${SAVE_VERSION}`;
 export const SAVE_TRANSFER_PREFIX = 'frontier-miner-save:';
@@ -60,6 +66,71 @@ function getSpaceStationBlueprint(blueprintId: string) {
   return SPACE_STATION_BLUEPRINTS.find(blueprint => blueprint.id === blueprintId);
 }
 
+function isItemId(value: unknown): value is ItemId {
+  return typeof value === 'string' && ALL_ITEM_IDS.includes(value as ItemId);
+}
+
+function isLogisticsLocationKind(value: unknown): value is LogisticsLocationKind {
+  return value === 'planet' || value === 'station';
+}
+
+function isShipStatus(value: unknown): value is ShipStatus {
+  return value === 'idle' || value === 'outbound' || value === 'returning';
+}
+
+function normalizeNonNegativeNumber(value: unknown): number {
+  const numericValue = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(numericValue) ? Math.max(0, numericValue) : 0;
+}
+
+function normalizeLocation(
+  planetId: unknown,
+  kind: unknown,
+  stationPlanetIds: ReadonlySet<string>,
+): LogisticsLocation | null {
+  if (typeof planetId !== 'string' || !getPlanet(planetId)) {
+    return null;
+  }
+
+  const normalizedKind = isLogisticsLocationKind(kind) ? kind : 'planet';
+  if (normalizedKind === 'station' && !stationPlanetIds.has(planetId)) {
+    return null;
+  }
+
+  return {
+    planetId,
+    kind: normalizedKind,
+  };
+}
+
+function normalizeTransit(
+  value: unknown,
+  stationPlanetIds: ReadonlySet<string>,
+): ShipTransit | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const transit = value as Partial<ShipTransit>;
+  const from = normalizeLocation(transit.fromPlanetId, transit.fromKind, stationPlanetIds);
+  const to = normalizeLocation(transit.toPlanetId, transit.toKind, stationPlanetIds);
+  const departAt = normalizeNonNegativeNumber(transit.departAt);
+  const arriveAt = normalizeNonNegativeNumber(transit.arriveAt);
+
+  if (!from || !to || isSameLogisticsLocation(from, to) || arriveAt < departAt) {
+    return null;
+  }
+
+  return {
+    fromPlanetId: from.planetId,
+    fromKind: from.kind,
+    toPlanetId: to.planetId,
+    toKind: to.kind,
+    departAt,
+    arriveAt,
+  };
+}
+
 function createShipInstance(
   definitionId: string,
   planetId: string,
@@ -72,6 +143,7 @@ function createShipInstance(
       routeId: null,
       status: 'idle',
       currentPlanetId: planetId,
+      currentLocationKind: 'planet',
       cargo: { itemId: null, amount: 0 },
       transit: null,
     },
@@ -143,6 +215,10 @@ export function buildDefaultGameState(): GameState {
       PLANETS.map(planet => planet.id),
       ALL_ITEM_IDS,
     ),
+    stationInventories: buildPlanetItemMatrix(
+      PLANETS.map(planet => planet.id),
+      ALL_ITEM_IDS,
+    ),
     activeResourceId: 'carbon',
     upgradeLevels: {},
     autoMinerCounts: {},
@@ -191,44 +267,107 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
     };
   }
 
-  const routes = (saved.shipRoutes ?? []).filter(route => {
-    return !!getPlanet(route.originPlanetId)
-      && !!getPlanet(route.destinationPlanetId)
-      && route.originPlanetId !== route.destinationPlanetId;
-  }).map(route => ({
-    ...route,
-    keepMinimum: Math.max(0, Math.floor(route.keepMinimum ?? 0)),
-    enabled: route.enabled ?? true,
-  }));
+  const seenStationPlanets = new Set<string>();
+  const spaceStations = (saved.spaceStations ?? []).flatMap(station => {
+    if (
+      !getPlanet(station.planetId)
+      || !getSpaceStationBlueprint(station.blueprintId)
+      || seenStationPlanets.has(station.planetId)
+    ) {
+      return [];
+    }
+
+    seenStationPlanets.add(station.planetId);
+    return [{
+      planetId: station.planetId,
+      blueprintId: station.blueprintId,
+    }];
+  });
+  const stationPlanetIds = new Set(spaceStations.map(station => station.planetId));
+  const stationInventories = buildPlanetItemMatrix(
+    PLANETS.map(planet => planet.id),
+    ALL_ITEM_IDS,
+  );
+
+  Object.entries(saved.stationInventories ?? {}).forEach(([planetId, inventory]) => {
+    if (!stationPlanetIds.has(planetId) || !stationInventories[planetId]) {
+      return;
+    }
+
+    stationInventories[planetId] = {
+      ...stationInventories[planetId],
+      ...inventory,
+    };
+  });
+
+  const routes = (saved.shipRoutes ?? []).flatMap(route => {
+    const origin = normalizeLocation(route.originPlanetId, route.originKind, stationPlanetIds);
+    const destination = normalizeLocation(route.destinationPlanetId, route.destinationKind, stationPlanetIds);
+
+    if (
+      !origin
+      || !destination
+      || isSameLogisticsLocation(origin, destination)
+      || typeof route.id !== 'string'
+      || typeof route.shipId !== 'string'
+      || !isItemId(route.itemId)
+    ) {
+      return [];
+    }
+
+    const normalizedRoute: ShipRoute = {
+      id: route.id,
+      shipId: route.shipId,
+      originPlanetId: origin.planetId,
+      originKind: origin.kind,
+      destinationPlanetId: destination.planetId,
+      destinationKind: destination.kind,
+      itemId: route.itemId,
+      keepMinimum: Math.max(0, Math.floor(normalizeNonNegativeNumber(route.keepMinimum))),
+      enabled: route.enabled ?? true,
+    };
+
+    return [normalizedRoute];
+  });
 
   const routeIds = new Set(routes.map(route => route.id));
-  const spaceStations = (saved.spaceStations ?? []).filter(station => {
-    return !!getPlanet(station.planetId)
-      && !!getSpaceStationBlueprint(station.blueprintId);
-  }).map(station => ({
-    planetId: station.planetId,
-    blueprintId: station.blueprintId,
-  }));
-  const ships = (saved.ships ?? []).filter(ship => !!getShipDefinition(ship.definitionId)).map(ship => ({
-    id: ship.id,
-    definitionId: ship.definitionId,
-    routeId: ship.routeId && routeIds.has(ship.routeId) ? ship.routeId : null,
-    status: ship.status ?? 'idle',
-    currentPlanetId: ship.currentPlanetId && getPlanet(ship.currentPlanetId) ? ship.currentPlanetId : currentPlanetId,
-    cargo: {
-      itemId: ship.cargo?.itemId ?? null,
-      amount: ship.cargo?.amount ?? 0,
-    },
-    transit: ship.transit && getPlanet(ship.transit.fromPlanetId) && getPlanet(ship.transit.toPlanetId)
-      ? { ...ship.transit }
-      : null,
-  }));
+  const ships = (saved.ships ?? []).flatMap(ship => {
+    if (!getShipDefinition(ship.definitionId) || typeof ship.id !== 'string') {
+      return [];
+    }
+
+    const transit = normalizeTransit(ship.transit, stationPlanetIds);
+    const dockedLocation = normalizeLocation(
+      ship.currentPlanetId,
+      ship.currentLocationKind,
+      stationPlanetIds,
+    ) ?? createPlanetLocation(currentPlanetId);
+    const cargoItemId = isItemId(ship.cargo?.itemId) ? ship.cargo.itemId : null;
+    const cargoAmount = cargoItemId ? normalizeNonNegativeNumber(ship.cargo?.amount) : 0;
+
+    const normalizedShip: OwnedShip = {
+      id: ship.id,
+      definitionId: ship.definitionId,
+      routeId: ship.routeId && routeIds.has(ship.routeId) ? ship.routeId : null,
+      status: isShipStatus(ship.status) ? ship.status : 'idle',
+      currentPlanetId: transit ? null : dockedLocation.planetId,
+      currentLocationKind: transit ? null : dockedLocation.kind,
+      cargo: {
+        itemId: cargoItemId,
+        amount: cargoAmount,
+      },
+      transit,
+    };
+
+    return [normalizedShip];
+  });
 
   const merged: GameState = {
     ...defaults,
     ...saved,
     version: SAVE_VERSION,
     planetInventories,
+    stationInventories,
     totalMined: {
       ...defaults.totalMined,
       ...(saved.totalMined ?? {}),

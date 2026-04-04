@@ -59,6 +59,10 @@ describe('UpgradePanelComponent', () => {
     expect(component.currentPlanet.id).toBe('solara');
   });
 
+  it('should return all focus resources on solara', () => {
+    expect(component.focusResources.map(resource => resource.id)).toEqual(['carbon', 'ferrite', 'oxygen']);
+  });
+
   it('should return visible recipes (none initially)', () => {
     expect(component.visibleRecipes.length).toBe(0);
   });
@@ -265,5 +269,34 @@ describe('UpgradePanelComponent', () => {
     const resource = gameService.resources[0];
     const requirements = component.getAutomationUnlockRequirements(resource);
     expect(requirements.length).toBeGreaterThan(0);
+  });
+
+  it('should narrow focus resources on specialized planets', () => {
+    (gameService as any).state.currentPlanetId = 'ferros';
+
+    expect(component.focusResources.map(resource => resource.id)).toEqual(['ferrite']);
+  });
+
+  it('should show only local-chain recipes on specialized planets', () => {
+    (gameService as any).state.currentPlanetId = 'ferros';
+    gameService.setActiveResource('ferrite');
+
+    for (let i = 0; i < 30; i++) {
+      gameService.mineActiveResource();
+    }
+
+    fixture.detectChanges();
+
+    expect(component.visibleRecipes.map(recipe => recipe.id)).toEqual(['refined-metal']);
+  });
+
+  it('should show only local-chain automation on specialized planets', () => {
+    (gameService as any).state.currentPlanetId = 'ferros';
+    (gameService as any).state.totalMined.ferrite = 100;
+    (gameService as any).state.planetInventories.ferros.refinedMetal = 5;
+
+    fixture.detectChanges();
+
+    expect(component.visibleAutoMiners.every(miner => miner.resourceId === 'ferrite')).toBeTrue();
   });
 });

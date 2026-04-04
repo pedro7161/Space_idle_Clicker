@@ -115,6 +115,7 @@ describe('GameComponent', () => {
           routeId: null,
           status: 'idle',
           currentPlanetId: state.currentPlanetId,
+          currentLocationKind: 'planet',
           cargo: { itemId: null, amount: 0 },
           transit: null,
         },
@@ -134,6 +135,31 @@ describe('GameComponent', () => {
       component.startGame();
       component.toggleShipsWorkspace();
       expect(component.activeWorkspace).toBe('surface');
+    });
+
+    it('should render the ships workspace full width', () => {
+      component.startGame();
+      const state = gameService.getState();
+      state.shipLaunched = true;
+      state.ships = [
+        {
+          id: 'ship-1',
+          definitionId: 'shuttle',
+          routeId: null,
+          status: 'idle',
+          currentPlanetId: state.currentPlanetId,
+          currentLocationKind: 'planet',
+          cargo: { itemId: null, amount: 0 },
+          transit: null,
+        },
+      ];
+
+      component.toggleShipsWorkspace();
+      fixture.detectChanges();
+
+      const fleetManager = fixture.nativeElement.querySelector('app-fleet-manager');
+      expect(fleetManager).toBeTruthy();
+      expect(fleetManager.className).toContain('min-[960px]:col-span-2');
     });
   });
 
@@ -236,6 +262,26 @@ describe('GameComponent', () => {
       expect(fakeDialog.updateFeedback).toHaveBeenCalled();
       const tone = fakeDialog.updateFeedback.calls.mostRecent().args[1];
       expect(tone).toBe('error');
+    });
+  });
+
+  describe('dev resources', () => {
+    it('should enable dev mode in non-production builds', () => {
+      expect(component.devModeEnabled).toBeTrue();
+    });
+
+    it('should grant dev resources and report success', () => {
+      component.startGame();
+      const fakeDialog = { updateFeedback: jasmine.createSpy('updateFeedback') } as any;
+
+      component.grantDevResources(fakeDialog, {
+        amount: 400,
+        scope: 'currentPlanet',
+      });
+
+      expect(gameService.getInventoryAmount('carbon')).toBe(400);
+      expect(fakeDialog.updateFeedback).toHaveBeenCalled();
+      expect(fakeDialog.updateFeedback.calls.mostRecent().args[1]).toBe('success');
     });
   });
 
