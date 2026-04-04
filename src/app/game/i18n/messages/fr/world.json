@@ -1,0 +1,47 @@
+{
+  "planets": {
+    "solara": {
+      "name": "Bassin Solara",
+      "description": "Le monde de départ sûr. Des rendements équilibrés, une infrastructure légère et un environnement stable pour apprendre les bases."
+    },
+    "ferros": {
+      "name": "Berceau de Ferros",
+      "description": "Un monde métallique où les veines de ferrite sont denses, mais les dépôts de carburant sont rares."
+    },
+    "verdara": {
+      "name": "Dérive Verdara",
+      "description": "Une atmosphère volatile rend l'oxygène facile à récolter et la ferrite plus difficile à extraire proprement."
+    },
+    "glassmere": {
+      "name": "Étendue Glassmere",
+      "description": "Un bassin désertique éblouissant riche en dunes de silice, avec juste assez d'atmosphère pour soutenir des plateformes d'exportation."
+    },
+    "cinder": {
+      "name": "Étendue Cinder",
+      "description": "Une planète de cendres brûlantes où le carbone est abondant et où tout le reste résiste."
+    },
+    "voltaris": {
+      "name": "Spirale Voltaris",
+      "description": "Un monde conducteur enveloppé de tempêtes, où les veines de cuivre brûlent sous un ciel électrique violent."
+    },
+    "nivalis": {
+      "name": "Dérive Nivalis",
+      "description": "Un monde glacé et riche en gaz où les poches d'hydrogène et le givre minéral rendent chaque chargement instable."
+    },
+    "titanreach": {
+      "name": "Forge Titanreach",
+      "description": "Un monde industriel à la gravité brutale avec de profondes couches de titane et des ceintures de ferrite lourde."
+    },
+    "umbra": {
+      "name": "Coffre Umbra",
+      "description": "Un monde sombre et fracturé où des cristaux rares poussent dans des cavernes ombragées et où chaque prospection coûte cher."
+    },
+    "helion": {
+      "name": "Brèche Helion",
+      "description": "Le monde de frontière de plus haut niveau. Les veines irradiées d'uranium le rendent dangereux, lucratif et digne d'être préparé."
+    }
+  },
+  "frontier": {
+    "description": "Un monde de frontière marqué par la prospection, riche en {primary}, avec des veines secondaires de {support}. Chaque expédition réussie pousse la recherche plus loin dans l'orbite inconnue {depth}."
+  }
+}

@@ -16,15 +16,15 @@ export class ChangelogDialogComponent {
   constructor(public copy: GameMessagesService) {}
 
   getLocalizedTitle(entry: ChangelogEntry): string {
-    return this.copy.currentLocale === 'pt' ? entry.title.pt : entry.title.en;
+    return this.copy.currentLocale.startsWith('pt') ? entry.title.pt : entry.title.en;
   }
 
   getLocalizedSummary(entry: ChangelogEntry): string {
-    return this.copy.currentLocale === 'pt' ? entry.summary.pt : entry.summary.en;
+    return this.copy.currentLocale.startsWith('pt') ? entry.summary.pt : entry.summary.en;
   }
 
   getLocalizedItem(item: ChangelogItem): string {
-    return this.copy.currentLocale === 'pt' ? item.pt : item.en;
+    return this.copy.currentLocale.startsWith('pt') ? item.pt : item.en;
   }
 
   getTypeLabel(type: ChangelogItem['type']): string {
