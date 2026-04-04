@@ -38,13 +38,88 @@ interface MapSegment {
   midpointPx: number;
 }
 
+interface Vector3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface ProjectedOrbitPath {
+  id: string;
+  path: string;
+  opacity: number;
+}
+
+interface ProjectedPlanetMarker {
+  planet: Planet;
+  xPercent: number;
+  yPercent: number;
+  scale: number;
+  depth: number;
+  opacity: number;
+  transform: string;
+}
+
+interface ProjectedRouteLine {
+  id: string;
+  color: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  label: string;
+  opacity: number;
+}
+
+interface ProjectedTransitMarker {
+  ship: OwnedShip;
+  xPercent: number;
+  yPercent: number;
+  scale: number;
+  depth: number;
+  transform: string;
+}
+
+interface ProjectedSegmentLabel {
+  id: string;
+  label: string;
+  xPercent: number;
+  yPercent: number;
+  scale: number;
+  depth: number;
+  transform: string;
+}
+
+interface ProjectedSystemMap {
+  orbitPaths: ProjectedOrbitPath[];
+  planets: ProjectedPlanetMarker[];
+  routes: ProjectedRouteLine[];
+  transitMarkers: ProjectedTransitMarker[];
+  segments: ProjectedSegmentLabel[];
+}
+
 type FleetSection = 'routes' | 'expeditions' | 'shipyard' | 'stats';
 type FleetActivityFilter = 'all' | 'working' | 'idle' | 'docked' | 'transit';
 type FleetPlanetTrafficFilter = 'any' | 'sending' | 'receiving';
+type SystemMapViewMode = '2d' | '3d';
 
 interface FleetSectionDef {
   key: FleetSection;
   label: string;
+}
+
+const SYSTEM_MAP_3D_WIDTH = 1200;
+const SYSTEM_MAP_3D_HEIGHT = 720;
+const SYSTEM_MAP_3D_CENTER_X = SYSTEM_MAP_3D_WIDTH / 2;
+const SYSTEM_MAP_3D_CENTER_Y = SYSTEM_MAP_3D_HEIGHT / 2;
+const SYSTEM_MAP_3D_DEFAULT_YAW = -0.9;
+const SYSTEM_MAP_3D_DEFAULT_PITCH = 0.48;
+const SYSTEM_MAP_3D_DRAG_SENSITIVITY = 0.0075;
+const SYSTEM_MAP_3D_PITCH_MIN = -1.1;
+const SYSTEM_MAP_3D_PITCH_MAX = 1.1;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 @Component({
@@ -58,6 +133,7 @@ export class FleetManagerComponent implements OnInit, OnDestroy {
   currentTime = Date.now();
   isSystemMapExpanded = false;
   isPanningSystemMap = false;
+  systemMapViewMode: SystemMapViewMode = '2d';
   routeActivityFilter: FleetActivityFilter = 'all';
   routePlanetFilterId = 'all';
   routePlanetTrafficFilter: FleetPlanetTrafficFilter = 'any';
@@ -73,6 +149,10 @@ export class FleetManagerComponent implements OnInit, OnDestroy {
   private mapPanStartY = 0;
   private mapPanStartScrollLeft = 0;
   private mapPanStartScrollTop = 0;
+  private systemMapYaw = SYSTEM_MAP_3D_DEFAULT_YAW;
+  private systemMapPitch = SYSTEM_MAP_3D_DEFAULT_PITCH;
+  private mapPanStartYaw = SYSTEM_MAP_3D_DEFAULT_YAW;
+  private mapPanStartPitch = SYSTEM_MAP_3D_DEFAULT_PITCH;
 
   constructor(
     public game: GameService,
@@ -170,6 +250,10 @@ export class FleetManagerComponent implements OnInit, OnDestroy {
 
   get routeFilterPlanets(): Planet[] {
     return this.mapPlanets;
+  }
+
+  get is3DSystemMap(): boolean {
+    return this.systemMapViewMode === '3d';
   }
 
   get hasActiveRouteFilters(): boolean {
@@ -296,6 +380,12 @@ export class FleetManagerComponent implements OnInit, OnDestroy {
     return this.copy.format(this.copy.messages.ui.fleetManager.mapTransitTraffic, {
       ships: this.filteredTransitShips.length,
     });
+  }
+
+  getSystemMapInteractionHint(): string {
+    return this.is3DSystemMap
+      ? this.copy.messages.ui.fleetManager.systemMap3dHint
+      : this.copy.messages.ui.fleetManager.systemMap2dHint;
   }
 
   getVisibleShipsLabel(): string {
@@ -609,11 +699,122 @@ export class FleetManagerComponent implements OnInit, OnDestroy {
     );
   }
 
+  getProjectedSystemMap(): ProjectedSystemMap {
+    const orbitPaths = this.mapPlanets.map((planet, index) => ({
+      id: `orbit-${planet.id}`,
+      path: this.buildOrbitPath(this.getPlanetOrbitRadius(planet)),
+      opacity: clamp(0.18 - (index * 0.008), 0.05, 0.18),
+    }));
+
+    const planets = this.mapPlanets
+      .map(planet => {
+        const projected = this.projectVector(this.getPlanetMapVector(planet));
+        return {
+          planet,
+          xPercent: (projected.x / SYSTEM_MAP_3D_WIDTH) * 100,
+          yPercent: (projected.y / SYSTEM_MAP_3D_HEIGHT) * 100,
+          scale: projected.scale,
+          depth: projected.depth,
+          opacity: clamp(0.52 + (projected.scale * 0.3), 0.52, 1),
+          transform: `translate(-50%, -50%) scale(${projected.scale.toFixed(3)})`,
+        };
+      })
+      .sort((left, right) => left.depth - right.depth);
+
+    const routes = this.filteredMappedRoutes
+      .map(route => {
+        const origin = this.projectVector(this.getPlanetMapVector(route.originPlanetId));
+        const destination = this.projectVector(this.getPlanetMapVector(route.destinationPlanetId));
+        const routeDepth = (origin.depth + destination.depth) / 2;
+        const routeScale = (origin.scale + destination.scale) / 2;
+        return {
+          id: route.id,
+          color: this.getItemColor(route.itemId),
+          x1: origin.x,
+          y1: origin.y,
+          x2: destination.x,
+          y2: destination.y,
+          label: this.getRouteMapLabel(route),
+          opacity: clamp(0.16 + (routeScale * 0.22), 0.16, 0.42),
+          depth: routeDepth,
+        };
+      })
+      .sort((left, right) => left.depth - right.depth)
+      .map(({ depth, ...route }) => route);
+
+    const transitMarkers = this.filteredTransitShips
+      .flatMap(ship => {
+        const progress = this.game.getShipTransitProgress(ship, this.currentTime);
+        if (progress === null || !ship.transit) {
+          return [];
+        }
+
+        const from = this.getPlanetMapVector(ship.transit.fromPlanetId);
+        const to = this.getPlanetMapVector(ship.transit.toPlanetId);
+        const projected = this.projectVector({
+          x: from.x + ((to.x - from.x) * progress),
+          y: from.y + ((to.y - from.y) * progress),
+          z: from.z + ((to.z - from.z) * progress),
+        });
+
+        return [{
+          ship,
+          xPercent: (projected.x / SYSTEM_MAP_3D_WIDTH) * 100,
+          yPercent: (projected.y / SYSTEM_MAP_3D_HEIGHT) * 100,
+          scale: projected.scale,
+          depth: projected.depth,
+          transform: `translate(-50%, -50%) scale(${clamp(projected.scale * 0.92, 0.58, 1.4).toFixed(3)})`,
+        }];
+      })
+      .sort((left, right) => left.depth - right.depth);
+
+    const segments = this.mapSegments
+      .map(segment => {
+        const midpointVector = this.getMidpointVector(
+          this.getPlanetMapVector(segment.from),
+          this.getPlanetMapVector(segment.to),
+        );
+        const projected = this.projectVector(midpointVector);
+        return {
+          id: `${segment.from.id}-${segment.to.id}`,
+          label: this.getSegmentDistanceLabel(segment),
+          xPercent: (projected.x / SYSTEM_MAP_3D_WIDTH) * 100,
+          yPercent: (projected.y / SYSTEM_MAP_3D_HEIGHT) * 100,
+          scale: clamp(projected.scale * 0.78, 0.72, 1.1),
+          depth: projected.depth,
+          transform: `translate(-50%, -50%) scale(${clamp(projected.scale * 0.78, 0.72, 1.1).toFixed(3)})`,
+        };
+      })
+      .sort((left, right) => left.depth - right.depth);
+
+    return {
+      orbitPaths,
+      planets,
+      routes,
+      transitMarkers,
+      segments,
+    };
+  }
+
   toggleSystemMapExpanded(): void {
     this.isSystemMapExpanded = !this.isSystemMapExpanded;
     if (!this.isSystemMapExpanded) {
       this.stopSystemMapPan();
     }
+  }
+
+  setSystemMapViewMode(mode: SystemMapViewMode): void {
+    if (this.systemMapViewMode === mode) {
+      return;
+    }
+
+    this.stopSystemMapPan();
+    this.systemMapViewMode = mode;
+  }
+
+  resetSystemMap3DView(): void {
+    this.systemMapYaw = SYSTEM_MAP_3D_DEFAULT_YAW;
+    this.systemMapPitch = SYSTEM_MAP_3D_DEFAULT_PITCH;
   }
 
   startSystemMapPan(event: PointerEvent): void {
@@ -632,6 +833,8 @@ export class FleetManagerComponent implements OnInit, OnDestroy {
     this.mapPanStartY = event.clientY;
     this.mapPanStartScrollLeft = viewport.scrollLeft;
     this.mapPanStartScrollTop = viewport.scrollTop;
+    this.mapPanStartYaw = this.systemMapYaw;
+    this.mapPanStartPitch = this.systemMapPitch;
     viewport.setPointerCapture(event.pointerId);
     event.preventDefault();
   }
@@ -643,6 +846,18 @@ export class FleetManagerComponent implements OnInit, OnDestroy {
 
     const viewport = this.mapViewport()?.nativeElement;
     if (!viewport) {
+      return;
+    }
+
+    if (this.is3DSystemMap) {
+      const deltaX = event.clientX - this.mapPanStartX;
+      const deltaY = event.clientY - this.mapPanStartY;
+      this.systemMapYaw = this.mapPanStartYaw + (deltaX * SYSTEM_MAP_3D_DRAG_SENSITIVITY);
+      this.systemMapPitch = clamp(
+        this.mapPanStartPitch + (deltaY * SYSTEM_MAP_3D_DRAG_SENSITIVITY),
+        SYSTEM_MAP_3D_PITCH_MIN,
+        SYSTEM_MAP_3D_PITCH_MAX,
+      );
       return;
     }
 
@@ -912,5 +1127,96 @@ export class FleetManagerComponent implements OnInit, OnDestroy {
 
   private get maxOrbitPosition(): number {
     return this.game.planets.reduce((highest, planet) => Math.max(highest, planet.orbitPosition), 0);
+  }
+
+  private getPlanetOrbitRadius(planet: Planet | string): number {
+    const orbitPosition = typeof planet === 'string'
+      ? this.game.getPlanet(planet)?.orbitPosition ?? 0
+      : planet.orbitPosition;
+    return 88 + (orbitPosition * 31);
+  }
+
+  private getPlanetMapVector(planet: Planet | string): Vector3 {
+    const currentPlanet = typeof planet === 'string'
+      ? this.game.getPlanet(planet)
+      : planet;
+    if (!currentPlanet) {
+      return { x: 0, y: 0, z: 0 };
+    }
+
+    const angle = this.getPlanetMapAngle(currentPlanet);
+    const orbitRadius = this.getPlanetOrbitRadius(currentPlanet);
+    const elevationSeed = this.hashString(`${currentPlanet.id}:elevation`);
+    const elevation = (((elevationSeed % 5) - 2) * 18) + (Math.sin(angle * 1.7) * 14);
+
+    return {
+      x: Math.cos(angle) * orbitRadius,
+      y: elevation,
+      z: Math.sin(angle) * orbitRadius,
+    };
+  }
+
+  private getPlanetMapAngle(planet: Planet): number {
+    const goldenAngle = 2.399963229728653;
+    const seedOffset = (this.hashString(planet.id) % 360) * (Math.PI / 180);
+    return (planet.orbitIndex * goldenAngle) + (seedOffset * 0.35);
+  }
+
+  private getMidpointVector(from: Vector3, to: Vector3): Vector3 {
+    return {
+      x: (from.x + to.x) / 2,
+      y: (from.y + to.y) / 2,
+      z: (from.z + to.z) / 2,
+    };
+  }
+
+  private projectVector(vector: Vector3): { x: number; y: number; scale: number; depth: number } {
+    const cosYaw = Math.cos(this.systemMapYaw);
+    const sinYaw = Math.sin(this.systemMapYaw);
+    const yawX = (vector.x * cosYaw) - (vector.z * sinYaw);
+    const yawZ = (vector.x * sinYaw) + (vector.z * cosYaw);
+
+    const cosPitch = Math.cos(this.systemMapPitch);
+    const sinPitch = Math.sin(this.systemMapPitch);
+    const pitchY = (vector.y * cosPitch) - (yawZ * sinPitch);
+    const pitchZ = (vector.y * sinPitch) + (yawZ * cosPitch);
+
+    const cameraDistance = Math.max(560, 320 + (this.maxOrbitPosition * 48));
+    const depthDistance = Math.max(180, cameraDistance - pitchZ);
+    const perspective = 880 / depthDistance;
+
+    return {
+      x: SYSTEM_MAP_3D_CENTER_X + (yawX * perspective),
+      y: SYSTEM_MAP_3D_CENTER_Y + (pitchY * perspective),
+      scale: clamp(perspective * 1.45, 0.52, 1.6),
+      depth: pitchZ,
+    };
+  }
+
+  private buildOrbitPath(radius: number): string {
+    const points: string[] = [];
+    const segments = 40;
+
+    for (let index = 0; index <= segments; index += 1) {
+      const angle = (index / segments) * Math.PI * 2;
+      const projected = this.projectVector({
+        x: Math.cos(angle) * radius,
+        y: 0,
+        z: Math.sin(angle) * radius,
+      });
+      const command = index === 0 ? 'M' : 'L';
+      points.push(`${command} ${projected.x.toFixed(2)} ${projected.y.toFixed(2)}`);
+    }
+
+    return `${points.join(' ')} Z`;
+  }
+
+  private hashString(value: string): number {
+    let hash = 0;
+    for (let index = 0; index < value.length; index += 1) {
+      hash = ((hash * 31) + value.charCodeAt(index)) >>> 0;
+    }
+
+    return hash;
   }
 }

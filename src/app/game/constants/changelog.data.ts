@@ -27,8 +27,8 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
       pt: 'Expedições da Fronteira Infinita',
     },
     summary: {
-      en: 'Charting the full handcrafted system now unlocks a dedicated explorer program that can keep discovering generated planets, while the fleet map expands into a draggable wider viewport.',
-      pt: 'Cartografar todo o sistema artesanal passa agora a desbloquear um programa explorador dedicado que pode continuar a descobrir planetas gerados, enquanto o mapa da frota se expande para uma vista mais larga e arrastável.',
+      en: 'Charting the full handcrafted system now unlocks a dedicated explorer program that can keep discovering generated planets, while Fleet Command grows into both a wide 2D logistics chart and a rotatable 3D star view.',
+      pt: 'Cartografar todo o sistema artesanal passa agora a desbloquear um programa explorador dedicado que pode continuar a descobrir planetas gerados, enquanto o Comando da Frota cresce para um gráfico logístico 2D largo e uma vista estelar 3D rotativa.',
     },
     items: [
       {
@@ -43,8 +43,8 @@ export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
       },
       {
         type: 'changed',
-        en: 'Fleet Command now includes an expedition deck plus a wider system map that can be expanded, scrolled, and dragged as the frontier keeps growing.',
-        pt: 'O Comando da Frota passa agora a incluir um painel de expedições e um mapa do sistema mais largo que pode ser expandido, percorrido e arrastado à medida que a fronteira continua a crescer.',
+        en: 'Fleet Command now includes an expedition deck plus switchable 2D and 3D system-map views, with the 2D chart staying draggable and the 3D map supporting click-drag rotation.',
+        pt: 'O Comando da Frota passa agora a incluir um painel de expedições e vistas 2D e 3D alternáveis do mapa do sistema, com o gráfico 2D a manter o arrasto e o mapa 3D a suportar rotação ao clicar e arrastar.',
       },
       {
         type: 'changed',

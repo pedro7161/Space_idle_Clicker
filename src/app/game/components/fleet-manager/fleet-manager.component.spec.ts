@@ -140,6 +140,16 @@ describe('FleetManagerComponent', () => {
     expect(nativeElement.querySelector('[data-testid="fleet-system-map-panel"]')?.className).toContain('fixed');
   });
 
+  it('should switch the system map into 3d mode', () => {
+    component.setSystemMapViewMode('3d');
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    expect(component.systemMapViewMode).toBe('3d');
+    expect(nativeElement.querySelector('[data-testid="fleet-system-map-3d"]')).toBeTruthy();
+  });
+
   it('should show the expedition deck once every handcrafted planet is discovered', () => {
     const state = (gameService as any).state;
     state.discoveredPlanetIds = PLANETS.map(planet => planet.id);

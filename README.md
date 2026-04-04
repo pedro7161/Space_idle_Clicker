@@ -38,13 +38,13 @@ The current prototype includes:
 - multiple ship tiers with different cargo and speed tradeoffs
 - higher-tier ships required for deeper planets
 - dedicated overview workspace for network totals plus per-planet, per-station, and fleet-cargo stock
-- dedicated fleet management workspace with route filters, an expedition deck, and a system map
+- dedicated fleet management workspace with route filters, an expedition deck, and switchable 2D/3D system maps
 - expandable operations workspace with dedicated resources, upgrades, crafting, automation, and launch tabs
 - repeatable ship logistics routes between planetary surfaces and orbital stations
 - orbital station construction on discovered planets with separate orbital storage
 - dedicated explorer ship with engine and fuel upgrade paths
 - repeatable frontier expeditions that generate additional planets and persist them in the save state
-- expandable, draggable, horizontally scrollable system map for larger frontier layouts
+- expandable system maps with a wide draggable 2D logistics chart plus a rotatable 3D star view
 - collapsible top command header to free vertical space
 - in-game changelog viewer
 - save/load through local storage
@@ -117,4 +117,4 @@ Repo-level project documentation lives here:
 
 ## Status
 
-This project is still evolving. The current codebase already reflects the mining, overview, crafting, automation, ship-building, filtered fleet command, surface-and-station route logistics, deep-resource planets, explorer expeditions, generated frontier planets, and expandable system-map loop, but broader hub automation and later-game economy layers are still in progress.
+This project is still evolving. The current codebase already reflects the mining, overview, crafting, automation, ship-building, filtered fleet command, surface-and-station route logistics, deep-resource planets, explorer expeditions, generated frontier planets, and switchable 2D/3D system-map loop, but broader hub automation and later-game economy layers are still in progress.

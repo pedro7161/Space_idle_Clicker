@@ -43,7 +43,7 @@ These are current design decisions and should override older wording if there is
 - Upgrade lists should not dump every available card at once; they should stage the next active upgrades and fade completed chains.
 - After every handcrafted planet is discovered, expeditions unlock as a separate progression lane with a dedicated explorer ship instead of reusing the standard cargo fleet.
 - Generated frontier planets are persisted as seeds in save data and then behave like normal discovered worlds for inventories, travel, and future logistics upgrades.
-- The fleet map is currently a widened 2D orbital chart with scroll, drag-to-pan, and fullscreen expansion, not a true 3D map.
+- The fleet map now offers two views: a widened 2D orbital logistics chart for long frontier readability, and a 3D star-view prototype for spatial exploration.
 
 ## Current Progression Structure
 
@@ -83,13 +83,13 @@ The current project includes:
 - multiple ship tiers with different cargo and travel-speed profiles
 - higher-tier ships for deeper planets
 - dedicated overview workspace with network totals and per-planet, per-station, and fleet-cargo inventory breakdowns
-- dedicated ships workspace with route management, activity filters, planet-traffic filters, an expedition command deck, shipyard, and ship stats views
+- dedicated ships workspace with route management, activity filters, planet-traffic filters, an expedition command deck, shipyard, ship stats views, and switchable 2D/3D map modes
 - dedicated operations workspace with resources, upgrades, crafting, automation, and launch views
 - repeatable logistics routes between discovered planetary surfaces and orbital stations
 - orbital station construction with separate orbital storage and route-efficiency bonuses
 - dedicated explorer ship progression with separate engine and fuel upgrades
 - repeatable expedition missions that generate persistent frontier planets beyond the authored map
-- expandable, draggable, horizontally scrollable system map to keep larger orbital layouts readable
+- expandable system maps with a wide draggable 2D chart plus a rotatable 3D star-view prototype
 - collapsible top header with a restore handle
 - in-game changelog dialog
 - save/load through local storage
@@ -107,7 +107,7 @@ The current project includes:
 - The expanded operations workspace should stay tab-driven, with the local ledger available in its own `Resources` view instead of permanently consuming vertical space.
 - The ships workspace should feel like a true page swap, not a small embedded subsection.
 - Route-heavy fleet screens should provide fast filtering for active traffic, docked hulls, and planet-specific logistics.
-- The system map should stay readable as the frontier widens, which means horizontal scrolling, drag-to-pan support, and a fullscreen mode are preferred over squeezing every orbit into a static viewport.
+- The system map should stay readable as the frontier widens, which means the 2D chart remains the clearest logistics view for long frontiers, while the 3D view can add spatial context without replacing the readable 2D fallback.
 - The operations workspace should follow the same page-swap logic as ships.
 - Resource summaries can be collapsed on smaller screens.
 - The top header can collapse to maximize vertical space, but it must always remain recoverable from a visible handle.
@@ -176,7 +176,7 @@ Test coverage includes:
 - `ResetDialogComponent` — confirm/cancel output emissions and backdrop click handling
 - `SettingsDialogComponent` — input binding, feedback updates, import/export/locale change emissions, and file download
 - `SaveTransferDialogComponent` — export value binding, import emission, clipboard copy success/failure feedback
-- `FleetManagerComponent` — route destination reachability, traffic filters, system-map rendering, fullscreen map mode, and expedition workspace visibility
+- `FleetManagerComponent` — route destination reachability, traffic filters, 2D/3D system-map rendering, fullscreen map mode, and expedition workspace visibility
 
 ## Deployment
 
@@ -204,7 +204,7 @@ Likely next areas of depth:
 - station-to-station hub systems
 - richer routing controls and multi-stop logistics
 - frontier-specific events, anomalies, or authored surprises layered into the generated worlds
-- a possible future 3D map if it adds clarity without replacing the current wide-map usability
+- deeper 3D map polish only if it keeps the clear wide-map logistics read already available in 2D
 
 ## Notes For Future Changes
 
