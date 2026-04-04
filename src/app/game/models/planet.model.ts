@@ -9,6 +9,7 @@ export interface Planet {
   travelCost: ItemCost[];
   requiredShipTier: number;
   orbitIndex: number;
+  orbitPosition: number;
   unlockedByDefault: boolean;
   color: string;
   mineralColor: string;

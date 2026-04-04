@@ -18,6 +18,8 @@ import {
   GameState,
   ItemCost,
   ItemId,
+  LogisticsLocation,
+  LogisticsLocationKind,
   OwnedShip,
   OwnedSpaceStation,
   Planet,
@@ -30,6 +32,9 @@ import {
   ShipRoute,
   ShipStatus,
   SpaceStationBlueprint,
+  createPlanetLocation,
+  createStationLocation,
+  isSameLogisticsLocation,
 } from '../models';
 import {
   buildDefaultGameState,
@@ -282,24 +287,36 @@ export class GameService {
 
   saveShipRoute(config: {
     shipId: string;
-    originPlanetId: string;
-    destinationPlanetId: string;
+    origin?: LogisticsLocation;
+    originPlanetId?: string;
+    originKind?: LogisticsLocationKind;
+    destination?: LogisticsLocation;
+    destinationPlanetId?: string;
+    destinationKind?: LogisticsLocationKind;
     itemId: ItemId;
     keepMinimum: number;
   }): boolean {
     const ship = this.getOwnedShip(config.shipId);
-    const destination = this.getPlanet(config.destinationPlanetId);
-    const origin = this.getPlanet(config.originPlanetId);
+    const originLocation = this.resolveConfiguredLocation(config.origin, config.originPlanetId, config.originKind);
+    const destinationLocation = this.resolveConfiguredLocation(
+      config.destination,
+      config.destinationPlanetId,
+      config.destinationKind,
+    );
+    const destination = destinationLocation ? this.getPlanet(destinationLocation.planetId) : undefined;
+    const origin = originLocation ? this.getPlanet(originLocation.planetId) : undefined;
     const definition = ship ? this.getShipDefinition(ship.definitionId) : undefined;
 
     if (
       !ship ||
+      !originLocation ||
+      !destinationLocation ||
       !origin ||
       !destination ||
       !definition ||
-      origin.id === destination.id ||
-      !this.isPlanetDiscovered(origin.id) ||
-      !this.isPlanetDiscovered(destination.id) ||
+      isSameLogisticsLocation(originLocation, destinationLocation) ||
+      !this.isLogisticsLocationAvailable(originLocation) ||
+      !this.isLogisticsLocationAvailable(destinationLocation) ||
       definition.tier < destination.requiredShipTier
     ) {
       return false;
@@ -310,8 +327,10 @@ export class GameService {
     const route: ShipRoute = {
       id: existingRoute?.id ?? this.createShipRouteId(),
       shipId: config.shipId,
-      originPlanetId: origin.id,
-      destinationPlanetId: destination.id,
+      originPlanetId: originLocation.planetId,
+      originKind: originLocation.kind,
+      destinationPlanetId: destinationLocation.planetId,
+      destinationKind: destinationLocation.kind,
       itemId: config.itemId,
       keepMinimum,
       enabled: true,
@@ -431,8 +450,28 @@ export class GameService {
     return this.getPlanetInventory(planetId)[itemId] ?? 0;
   }
 
+  getStationInventoryAmount(itemId: ItemId, planetId: string): number {
+    return this.getStationInventory(planetId)[itemId] ?? 0;
+  }
+
+  getFleetCargoAmount(itemId: ItemId): number {
+    return this.state.ships.reduce((total, ship) => {
+      return total + (ship.cargo.itemId === itemId ? ship.cargo.amount : 0);
+    }, 0);
+  }
+
+  getInventoryAmountAtLocation(itemId: ItemId, location: LogisticsLocation): number {
+    return location.kind === 'planet'
+      ? this.getInventoryAmount(itemId, location.planetId)
+      : this.getStationInventoryAmount(itemId, location.planetId);
+  }
+
   getNetworkInventoryAmount(itemId: ItemId): number {
-    return this.planets.reduce((total, planet) => total + this.getInventoryAmount(itemId, planet.id), 0);
+    const planetTotal = this.planets.reduce((total, planet) => total + this.getInventoryAmount(itemId, planet.id), 0);
+    const stationTotal = this.planets.reduce((total, planet) => {
+      return total + (this.hasSpaceStation(planet.id) ? this.getStationInventoryAmount(itemId, planet.id) : 0);
+    }, 0);
+    return planetTotal + stationTotal + this.getFleetCargoAmount(itemId);
   }
 
   getPlanetMultiplier(planetId: string, resourceId: ResourceId): number {
@@ -580,6 +619,17 @@ export class GameService {
     return this.planets.filter(planet => this.isPlanetDiscovered(planet.id));
   }
 
+  getAvailableLogisticsLocations(): LogisticsLocation[] {
+    return this.getDiscoveredPlanets().flatMap(planet => {
+      const locations: LogisticsLocation[] = [createPlanetLocation(planet.id)];
+      if (this.hasSpaceStation(planet.id)) {
+        locations.push(createStationLocation(planet.id));
+      }
+
+      return locations;
+    });
+  }
+
   getSpaceStation(planetId: string): OwnedSpaceStation | undefined {
     return this.state.spaceStations.find(station => station.planetId === planetId);
   }
@@ -629,8 +679,40 @@ export class GameService {
     }).length;
   }
 
+  getLocationRouteCount(
+    location: LogisticsLocation,
+    direction: 'inbound' | 'outbound' | 'all' = 'all',
+  ): number {
+    return this.state.shipRoutes.filter(route => {
+      if (!route.enabled) {
+        return false;
+      }
+
+      const routeOrigin = this.getRouteOriginLocation(route);
+      const routeDestination = this.getRouteDestinationLocation(route);
+
+      if (direction === 'inbound') {
+        return isSameLogisticsLocation(routeDestination, location);
+      }
+
+      if (direction === 'outbound') {
+        return isSameLogisticsLocation(routeOrigin, location);
+      }
+
+      return isSameLogisticsLocation(routeOrigin, location) || isSameLogisticsLocation(routeDestination, location);
+    }).length;
+  }
+
   getOwnedShip(shipId: string): OwnedShip | undefined {
     return this.state.ships.find(ship => ship.id === shipId);
+  }
+
+  getShipDockLocation(ship: OwnedShip): LogisticsLocation | null {
+    if (!ship.currentPlanetId || !ship.currentLocationKind) {
+      return null;
+    }
+
+    return this.createLocation(ship.currentPlanetId, ship.currentLocationKind);
   }
 
   getShipDefinition(definitionId: string): Ship | undefined {
@@ -668,7 +750,7 @@ export class GameService {
       return null;
     }
 
-    return Math.abs(fromPlanet.orbitIndex - toPlanet.orbitIndex);
+    return Math.abs(fromPlanet.orbitPosition - toPlanet.orbitPosition);
   }
 
   getShipTransitProgress(ship: OwnedShip, now: number = Date.now()): number | null {
@@ -832,10 +914,14 @@ export class GameService {
     }
 
     ship.currentPlanetId = transit.toPlanetId;
+    ship.currentLocationKind = transit.toKind;
     ship.transit = null;
 
     if (ship.status === 'outbound' && ship.cargo.itemId && ship.cargo.amount > 0) {
-      this.addItem(ship.cargo.itemId, ship.cargo.amount, transit.toPlanetId);
+      this.addItemToLocation(ship.cargo.itemId, ship.cargo.amount, {
+        planetId: transit.toPlanetId,
+        kind: transit.toKind,
+      });
       ship.cargo = { itemId: null, amount: 0 };
     }
 
@@ -849,13 +935,14 @@ export class GameService {
       return false;
     }
 
-    const currentPlanetId = ship.currentPlanetId;
-    if (!currentPlanetId) {
+    const currentLocation = this.getShipDockLocation(ship);
+    if (!currentLocation) {
       return false;
     }
 
-    if (currentPlanetId === route.originPlanetId) {
-      const available = this.getInventoryAmount(route.itemId, route.originPlanetId) - route.keepMinimum;
+    const originLocation = this.getRouteOriginLocation(route);
+    if (isSameLogisticsLocation(currentLocation, originLocation)) {
+      const available = this.getInventoryAmountAtLocation(route.itemId, originLocation) - route.keepMinimum;
       const effectiveCapacity = Math.max(
         1,
         Math.floor(definition.cargoCapacity * this.getSpaceStationCargoMultiplier(route.originPlanetId)),
@@ -865,13 +952,13 @@ export class GameService {
         return false;
       }
 
-      this.removeItem(route.itemId, loadAmount, route.originPlanetId);
+      this.removeItemFromLocation(route.itemId, loadAmount, originLocation);
       ship.cargo = { itemId: route.itemId, amount: loadAmount };
-      this.startShipTransit(ship, route.destinationPlanetId, now, 'outbound');
+      this.startShipTransit(ship, route.destinationPlanetId, route.destinationKind, now, 'outbound');
       return true;
     }
 
-    this.startShipTransit(ship, route.originPlanetId, now, 'returning');
+    this.startShipTransit(ship, route.originPlanetId, route.originKind, now, 'returning');
     return true;
   }
 
@@ -894,19 +981,28 @@ export class GameService {
   private startShipTransit(
     ship: OwnedShip,
     toPlanetId: string,
+    toKind: LogisticsLocationKind,
     now: number,
     status: ShipStatus,
   ): void {
-    if (!ship.currentPlanetId || ship.currentPlanetId === toPlanetId) {
+    if (
+      !ship.currentPlanetId
+      || !ship.currentLocationKind
+      || (ship.currentPlanetId === toPlanetId && ship.currentLocationKind === toKind)
+    ) {
       return;
     }
 
     const fromPlanetId = ship.currentPlanetId;
+    const fromKind = ship.currentLocationKind;
     ship.currentPlanetId = null;
+    ship.currentLocationKind = null;
     ship.status = status;
     ship.transit = {
       fromPlanetId,
+      fromKind,
       toPlanetId,
+      toKind,
       departAt: now,
       arriveAt: now + this.getTravelDurationMs(fromPlanetId, toPlanetId, ship.definitionId),
     };
@@ -971,6 +1067,17 @@ export class GameService {
     return created;
   }
 
+  private getStationInventory(planetId: string): Record<ItemId, number> {
+    const inventory = this.state.stationInventories[planetId];
+    if (inventory) {
+      return inventory;
+    }
+
+    const created = buildNumberRecord(ALL_ITEM_IDS);
+    this.state.stationInventories[planetId] = created;
+    return created;
+  }
+
   private ensureActiveResourceAvailable(): void {
     if (this.isResourceAvailableOnPlanet(this.state.currentPlanetId, this.state.activeResourceId)) {
       return;
@@ -990,6 +1097,7 @@ export class GameService {
       routeId: null,
       status: 'idle',
       currentPlanetId: planetId,
+      currentLocationKind: 'planet',
       cargo: { itemId: null, amount: 0 },
       transit: null,
     };
@@ -1019,11 +1127,69 @@ export class GameService {
     return this.getSpaceStationBlueprint(station.blueprintId)?.travelTimeMultiplier ?? 1;
   }
 
+  private isLogisticsLocationAvailable(location: LogisticsLocation): boolean {
+    return location.kind === 'planet'
+      ? this.isPlanetDiscovered(location.planetId)
+      : this.isPlanetDiscovered(location.planetId) && this.hasSpaceStation(location.planetId);
+  }
+
+  private resolveConfiguredLocation(
+    location: LogisticsLocation | undefined,
+    planetId: string | undefined,
+    kind: LogisticsLocationKind | undefined,
+  ): LogisticsLocation | null {
+    if (location) {
+      return this.createLocation(location.planetId, location.kind);
+    }
+
+    if (!planetId) {
+      return null;
+    }
+
+    return this.createLocation(planetId, kind ?? 'planet');
+  }
+
+  private createLocation(planetId: string, kind: LogisticsLocationKind): LogisticsLocation {
+    return kind === 'station' ? createStationLocation(planetId) : createPlanetLocation(planetId);
+  }
+
+  private getRouteOriginLocation(route: ShipRoute): LogisticsLocation {
+    return this.createLocation(route.originPlanetId, route.originKind);
+  }
+
+  private getRouteDestinationLocation(route: ShipRoute): LogisticsLocation {
+    return this.createLocation(route.destinationPlanetId, route.destinationKind);
+  }
+
+  private addItemToLocation(itemId: ItemId, amount: number, location: LogisticsLocation): void {
+    if (location.kind === 'planet') {
+      this.addItem(itemId, amount, location.planetId);
+      return;
+    }
+
+    this.getStationInventory(location.planetId)[itemId] += amount;
+  }
+
+  private removeItemFromLocation(itemId: ItemId, amount: number, location: LogisticsLocation): void {
+    if (location.kind === 'planet') {
+      this.removeItem(itemId, amount, location.planetId);
+      return;
+    }
+
+    this.getStationInventory(location.planetId)[itemId] -= amount;
+  }
+
   private emit(): void {
     this.state$.next({
       ...this.state,
       planetInventories: Object.fromEntries(
         Object.entries(this.state.planetInventories).map(([planetId, inventory]) => [
+          planetId,
+          { ...inventory },
+        ]),
+      ),
+      stationInventories: Object.fromEntries(
+        Object.entries(this.state.stationInventories).map(([planetId, inventory]) => [
           planetId,
           { ...inventory },
         ]),

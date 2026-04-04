@@ -5,6 +5,7 @@ import { OwnedSpaceStation } from './space-station.model';
 export interface GameState {
   version: number;
   planetInventories: Record<string, Record<ItemId, number>>;
+  stationInventories: Record<string, Record<ItemId, number>>;
   activeResourceId: ResourceId;
   upgradeLevels: Record<string, number>;
   autoMinerCounts: Record<string, number>;

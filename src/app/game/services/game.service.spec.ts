@@ -268,7 +268,7 @@ describe('GameService', () => {
 
     it('should report orbit distance between planets', () => {
       expect(service.getPlanetDistance('solara', 'ferros')).toBe(1);
-      expect(service.getPlanetDistance('solara', 'helion')).toBe(9);
+      expect(service.getPlanetDistance('solara', 'helion')).toBe(14);
       expect(service.getPlanetDistance('solara', 'missing')).toBeNull();
     });
 
@@ -290,6 +290,7 @@ describe('GameService', () => {
           routeId: null,
           status: 'idle',
           currentPlanetId: 'solara',
+          currentLocationKind: 'planet',
           cargo: { itemId: null, amount: 0 },
           transit: null,
         },
@@ -337,10 +338,13 @@ describe('GameService', () => {
         routeId: null,
         status: 'outbound',
         currentPlanetId: null,
+        currentLocationKind: null,
         cargo: { itemId: null, amount: 0 },
         transit: {
           fromPlanetId: 'solara',
+          fromKind: 'planet',
           toPlanetId: 'ferros',
+          toKind: 'planet',
           departAt: 1_000,
           arriveAt: 5_000,
         },
@@ -388,6 +392,33 @@ describe('GameService', () => {
       })).toBeTrue();
 
       expect(service.getState().ships[0].cargo.amount).toBe(24);
+    });
+
+    it('should allow a station to be used as a cargo destination', () => {
+      const state = (service as any).state;
+      state.planetInventories.solara.carbon = 60;
+      service.getSpaceStationBuildCost('solara').forEach(cost => {
+        state.planetInventories.solara[cost.itemId] = cost.amount;
+      });
+
+      expect(service.buildSpaceStation('solara')).toBeTrue();
+
+      const starterShip = service.getState().ships[0];
+      expect(service.saveShipRoute({
+        shipId: starterShip.id,
+        origin: { planetId: 'solara', kind: 'planet' },
+        destination: { planetId: 'solara', kind: 'station' },
+        itemId: 'carbon',
+        keepMinimum: 0,
+      })).toBeTrue();
+
+      const arriveAt = service.getState().ships[0].transit!.arriveAt;
+      (service as any).processFleet(arriveAt);
+      const internalState = (service as any).state;
+
+      expect(internalState.ships[0].cargo.amount).toBe(0);
+      expect(service.getStationInventoryAmount('carbon', 'solara')).toBe(24);
+      expect(service.getInventoryAmount('carbon', 'solara')).toBe(36);
     });
   });
 
