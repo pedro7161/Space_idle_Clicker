@@ -187,6 +187,26 @@ describe('GameComponent', () => {
     });
   });
 
+  describe('dev resources', () => {
+    it('should enable dev mode in non-production builds', () => {
+      expect(component.devModeEnabled).toBeTrue();
+    });
+
+    it('should grant dev resources and report success', () => {
+      component.startGame();
+      const fakeDialog = { updateFeedback: jasmine.createSpy('updateFeedback') } as any;
+
+      component.grantDevResources(fakeDialog, {
+        amount: 400,
+        scope: 'currentPlanet',
+      });
+
+      expect(gameService.getInventoryAmount('carbon')).toBe(400);
+      expect(fakeDialog.updateFeedback).toHaveBeenCalled();
+      expect(fakeDialog.updateFeedback.calls.mostRecent().args[1]).toBe('success');
+    });
+  });
+
   describe('ngOnDestroy', () => {
     it('should destroy the game service', () => {
       spyOn(gameService, 'destroy');

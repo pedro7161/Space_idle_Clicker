@@ -20,6 +20,35 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: '0.5.2',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Planet Focus Display',
+      pt: 'Vista de Foco Planetário',
+    },
+    summary: {
+      en: 'Crafting and automation now surface the resource chains that matter on the current planet, with a local focus display explaining the filter.',
+      pt: 'O fabrico e a automação passam agora a destacar as cadeias de recursos que interessam no planeta atual, com uma vista de foco local a explicar o filtro.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'A local focus display in the operations panel that lists the resource chains emphasized on the current planet.',
+        pt: 'Uma vista de foco local no painel de operações que lista as cadeias de recursos enfatizadas no planeta atual.',
+      },
+      {
+        type: 'changed',
+        en: 'The automation tab now only shows miners tied to the current planet’s strongest resource chains.',
+        pt: 'O separador de automação passa agora a mostrar apenas mineradores ligados às cadeias de recursos mais fortes do planeta atual.',
+      },
+      {
+        type: 'changed',
+        en: 'The crafting tab now reveals recipes through the same planet-focus logic, so newly relevant recipes appear where their resource chain comes online.',
+        pt: 'O separador de fabrico passa agora a revelar receitas através da mesma lógica de foco planetário, para que novas receitas relevantes apareçam onde a sua cadeia de recursos entra em cena.',
+      },
+    ],
+  },
+  {
     version: '0.5.1',
     releasedAt: '2026-04-03',
     title: {

@@ -183,6 +183,15 @@ describe('GameService', () => {
       service.craft('condensed-carbon');
       expect(service.getInventoryAmount('carbon')).toBe(beforeCarbon - 25);
     });
+
+    it('should reject crafting recipes hidden by the current planet focus', () => {
+      const state = (service as any).state;
+      state.currentPlanetId = 'cinder';
+      state.totalMined.ferrite = 30;
+      state.planetInventories.cinder.ferrite = 30;
+
+      expect(service.craft('refined-metal')).toBeFalse();
+    });
   });
 
   describe('auto miners', () => {
@@ -194,6 +203,17 @@ describe('GameService', () => {
 
     it('should report zero auto rate when no miners are owned', () => {
       expect(service.getTotalAutoRate('carbon')).toBe(0);
+    });
+
+    it('should reject buying auto miners hidden by the current planet focus', () => {
+      const miner = service.autoMiners.find(item => item.id === 'ferrite-rig')!;
+      const state = (service as any).state;
+      state.currentPlanetId = 'verdara';
+      state.totalMined.ferrite = miner.unlockAtTotal;
+      state.planetInventories.verdara.ferrite = 60;
+      state.planetInventories.verdara.refinedMetal = 5;
+
+      expect(service.buyAutoMiner(miner.id)).toBeFalse();
     });
   });
 
@@ -365,6 +385,30 @@ describe('GameService', () => {
       }
       expect(service.hasUnlockedCrafting()).toBeTrue();
     });
+
+    it('should return the strongest resource chains for a planet', () => {
+      expect(service.getPlanetAssociatedResourceIds('ferros')).toEqual(['ferrite']);
+      expect(service.getPlanetAssociatedResourceIds('verdara')).toEqual(['oxygen']);
+      expect(service.getPlanetAssociatedResourceIds('cinder')).toEqual(['carbon']);
+      expect(service.getPlanetAssociatedResourceIds('solara')).toEqual(['carbon', 'ferrite', 'oxygen']);
+    });
+
+    it('should show recipes only on planets associated with their resource chains', () => {
+      const recipe = service.recipes.find(item => item.id === 'refined-metal')!;
+      (service as any).state.totalMined.ferrite = 30;
+
+      expect(service.isRecipeVisible(recipe, 'ferros')).toBeTrue();
+      expect(service.isRecipeVisible(recipe, 'solara')).toBeTrue();
+      expect(service.isRecipeVisible(recipe, 'cinder')).toBeFalse();
+    });
+
+    it('should show auto miners only on planets associated with their resource chain', () => {
+      const miner = service.autoMiners.find(item => item.id === 'ferrite-rig')!;
+      (service as any).state.totalMined.ferrite = miner.unlockAtTotal;
+
+      expect(service.isAutoMinerVisible(miner, 'ferros')).toBeTrue();
+      expect(service.isAutoMinerVisible(miner, 'verdara')).toBeFalse();
+    });
   });
 
   describe('save/load', () => {
@@ -460,6 +504,35 @@ describe('GameService', () => {
     it('should increase after mining', () => {
       service.mineActiveResource();
       expect(service.getProgressScore()).toBeGreaterThan(0);
+    });
+  });
+
+  describe('dev resources', () => {
+    beforeEach(() => service.init());
+
+    it('should grant all items to the current planet and mined totals', () => {
+      expect(service.grantDevResources(500)).toBeTrue();
+
+      expect(service.getInventoryAmount('carbon', 'solara')).toBe(500);
+      expect(service.getInventoryAmount('mechanicalParts', 'solara')).toBe(500);
+      expect(service.getState().totalMined.carbon).toBe(500);
+      expect(service.getState().totalMined.ferrite).toBe(500);
+      expect(service.getState().totalMined.oxygen).toBe(500);
+    });
+
+    it('should grant all items to every planet when requested', () => {
+      expect(service.grantDevResources(250, 'allPlanets')).toBeTrue();
+
+      PLANETS.forEach(planet => {
+        expect(service.getInventoryAmount('basicCircuits', planet.id)).toBe(250);
+      });
+      expect(service.getState().totalMined.carbon).toBe(250 * PLANETS.length);
+    });
+
+    it('should reject invalid grant amounts', () => {
+      expect(service.grantDevResources(0)).toBeFalse();
+      expect(service.grantDevResources(-5)).toBeFalse();
+      expect(service.grantDevResources(Number.NaN)).toBeFalse();
     });
   });
 });

@@ -93,6 +93,11 @@ export class UpgradePanelComponent implements OnDestroy {
     return this.game.getCurrentPlanet();
   }
 
+  get focusResources(): ResourceDef[] {
+    const focusIds = this.game.getPlanetAssociatedResourceIds(this.currentPlanet.id);
+    return this.resources.filter(resource => focusIds.includes(resource.id));
+  }
+
   get visibleRecipes(): Recipe[] {
     return this.game.recipes.filter(recipe => this.game.isRecipeVisible(recipe));
   }

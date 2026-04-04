@@ -414,6 +414,28 @@ export class GameService {
     return planet?.resourceMultipliers[resourceId] ?? 1;
   }
 
+  getPlanetAssociatedResourceIds(planetId: string = this.state.currentPlanetId): ResourceId[] {
+    const planet = this.getPlanet(planetId);
+    if (!planet) {
+      return [...RESOURCE_IDS];
+    }
+
+    const strongestMultiplier = RESOURCE_IDS.reduce((highest, resourceId) => {
+      return Math.max(highest, planet.resourceMultipliers[resourceId] ?? 0);
+    }, 0);
+
+    return RESOURCE_IDS.filter(resourceId => {
+      return (planet.resourceMultipliers[resourceId] ?? 0) === strongestMultiplier;
+    });
+  }
+
+  isPlanetAssociatedResource(
+    resourceId: ResourceId,
+    planetId: string = this.state.currentPlanetId,
+  ): boolean {
+    return this.getPlanetAssociatedResourceIds(planetId).includes(resourceId);
+  }
+
   getManualYield(resourceId: ResourceId, planetId: string): number {
     const resource = this.getResource(resourceId);
     const modifiers = this.getProductionModifiers(planetId, resourceId);
@@ -486,20 +508,22 @@ export class GameService {
     return this.state.totalMined[upgrade.resourceId] >= upgrade.unlockAtTotal;
   }
 
-  isAutoMinerVisible(miner: AutoMiner): boolean {
+  isAutoMinerVisible(miner: AutoMiner, planetId: string = this.state.currentPlanetId): boolean {
     const meetsTotal = this.state.totalMined[miner.resourceId] >= miner.unlockAtTotal;
+    const meetsPlanetAssociation = this.isPlanetAssociatedResource(miner.resourceId, planetId);
     const meetsCraftRequirement =
       !miner.unlockCraftedId ||
-      this.getInventoryAmount(miner.unlockCraftedId, this.state.currentPlanetId) > 0;
-    return meetsTotal && meetsCraftRequirement;
+      this.getInventoryAmount(miner.unlockCraftedId, planetId) > 0;
+    return meetsTotal && meetsPlanetAssociation && meetsCraftRequirement;
   }
 
-  isRecipeVisible(recipe: Recipe): boolean {
-    return this.getProgressScore() >= recipe.unlockAtTotal;
+  isRecipeVisible(recipe: Recipe, planetId: string = this.state.currentPlanetId): boolean {
+    return this.getProgressScore() >= recipe.unlockAtTotal
+      && recipe.resourceIds.some(resourceId => this.isPlanetAssociatedResource(resourceId, planetId));
   }
 
-  hasUnlockedCrafting(): boolean {
-    return this.recipes.some(recipe => this.isRecipeVisible(recipe));
+  hasUnlockedCrafting(planetId: string = this.state.currentPlanetId): boolean {
+    return this.recipes.some(recipe => this.isRecipeVisible(recipe, planetId));
   }
 
   isShipPartBuilt(partId: string): boolean {
@@ -625,6 +649,33 @@ export class GameService {
   getSpaceStationTravelReductionPercent(planetId: string): number {
     const blueprint = this.getSpaceStationBlueprintForPlanet(planetId);
     return Math.round((1 - blueprint.travelTimeMultiplier) * 100);
+  }
+
+  grantDevResources(
+    amount: number,
+    scope: 'currentPlanet' | 'allPlanets' = 'currentPlanet',
+  ): boolean {
+    const normalizedAmount = Math.floor(amount);
+    if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+      return false;
+    }
+
+    const targetPlanetIds = scope === 'allPlanets'
+      ? this.planets.map(planet => planet.id)
+      : [this.state.currentPlanetId];
+
+    targetPlanetIds.forEach(planetId => {
+      ALL_ITEM_IDS.forEach(itemId => {
+        this.addItem(itemId, normalizedAmount, planetId);
+      });
+    });
+
+    RESOURCE_IDS.forEach(resourceId => {
+      this.state.totalMined[resourceId] += normalizedAmount * targetPlanetIds.length;
+    });
+
+    this.emit();
+    return true;
   }
 
   private applyOfflineProgress(): void {

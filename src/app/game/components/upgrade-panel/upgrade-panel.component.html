@@ -116,7 +116,7 @@
       }
     </nav>
 
-    <div class="min-h-0 overflow-y-auto overscroll-contain p-4 min-[1600px]:p-5">
+    <div class="min-h-0 overflow-y-auto overscroll-contain p-4 pb-12 min-[1600px]:p-5 min-[1600px]:pb-14">
       @if (activeTab === 'upgrades') {
         <section class="grid gap-4 min-[1600px]:gap-5">
           @for (resource of resources; track resource.id) {
@@ -176,6 +176,25 @@
 
       @if (activeTab === 'crafting') {
         <section class="grid gap-4 min-[1600px]:gap-5">
+          <div class="rounded-2xl border border-cyan-400/15 bg-cyan-500/8 p-4 min-[1600px]:rounded-[1.15rem] min-[1600px]:p-5">
+            <div class="text-[0.7rem] uppercase tracking-[0.14em] text-cyan-100/75 min-[1600px]:text-[0.76rem]">
+              {{ copy.messages.ui.upgradePanel.resourceFocusTitle }}
+            </div>
+            <p class="mt-1.5 text-[0.78rem] leading-[1.5] text-cyan-50 min-[1600px]:text-[0.84rem]">
+              {{ copy.messages.ui.upgradePanel.craftingFocusDescription }}
+            </p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              @for (resource of focusResources; track resource.id) {
+                <span
+                  class="rounded-full border px-2.5 py-1 text-[0.72rem] font-semibold text-cyan-50 min-[1600px]:px-3 min-[1600px]:py-1.5 min-[1600px]:text-[0.78rem]"
+                  [style.borderColor]="resource.color"
+                >
+                  {{ resource.name }}
+                </span>
+              }
+            </div>
+          </div>
+
           @if (visibleRecipes.length === 0) {
             <div class="grid gap-1 rounded-2xl bg-white/[0.03] p-4 text-[0.76rem] text-slate-400 min-[1600px]:rounded-[1.15rem] min-[1600px]:p-5 min-[1600px]:text-[0.82rem]">
               {{ copy.messages.ui.upgradePanel.craftingUnlockHint }}
@@ -220,13 +239,32 @@
 
       @if (activeTab === 'automation') {
         <section class="grid gap-4 min-[1600px]:gap-5">
+          <div class="rounded-2xl border border-cyan-400/15 bg-cyan-500/8 p-4 min-[1600px]:rounded-[1.15rem] min-[1600px]:p-5">
+            <div class="text-[0.7rem] uppercase tracking-[0.14em] text-cyan-100/75 min-[1600px]:text-[0.76rem]">
+              {{ copy.messages.ui.upgradePanel.resourceFocusTitle }}
+            </div>
+            <p class="mt-1.5 text-[0.78rem] leading-[1.5] text-cyan-50 min-[1600px]:text-[0.84rem]">
+              {{ copy.messages.ui.upgradePanel.automationFocusDescription }}
+            </p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              @for (resource of focusResources; track resource.id) {
+                <span
+                  class="rounded-full border px-2.5 py-1 text-[0.72rem] font-semibold text-cyan-50 min-[1600px]:px-3 min-[1600px]:py-1.5 min-[1600px]:text-[0.78rem]"
+                  [style.borderColor]="resource.color"
+                >
+                  {{ resource.name }}
+                </span>
+              }
+            </div>
+          </div>
+
           @if (visibleAutoMiners.length === 0) {
             <div class="grid gap-1 rounded-2xl bg-white/[0.03] p-4 text-[0.76rem] text-slate-400 min-[1600px]:rounded-[1.15rem] min-[1600px]:p-5 min-[1600px]:text-[0.82rem]">
               {{ copy.messages.ui.upgradePanel.automationUnlockHint }}
             </div>
           }
 
-          @for (resource of resources; track resource.id) {
+          @for (resource of focusResources; track resource.id) {
             <div class="grid gap-3 min-[1600px]:gap-4">
               <div class="flex items-center justify-between gap-3">
                 <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 min-[1600px]:text-[0.88rem]">
