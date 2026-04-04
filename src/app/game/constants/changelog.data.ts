@@ -20,6 +20,25 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: '0.6.4',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Production Settings Guardrails',
+      pt: 'Proteções das Definições em Produção',
+    },
+    summary: {
+      en: 'Production builds now hide dev-only settings correctly while keeping the tools available in local non-production builds.',
+      pt: 'As builds de produção passam agora a esconder corretamente as definições apenas para dev, mantendo as ferramentas disponíveis em builds locais não produtivas.',
+    },
+    items: [
+      {
+        type: 'fixed',
+        en: 'Production build configuration now swaps in the production environment file, so dev-only settings tools no longer appear in deployed builds.',
+        pt: 'A configuração da build de produção passa agora a trocar para o ficheiro de ambiente de produção, para que as ferramentas de definições apenas para dev deixem de aparecer nas builds publicadas.',
+      },
+    ],
+  },
+  {
     version: '0.6.3',
     releasedAt: '2026-04-04',
     title: {
