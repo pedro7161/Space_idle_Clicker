@@ -6,7 +6,7 @@ This document is the versioned project brief for the repository. It should stay 
 
 Frontier Miner is a desktop-first incremental mining and progression game built in Angular.
 
-The player starts on a safe frontier world, manually gathers resources, unlocks refinement and automation, builds ship parts, and gradually grows into a broader multi-planet production game with local surface inventories, orbital-station inventories, ship cargo, tiered ships, orbital logistics, and late-game frontier resources.
+The player starts on a safe frontier world, manually gathers resources, unlocks refinement and automation, builds ship parts, and gradually grows into a broader multi-planet production game with local surface inventories, orbital-station inventories, ship cargo, tiered ships, orbital logistics, late-game frontier resources, and a dedicated expedition program that can keep extending the map with generated worlds.
 
 The design goal is not a generic idle game where everything scales passively from the beginning. The game should create bottlenecks, force prioritization, and make the player decide which resource chain matters most right now.
 
@@ -21,6 +21,7 @@ The design goal is not a generic idle game where everything scales passively fro
 7. Move resources between planets and orbital stations through assigned ship routes.
 8. Build orbital stations to open new logistics destinations, create separate orbital stockpiles, and prepare future hub systems.
 9. Push into deeper-tier planets for advanced resources, stronger production chains, and uranium-heavy late-game scaling.
+10. After the handcrafted system is fully charted, build an explorer ship, upgrade its engine and fuel systems, and launch expeditions that keep generating new frontier planets.
 
 ## Product Clarifications
 
@@ -40,6 +41,9 @@ These are current design decisions and should override older wording if there is
 - Orbital stations are per-planet logistics upgrades and should naturally evolve into future hub mechanics.
 - The top command header can be collapsed upward to free more vertical play space.
 - Upgrade lists should not dump every available card at once; they should stage the next active upgrades and fade completed chains.
+- After every handcrafted planet is discovered, expeditions unlock as a separate progression lane with a dedicated explorer ship instead of reusing the standard cargo fleet.
+- Generated frontier planets are persisted as seeds in save data and then behave like normal discovered worlds for inventories, travel, and future logistics upgrades.
+- The fleet map is currently a widened 2D orbital chart with scroll, drag-to-pan, and fullscreen expansion, not a true 3D map.
 
 ## Current Progression Structure
 
@@ -57,6 +61,8 @@ The currently implemented progression is:
    Higher-tier ships open access to rare crystal and uranium planets, ending in `Helion Breach` as the current highest-tier destination.
 6. Late-game payoff
    Uranium is meant to justify significantly stronger upgrades than the standard early-resource loop.
+7. Infinite frontier
+   After all handcrafted worlds are discovered, the explorer program can repeatedly survey and add generated planets, with each expedition demanding more time and fuel than the last.
 
 ## Current Implemented Systems
 
@@ -77,10 +83,13 @@ The current project includes:
 - multiple ship tiers with different cargo and travel-speed profiles
 - higher-tier ships for deeper planets
 - dedicated overview workspace with network totals and per-planet, per-station, and fleet-cargo inventory breakdowns
-- dedicated ships workspace with route management, activity filters, planet-traffic filters, shipyard, and ship stats views
+- dedicated ships workspace with route management, activity filters, planet-traffic filters, an expedition command deck, shipyard, and ship stats views
 - dedicated operations workspace with resources, upgrades, crafting, automation, and launch views
 - repeatable logistics routes between discovered planetary surfaces and orbital stations
 - orbital station construction with separate orbital storage and route-efficiency bonuses
+- dedicated explorer ship progression with separate engine and fuel upgrades
+- repeatable expedition missions that generate persistent frontier planets beyond the authored map
+- expandable, draggable, horizontally scrollable system map to keep larger orbital layouts readable
 - collapsible top header with a restore handle
 - in-game changelog dialog
 - save/load through local storage
@@ -98,6 +107,7 @@ The current project includes:
 - The expanded operations workspace should stay tab-driven, with the local ledger available in its own `Resources` view instead of permanently consuming vertical space.
 - The ships workspace should feel like a true page swap, not a small embedded subsection.
 - Route-heavy fleet screens should provide fast filtering for active traffic, docked hulls, and planet-specific logistics.
+- The system map should stay readable as the frontier widens, which means horizontal scrolling, drag-to-pan support, and a fullscreen mode are preferred over squeezing every orbit into a static viewport.
 - The operations workspace should follow the same page-swap logic as ships.
 - Resource summaries can be collapsed on smaller screens.
 - The top header can collapse to maximize vertical space, but it must always remain recoverable from a visible handle.
@@ -157,7 +167,7 @@ npm test
 Test coverage includes:
 
 - `FormatNumberPipe` — number formatting thresholds (K, M, B, T suffixes)
-- `GameService` — core game logic: initialization, mining, upgrades, crafting, auto miners, ship parts, planet travel, fleet routes, route filters, space stations, station destinations, save/load/export/import, reset, visibility checks, affordability, and progress scoring
+- `GameService` — core game logic: initialization, mining, upgrades, crafting, auto miners, ship parts, planet travel, fleet routes, route filters, space stations, station destinations, expedition progression, generated planets, save/load/export/import, reset, visibility checks, affordability, and progress scoring
 - `AppComponent` — root component creation and router outlet rendering
 - `GameComponent` — start screen flow, fresh start, reset dialog, settings dialog, ships workspace toggles, mobile panel toggles, save import handling, and destroy lifecycle
 - `StatsHeaderComponent` — resource display, active resource stats, label generation, workspace button labels, and mobile toggle labels
@@ -166,6 +176,7 @@ Test coverage includes:
 - `ResetDialogComponent` — confirm/cancel output emissions and backdrop click handling
 - `SettingsDialogComponent` — input binding, feedback updates, import/export/locale change emissions, and file download
 - `SaveTransferDialogComponent` — export value binding, import emission, clipboard copy success/failure feedback
+- `FleetManagerComponent` — route destination reachability, traffic filters, system-map rendering, fullscreen map mode, and expedition workspace visibility
 
 ## Deployment
 
@@ -192,7 +203,8 @@ Likely next areas of depth:
 - deeper crafting chains
 - station-to-station hub systems
 - richer routing controls and multi-stop logistics
-- richer mid-game and post-first-ship progression
+- frontier-specific events, anomalies, or authored surprises layered into the generated worlds
+- a possible future 3D map if it adds clarity without replacing the current wide-map usability
 
 ## Notes For Future Changes
 

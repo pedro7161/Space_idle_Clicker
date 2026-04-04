@@ -422,6 +422,48 @@ describe('GameService', () => {
     });
   });
 
+  describe('frontier expeditions', () => {
+    beforeEach(() => {
+      service.init();
+      (service as any).state.discoveredPlanetIds = PLANETS.map(planet => planet.id);
+      service.grantDevResources(5_000);
+    });
+
+    it('should unlock the explorer program after every handcrafted planet is discovered', () => {
+      expect(service.hasUnlockedExpeditionProgram()).toBeTrue();
+    });
+
+    it('should build the explorer ship, launch an expedition, and discover a generated planet on completion', () => {
+      expect(service.buildExplorerShip()).toBeTrue();
+      expect(service.hasExplorerShip()).toBeTrue();
+      expect(service.startExpedition()).toBeTrue();
+
+      const mission = service.getState().expedition.activeMission;
+      expect(mission).toBeTruthy();
+
+      (service as any).processExpeditions(mission!.arriveAt);
+      const internalState = (service as any).state;
+
+      expect(internalState.expedition.activeMission).toBeNull();
+      expect(internalState.generatedPlanets.length).toBe(1);
+      expect(service.isPlanetDiscovered('frontier-1')).toBeTrue();
+      expect(service.getPlanet('frontier-1')?.requiredShipTier).toBe(5);
+    });
+
+    it('should require fuel upgrades as frontier distance increases', () => {
+      expect(service.buildExplorerShip()).toBeTrue();
+      (service as any).state.expedition.expeditionsCompleted = 3;
+
+      expect(service.getNextExpeditionFuelRequired()).toBe(7);
+      expect(service.getExplorerFuelCapacity()).toBe(6);
+      expect(service.canStartExpedition()).toBeFalse();
+
+      expect(service.upgradeExplorerFuel()).toBeTrue();
+      expect(service.getExplorerFuelCapacity()).toBe(9);
+      expect(service.canStartExpedition()).toBeTrue();
+    });
+  });
+
   describe('manual yield', () => {
     beforeEach(() => service.init());
 

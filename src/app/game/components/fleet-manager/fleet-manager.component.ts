@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnDestroy, OnInit, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
@@ -35,10 +35,10 @@ interface MapSegment {
   from: Planet;
   to: Planet;
   distance: number;
-  midpointPercent: number;
+  midpointPx: number;
 }
 
-type FleetSection = 'routes' | 'shipyard' | 'stats';
+type FleetSection = 'routes' | 'expeditions' | 'shipyard' | 'stats';
 type FleetActivityFilter = 'all' | 'working' | 'idle' | 'docked' | 'transit';
 type FleetPlanetTrafficFilter = 'any' | 'sending' | 'receiving';
 
@@ -53,15 +53,26 @@ interface FleetSectionDef {
   imports: [CommonModule, FormsModule, FormatNumberPipe],
   templateUrl: './fleet-manager.component.html',
 })
-export class FleetManagerComponent implements OnInit {
+export class FleetManagerComponent implements OnInit, OnDestroy {
   activeSection: FleetSection = 'routes';
   currentTime = Date.now();
+  isSystemMapExpanded = false;
+  isPanningSystemMap = false;
   routeActivityFilter: FleetActivityFilter = 'all';
   routePlanetFilterId = 'all';
   routePlanetTrafficFilter: FleetPlanetTrafficFilter = 'any';
   readonly sections: FleetSectionDef[];
   readonly routeDrafts: Record<string, RouteDraft> = {};
+  readonly mapViewport = viewChild<ElementRef<HTMLElement>>('mapViewport');
   private readonly destroyRef = inject(DestroyRef);
+  readonly orbitUnitWidthPx = 148;
+  readonly mapPaddingPx = 112;
+  readonly mapMinimumWidthPx = 736;
+  private mapPanPointerId: number | null = null;
+  private mapPanStartX = 0;
+  private mapPanStartY = 0;
+  private mapPanStartScrollLeft = 0;
+  private mapPanStartScrollTop = 0;
 
   constructor(
     public game: GameService,
@@ -70,6 +81,7 @@ export class FleetManagerComponent implements OnInit {
     const messages = this.copy.messages.ui.fleetManager;
     this.sections = [
       { key: 'routes', label: messages.routes },
+      { key: 'expeditions', label: messages.expeditions },
       { key: 'shipyard', label: messages.shipyard },
       { key: 'stats', label: messages.shipStats },
     ];
@@ -85,6 +97,10 @@ export class FleetManagerComponent implements OnInit {
         this.syncRouteDrafts();
         this.normalizeRouteFilters();
       });
+  }
+
+  ngOnDestroy(): void {
+    this.stopSystemMapPan();
   }
 
   get shipDefinitions(): Ship[] {
@@ -106,7 +122,7 @@ export class FleetManagerComponent implements OnInit {
         from,
         to,
         distance: this.game.getPlanetDistance(from.id, to.id) ?? 0,
-        midpointPercent: (this.getPlanetPositionPercent(from) + this.getPlanetPositionPercent(to)) / 2,
+        midpointPx: (this.getPlanetPositionPx(from) + this.getPlanetPositionPx(to)) / 2,
       };
     });
   }
@@ -146,6 +162,10 @@ export class FleetManagerComponent implements OnInit {
 
   get highestTier(): number {
     return this.game.getHighestOwnedShipTier();
+  }
+
+  get frontierWorldCount(): number {
+    return this.game.getState().generatedPlanets.length;
   }
 
   get routeFilterPlanets(): Planet[] {
@@ -284,6 +304,85 @@ export class FleetManagerComponent implements OnInit {
     });
   }
 
+  getFrontierWorldsLabel(): string {
+    return this.copy.format(this.copy.messages.ui.fleetManager.frontierWorlds, {
+      count: this.frontierWorldCount,
+    });
+  }
+
+  getExplorerEngineLabel(): string {
+    return this.copy.format(this.copy.messages.ui.fleetManager.explorerEngineLevel, {
+      level: this.game.getState().expedition.engineLevel,
+    });
+  }
+
+  getExplorerFuelLabel(): string {
+    return this.copy.format(this.copy.messages.ui.fleetManager.explorerFuelLevel, {
+      level: this.game.getState().expedition.fuelLevel,
+    });
+  }
+
+  getExplorerSpeedLabel(): string {
+    return this.copy.format(this.copy.messages.ui.fleetManager.explorerSpeed, {
+      speed: Number(this.game.getExplorerTravelSpeed().toFixed(2)),
+    });
+  }
+
+  getExplorerFuelCapacityLabel(): string {
+    return this.copy.format(this.copy.messages.ui.fleetManager.explorerFuelCapacity, {
+      fuel: this.game.getExplorerFuelCapacity(),
+    });
+  }
+
+  getNextExpeditionFuelLabel(): string {
+    return this.copy.format(this.copy.messages.ui.fleetManager.explorerFuelRequired, {
+      fuel: this.game.getNextExpeditionFuelRequired(),
+    });
+  }
+
+  getNextExpeditionDurationLabel(): string {
+    return this.copy.format(this.copy.messages.ui.fleetManager.expeditionDuration, {
+      seconds: Math.ceil(this.game.getNextExpeditionDurationMs() / 1000),
+    });
+  }
+
+  getExpeditionStatusLabel(): string {
+    return this.game.isExpeditionInProgress()
+      ? this.copy.messages.ui.fleetManager.expeditionStatusActive
+      : this.copy.messages.ui.fleetManager.expeditionStatusReady;
+  }
+
+  getExpeditionEtaLabel(): string | null {
+    const etaSeconds = this.game.getExpeditionEtaSeconds(this.currentTime);
+    if (etaSeconds === null) {
+      return null;
+    }
+
+    return this.copy.format(this.copy.messages.ui.fleetManager.expeditionEta, {
+      seconds: etaSeconds,
+    });
+  }
+
+  getExpeditionTargetLabel(): string {
+    const target = this.game.getExpeditionTargetPlanet();
+    return this.copy.format(this.copy.messages.ui.fleetManager.expeditionTarget, {
+      planet: target.name,
+    });
+  }
+
+  getExpeditionFuelWarning(): string | null {
+    const required = this.game.getNextExpeditionFuelRequired();
+    const capacity = this.game.getExplorerFuelCapacity();
+    if (required <= capacity) {
+      return null;
+    }
+
+    return this.copy.format(this.copy.messages.ui.fleetManager.expeditionFuelBlocked, {
+      required,
+      capacity,
+    });
+  }
+
   getCargoCapacityLabel(ship: Ship): string {
     return this.copy.format(this.copy.messages.ui.fleetManager.cargoCapacity, {
       capacity: ship.cargoCapacity,
@@ -376,6 +475,22 @@ export class FleetManagerComponent implements OnInit {
     this.game.clearShipRoute(ship.id);
   }
 
+  buildExplorerShip(): void {
+    this.game.buildExplorerShip();
+  }
+
+  upgradeExplorerEngine(): void {
+    this.game.upgradeExplorerEngine();
+  }
+
+  upgradeExplorerFuel(): void {
+    this.game.upgradeExplorerFuel();
+  }
+
+  startExpedition(): void {
+    this.game.startExpedition();
+  }
+
   getOwnedCountLabel(definition: Ship): string {
     return this.copy.format(this.copy.messages.ui.fleetManager.ownedCount, {
       count: this.ships.filter(ship => ship.definitionId === definition.id).length,
@@ -420,16 +535,12 @@ export class FleetManagerComponent implements OnInit {
     });
   }
 
-  getPlanetPositionPercent(planet: Planet | string): number {
+  getPlanetPositionPx(planet: Planet | string): number {
     const orbitPosition = typeof planet === 'string'
       ? this.game.getPlanet(planet)?.orbitPosition ?? 0
       : planet.orbitPosition;
 
-    if (this.maxOrbitPosition <= 0) {
-      return 50;
-    }
-
-    return 8 + (orbitPosition / this.maxOrbitPosition) * 84;
+    return this.mapPaddingPx + (orbitPosition * this.orbitUnitWidthPx);
   }
 
   getPlanetMarkerTopPercent(index: number): number {
@@ -440,19 +551,19 @@ export class FleetManagerComponent implements OnInit {
     return index % 2 === 0;
   }
 
-  getRouteStartPercent(route: ShipRoute): number {
-    const originPosition = this.getPlanetPositionPercent(route.originPlanetId);
-    const destinationPosition = this.getPlanetPositionPercent(route.destinationPlanetId);
+  getRouteStartPx(route: ShipRoute): number {
+    const originPosition = this.getPlanetPositionPx(route.originPlanetId);
+    const destinationPosition = this.getPlanetPositionPx(route.destinationPlanetId);
     return Math.min(originPosition, destinationPosition);
   }
 
-  getRouteWidthPercent(route: ShipRoute): number {
-    const originPosition = this.getPlanetPositionPercent(route.originPlanetId);
-    const destinationPosition = this.getPlanetPositionPercent(route.destinationPlanetId);
+  getRouteWidthPx(route: ShipRoute): number {
+    const originPosition = this.getPlanetPositionPx(route.originPlanetId);
+    const destinationPosition = this.getPlanetPositionPx(route.destinationPlanetId);
     return Math.abs(destinationPosition - originPosition);
   }
 
-  getShipMarkerLeftPercent(ship: OwnedShip): number | null {
+  getShipMarkerLeftPx(ship: OwnedShip): number | null {
     if (!ship.transit) {
       return null;
     }
@@ -462,8 +573,8 @@ export class FleetManagerComponent implements OnInit {
       return null;
     }
 
-    const fromPosition = this.getPlanetPositionPercent(ship.transit.fromPlanetId);
-    const toPosition = this.getPlanetPositionPercent(ship.transit.toPlanetId);
+    const fromPosition = this.getPlanetPositionPx(ship.transit.fromPlanetId);
+    const toPosition = this.getPlanetPositionPx(ship.transit.toPlanetId);
     return fromPosition + (toPosition - fromPosition) * progress;
   }
 
@@ -489,6 +600,74 @@ export class FleetManagerComponent implements OnInit {
     });
     const distance = this.getDistanceLabel(route.originPlanetId, route.destinationPlanetId);
     return distance ? `${summary} · ${distance}` : summary;
+  }
+
+  getSystemMapCanvasWidthPx(): number {
+    return Math.max(
+      this.mapMinimumWidthPx,
+      (this.maxOrbitPosition * this.orbitUnitWidthPx) + (this.mapPaddingPx * 2),
+    );
+  }
+
+  toggleSystemMapExpanded(): void {
+    this.isSystemMapExpanded = !this.isSystemMapExpanded;
+    if (!this.isSystemMapExpanded) {
+      this.stopSystemMapPan();
+    }
+  }
+
+  startSystemMapPan(event: PointerEvent): void {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const viewport = this.mapViewport()?.nativeElement;
+    if (!viewport) {
+      return;
+    }
+
+    this.isPanningSystemMap = true;
+    this.mapPanPointerId = event.pointerId;
+    this.mapPanStartX = event.clientX;
+    this.mapPanStartY = event.clientY;
+    this.mapPanStartScrollLeft = viewport.scrollLeft;
+    this.mapPanStartScrollTop = viewport.scrollTop;
+    viewport.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }
+
+  onSystemMapPan(event: PointerEvent): void {
+    if (!this.isPanningSystemMap) {
+      return;
+    }
+
+    const viewport = this.mapViewport()?.nativeElement;
+    if (!viewport) {
+      return;
+    }
+
+    viewport.scrollLeft = this.mapPanStartScrollLeft - (event.clientX - this.mapPanStartX);
+    viewport.scrollTop = this.mapPanStartScrollTop - (event.clientY - this.mapPanStartY);
+  }
+
+  stopSystemMapPan(event?: PointerEvent): void {
+    if (!this.isPanningSystemMap) {
+      return;
+    }
+
+    const viewport = this.mapViewport()?.nativeElement;
+    if (viewport && this.mapPanPointerId !== null) {
+      try {
+        viewport.releasePointerCapture(this.mapPanPointerId);
+      } catch {
+        // Ignore stale pointer capture releases.
+      }
+    }
+
+    if (!event || event.pointerId === this.mapPanPointerId) {
+      this.isPanningSystemMap = false;
+      this.mapPanPointerId = null;
+    }
   }
 
   updateRoutePlanetFilter(planetId: string): void {

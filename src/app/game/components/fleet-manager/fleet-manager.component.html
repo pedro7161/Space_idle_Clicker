@@ -32,7 +32,10 @@
   </section>
 
   <section class="relative z-10 mt-4 grid gap-3">
-    <nav class="grid grid-cols-3 gap-2 rounded-[1.2rem] border border-white/10 bg-[rgba(8,15,26,0.68)] p-2 backdrop-blur-xl">
+    <nav
+      class="grid gap-2 rounded-[1.2rem] border border-white/10 bg-[rgba(8,15,26,0.68)] p-2 backdrop-blur-xl"
+      [style.gridTemplateColumns]="'repeat(' + sections.length + ', minmax(0, 1fr))'"
+    >
       @for (section of sections; track section.key) {
         <button
           class="rounded-[0.9rem] border px-3 py-3 text-[0.76rem] font-bold transition min-[1600px]:text-[0.84rem]"
@@ -148,7 +151,11 @@
                 </div>
               </section>
 
-              <section class="grid gap-4 rounded-[1.2rem] border border-white/10 bg-white/[0.025] p-4 min-[1600px]:p-5">
+              <section
+                class="grid gap-4 rounded-[1.2rem] border border-white/10 bg-white/[0.025] p-4 min-[1600px]:p-5"
+                data-testid="fleet-system-map-panel"
+                [ngClass]="isSystemMapExpanded ? 'fixed inset-4 z-50 bg-[rgba(8,15,26,0.95)] shadow-[0_30px_90px_rgba(2,6,23,0.65)]' : ''"
+              >
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h4 class="text-[0.8rem] uppercase tracking-[0.12em] text-slate-400">
@@ -166,22 +173,44 @@
                     <span class="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-3 py-1.5 text-[0.72rem] font-semibold text-cyan-100">
                       {{ getFilteredTransitTrafficLabel() }}
                     </span>
+                    <button
+                      class="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[0.72rem] font-semibold text-slate-200 transition hover:bg-white/[0.1]"
+                      type="button"
+                      (click)="toggleSystemMapExpanded()"
+                    >
+                      {{ isSystemMapExpanded ? copy.messages.ui.fleetManager.collapseMap : copy.messages.ui.fleetManager.expandMap }}
+                    </button>
                   </div>
                 </div>
 
-                <div class="overflow-x-auto overscroll-contain pb-2">
+                <div
+                  #mapViewport
+                  class="overflow-auto overscroll-contain rounded-[1.3rem] border border-white/10 bg-slate-950/20 pb-2"
+                  [ngClass]="isPanningSystemMap ? 'cursor-grabbing' : 'cursor-grab'"
+                  (pointerdown)="startSystemMapPan($event)"
+                  (pointermove)="onSystemMapPan($event)"
+                  (pointerup)="stopSystemMapPan($event)"
+                  (pointercancel)="stopSystemMapPan($event)"
+                  (pointerleave)="stopSystemMapPan($event)"
+                >
                   <div
                     data-testid="fleet-system-map"
-                    class="relative min-h-[19rem] min-w-[46rem] overflow-hidden rounded-[1.3rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.14),transparent_32%),linear-gradient(180deg,rgba(8,15,26,0.94)_0%,rgba(5,10,18,0.98)_100%)] px-8 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                    class="relative overflow-hidden rounded-[1.3rem] bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.14),transparent_32%),linear-gradient(180deg,rgba(8,15,26,0.94)_0%,rgba(5,10,18,0.98)_100%)] px-8 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                    [style.width.px]="getSystemMapCanvasWidthPx()"
+                    [ngClass]="isSystemMapExpanded ? 'min-h-[72vh]' : 'min-h-[19rem]'"
                   >
                     <div class="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.18)_1px,transparent_0)] [background-size:24px_24px]"></div>
-                    <div class="absolute left-[8%] right-[8%] top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                    <div
+                      class="absolute top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      [style.left.px]="mapPaddingPx"
+                      [style.right.px]="mapPaddingPx"
+                    ></div>
 
                     @for (route of filteredMappedRoutes; track route.id) {
                       <div
                         class="absolute top-1/2 h-[0.18rem] -translate-y-1/2 rounded-full opacity-75"
-                        [style.left.%]="getRouteStartPercent(route)"
-                        [style.width.%]="getRouteWidthPercent(route)"
+                        [style.left.px]="getRouteStartPx(route)"
+                        [style.width.px]="getRouteWidthPx(route)"
                         [style.backgroundColor]="getItemColor(route.itemId)"
                         [attr.title]="getRouteMapLabel(route)"
                       ></div>
@@ -190,7 +219,7 @@
                     @for (segment of mapSegments; track segment.from.id + '-' + segment.to.id) {
                       <div
                         class="absolute top-1/2 -translate-x-1/2 translate-y-[1.4rem] rounded-full border border-white/10 bg-slate-950/80 px-2.5 py-1 text-[0.68rem] font-semibold text-slate-200 shadow-[0_10px_22px_rgba(2,6,23,0.35)]"
-                        [style.left.%]="segment.midpointPercent"
+                        [style.left.px]="segment.midpointPx"
                         data-testid="fleet-route-distance"
                       >
                         {{ getSegmentDistanceLabel(segment) }}
@@ -200,7 +229,7 @@
                     @for (planet of mapPlanets; let index = $index; track planet.id) {
                       <div
                         class="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-                        [style.left.%]="getPlanetPositionPercent(planet)"
+                        [style.left.px]="getPlanetPositionPx(planet)"
                         [style.top.%]="getPlanetMarkerTopPercent(index)"
                       >
                         <div
@@ -227,10 +256,10 @@
                     }
 
                     @for (ship of filteredTransitShips; let markerIndex = $index; track ship.id) {
-                      @if (getShipMarkerLeftPercent(ship); as markerLeft) {
+                      @if (getShipMarkerLeftPx(ship); as markerLeft) {
                         <div
                           class="absolute z-20 -translate-x-1/2 -translate-y-1/2"
-                          [style.left.%]="markerLeft"
+                          [style.left.px]="markerLeft"
                           [style.top.%]="getShipMarkerTopPercent(markerIndex)"
                           data-testid="fleet-system-map-ship"
                         >
@@ -381,6 +410,170 @@
                     </button>
                   </div>
                 </div>
+              </div>
+            }
+          </section>
+        }
+
+        @if (activeSection === 'expeditions') {
+          <section class="grid gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">
+                  {{ copy.messages.ui.fleetManager.expeditions }}
+                </h3>
+                <p class="mt-1 text-[0.8rem] text-slate-400">
+                  {{ copy.messages.ui.fleetManager.expeditionsDescription }}
+                </p>
+              </div>
+              <span class="text-[0.74rem] text-slate-400">
+                {{ getFrontierWorldsLabel() }}
+              </span>
+            </div>
+
+            @if (!game.hasUnlockedExpeditionProgram()) {
+              <div class="rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 text-[0.82rem] text-slate-300 min-[1600px]:p-5">
+                <div class="text-[0.9rem] font-semibold text-slate-50">
+                  {{ copy.messages.ui.fleetManager.expeditionLockTitle }}
+                </div>
+                <p class="mt-2 max-w-[44rem] text-[0.8rem] leading-7 text-slate-400">
+                  {{ copy.messages.ui.fleetManager.expeditionLockDescription }}
+                </p>
+              </div>
+            } @else {
+              <div class="grid gap-4 min-[1100px]:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
+                <section class="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 min-[1600px]:p-5">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                      <div class="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-white/[0.05] text-lg">
+                        🛰️
+                      </div>
+                      <div>
+                        <div class="text-[0.94rem] font-semibold text-slate-50">
+                          {{ copy.messages.ui.fleetManager.explorerShipTitle }}
+                        </div>
+                        <p class="mt-1 text-[0.8rem] leading-6 text-slate-400">
+                          {{ copy.messages.ui.fleetManager.explorerShipDescription }}
+                        </p>
+                      </div>
+                    </div>
+                    <span class="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[0.72rem] text-slate-300">
+                      {{ getExpeditionStatusLabel() }}
+                    </span>
+                  </div>
+
+                  <div class="grid gap-2 text-[0.78rem] text-slate-300">
+                    <div>{{ getExplorerEngineLabel() }}</div>
+                    <div>{{ getExplorerFuelLabel() }}</div>
+                    <div>{{ getExplorerSpeedLabel() }}</div>
+                    <div>{{ getExplorerFuelCapacityLabel() }}</div>
+                    <div>{{ getNextExpeditionFuelLabel() }}</div>
+                    <div>{{ getNextExpeditionDurationLabel() }}</div>
+                    <div>{{ getExpeditionTargetLabel() }}</div>
+                    @if (getExpeditionEtaLabel(); as expeditionEtaLabel) {
+                      <div class="text-cyan-300">{{ expeditionEtaLabel }}</div>
+                    }
+                    @if (getExpeditionFuelWarning(); as expeditionFuelWarning) {
+                      <div class="text-amber-300">{{ expeditionFuelWarning }}</div>
+                    }
+                  </div>
+
+                  @if (!game.hasExplorerShip()) {
+                    <div class="flex flex-wrap gap-2">
+                      @for (cost of game.getExplorerShipBuildCost(); track cost.itemId + '-' + cost.amount) {
+                        <span
+                          class="rounded-full border px-2 py-1 text-[0.72rem] text-slate-300"
+                          [style.borderColor]="getItemColor(cost.itemId)"
+                        >
+                          {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                        </span>
+                      }
+                    </div>
+
+                    <button
+                      class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.76rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+                      [disabled]="!game.canBuildExplorerShip()"
+                      (click)="buildExplorerShip()"
+                    >
+                      {{ copy.messages.ui.fleetManager.buildExplorerShip }}
+                    </button>
+                  } @else {
+                    <div class="flex flex-wrap gap-2">
+                      <button
+                        class="inline-flex items-center justify-center rounded-[0.85rem] border border-cyan-400/25 bg-cyan-500/10 px-3 py-2.5 text-[0.76rem] font-bold text-cyan-100 transition hover:-translate-y-px hover:bg-cyan-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                        [disabled]="!game.canStartExpedition()"
+                        (click)="startExpedition()"
+                      >
+                        {{ copy.messages.ui.fleetManager.launchExpedition }}
+                      </button>
+                    </div>
+                  }
+                </section>
+
+                <section class="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 min-[1600px]:p-5">
+                  <div>
+                    <h4 class="text-[0.8rem] uppercase tracking-[0.12em] text-slate-400">
+                      {{ copy.messages.ui.fleetManager.explorerUpgrades }}
+                    </h4>
+                    <p class="mt-1 text-[0.8rem] text-slate-400">
+                      {{ copy.messages.ui.fleetManager.explorerUpgradesDescription }}
+                    </p>
+                  </div>
+
+                  <div class="grid gap-3">
+                    <div class="grid gap-2 rounded-[1rem] border border-white/8 bg-slate-950/30 p-3.5">
+                      <div class="text-[0.84rem] font-semibold text-slate-50">
+                        {{ copy.messages.ui.fleetManager.explorerEngineUpgrade }}
+                      </div>
+                      <div class="text-[0.76rem] text-slate-400">
+                        {{ copy.messages.ui.fleetManager.explorerEngineUpgradeDescription }}
+                      </div>
+                      <div class="flex flex-wrap gap-2">
+                        @for (cost of game.getExplorerEngineUpgradeCost(); track cost.itemId + '-' + cost.amount) {
+                          <span
+                            class="rounded-full border px-2 py-1 text-[0.72rem] text-slate-300"
+                            [style.borderColor]="getItemColor(cost.itemId)"
+                          >
+                            {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                          </span>
+                        }
+                      </div>
+                      <button
+                        class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.76rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+                        [disabled]="!game.canUpgradeExplorerEngine()"
+                        (click)="upgradeExplorerEngine()"
+                      >
+                        {{ copy.messages.ui.fleetManager.upgradeExplorerEngine }}
+                      </button>
+                    </div>
+
+                    <div class="grid gap-2 rounded-[1rem] border border-white/8 bg-slate-950/30 p-3.5">
+                      <div class="text-[0.84rem] font-semibold text-slate-50">
+                        {{ copy.messages.ui.fleetManager.explorerFuelUpgrade }}
+                      </div>
+                      <div class="text-[0.76rem] text-slate-400">
+                        {{ copy.messages.ui.fleetManager.explorerFuelUpgradeDescription }}
+                      </div>
+                      <div class="flex flex-wrap gap-2">
+                        @for (cost of game.getExplorerFuelUpgradeCost(); track cost.itemId + '-' + cost.amount) {
+                          <span
+                            class="rounded-full border px-2 py-1 text-[0.72rem] text-slate-300"
+                            [style.borderColor]="getItemColor(cost.itemId)"
+                          >
+                            {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                          </span>
+                        }
+                      </div>
+                      <button
+                        class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.76rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+                        [disabled]="!game.canUpgradeExplorerFuel()"
+                        (click)="upgradeExplorerFuel()"
+                      >
+                        {{ copy.messages.ui.fleetManager.upgradeExplorerFuel }}
+                      </button>
+                    </div>
+                  </div>
+                </section>
               </div>
             }
           </section>

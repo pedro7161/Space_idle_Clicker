@@ -40,5 +40,8 @@
       "name": "Helion Breach",
       "description": "The highest-tier frontier world. Irradiated seams of uranium make it dangerous, lucrative, and worth building for."
     }
+  },
+  "frontier": {
+    "description": "A survey-marked frontier world rich in {primary}, with supporting seams of {support}. Every successful expedition pushes the search deeper into unknown orbit {depth}."
   }
 }

@@ -20,6 +20,40 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: '0.7.0',
+    releasedAt: '2026-04-04',
+    title: {
+      en: 'Infinite Frontier Expeditions',
+      pt: 'Expedições da Fronteira Infinita',
+    },
+    summary: {
+      en: 'Charting the full handcrafted system now unlocks a dedicated explorer program that can keep discovering generated planets, while the fleet map expands into a draggable wider viewport.',
+      pt: 'Cartografar todo o sistema artesanal passa agora a desbloquear um programa explorador dedicado que pode continuar a descobrir planetas gerados, enquanto o mapa da frota se expande para uma vista mais larga e arrastável.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'A dedicated explorer ship with separate engine and fuel upgrades that unlocks after every handcrafted planet has been discovered.',
+        pt: 'Uma nave exploradora dedicada com melhorias separadas de motor e combustível que desbloqueia depois de todos os planetas artesanais terem sido descobertos.',
+      },
+      {
+        type: 'added',
+        en: 'Repeatable expeditions that generate and permanently save new frontier planets, with each new survey costing more fuel and taking longer than the last.',
+        pt: 'Expedições repetíveis que geram e guardam permanentemente novos planetas da fronteira, com cada nova prospeção a custar mais combustível e a demorar mais do que a anterior.',
+      },
+      {
+        type: 'changed',
+        en: 'Fleet Command now includes an expedition deck plus a wider system map that can be expanded, scrolled, and dragged as the frontier keeps growing.',
+        pt: 'O Comando da Frota passa agora a incluir um painel de expedições e um mapa do sistema mais largo que pode ser expandido, percorrido e arrastado à medida que a fronteira continua a crescer.',
+      },
+      {
+        type: 'changed',
+        en: 'Save data now persists generated planets and expedition progress so the infinite frontier survives reloads, exports, and imports.',
+        pt: 'Os dados de save passam agora a persistir os planetas gerados e o progresso das expedições para que a fronteira infinita sobreviva a recarregamentos, exportações e importações.',
+      },
+    ],
+  },
+  {
     version: '0.6.4',
     releasedAt: '2026-04-04',
     title: {
