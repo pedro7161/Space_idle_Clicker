@@ -20,35 +20,6 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
-    version: '0.7.1',
-    releasedAt: '2026-04-04',
-    title: {
-      en: 'Expanded Locale Support',
-      pt: 'Suporte de Idiomas Expandido',
-    },
-    summary: {
-      en: 'Frontier Miner now supports English, Portuguese, Brazilian Portuguese, Spanish, and French across the main interface and settings selector.',
-      pt: 'O Frontier Miner passa agora a suportar inglês, português, português do Brasil, espanhol e francês na interface principal e no seletor de idioma.',
-    },
-    items: [
-      {
-        type: 'added',
-        en: 'New locale catalogs for Spanish, French, and Brazilian Portuguese.',
-        pt: 'Novos catálogos de idioma para espanhol, francês e português do Brasil.',
-      },
-      {
-        type: 'changed',
-        en: 'The settings dialog locale picker now exposes all supported languages with clearer region labels for Portuguese variants.',
-        pt: 'O seletor de idioma nas definições passa agora a expor todos os idiomas suportados com rótulos regionais mais claros para as variantes do português.',
-      },
-      {
-        type: 'changed',
-        en: 'Browser language detection now recognizes pt-BR, es, and fr in addition to the existing English and Portuguese defaults.',
-        pt: 'A deteção do idioma do browser passa agora a reconhecer pt-BR, es e fr além dos padrões existentes de inglês e português.',
-      },
-    ],
-  },
-  {
     version: '0.7.0',
     releasedAt: '2026-04-04',
     title: {
