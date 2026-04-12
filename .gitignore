@@ -21,7 +21,3 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
-
-# Generated docs
-DOCUMENTATION_GAPS.md
-docs/quick-start-contributor.md

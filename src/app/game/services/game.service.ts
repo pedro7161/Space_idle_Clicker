@@ -166,12 +166,6 @@ function buildGeneratedPlanet(seed: GeneratedPlanetSeed): Planet {
 export class GameService {
   private state!: GameState;
   private initialized = false;
-
-  private assertInitialized(): void {
-    if (!this.initialized) {
-      throw new Error('GameService: method called before init()');
-    }
-  }
   private tickInterval: ReturnType<typeof setInterval> | null = null;
   private saveInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -521,19 +515,17 @@ export class GameService {
       return { ok: false, error: 'Paste a save string before importing.' };
     }
 
-    let parsed: Partial<GameState>;
     try {
-      parsed = this.decodeSavePayload(trimmed);
+      const parsed = this.decodeSavePayload(trimmed);
+      this.state = mergeSavedStateWithDefaults(parsed);
+      this.ensureActiveResourceAvailable();
+      this.state.lastTickAt = Date.now();
+      this.save();
+      this.emit();
+      return { ok: true };
     } catch {
       return { ok: false, error: 'That save string is invalid or from an unsupported format.' };
     }
-
-    this.state = mergeSavedStateWithDefaults(parsed);
-    this.ensureActiveResourceAvailable();
-    this.state.lastTickAt = Date.now();
-    this.save();
-    this.emit();
-    return { ok: true };
   }
 
   getState(): GameState {
@@ -586,12 +578,11 @@ export class GameService {
   }
 
   getNetworkInventoryAmount(itemId: ItemId): number {
-    const combined = this.planets.reduce((total, planet) => {
-      const inv = this.getInventoryAmount(itemId, planet.id);
-      const station = this.hasSpaceStation(planet.id) ? this.getStationInventoryAmount(itemId, planet.id) : 0;
-      return total + inv + station;
+    const planetTotal = this.planets.reduce((total, planet) => total + this.getInventoryAmount(itemId, planet.id), 0);
+    const stationTotal = this.planets.reduce((total, planet) => {
+      return total + (this.hasSpaceStation(planet.id) ? this.getStationInventoryAmount(itemId, planet.id) : 0);
     }, 0);
-    return combined + this.getFleetCargoAmount(itemId);
+    return planetTotal + stationTotal + this.getFleetCargoAmount(itemId);
   }
 
   getPlanetMultiplier(planetId: string, resourceId: ResourceId): number {
@@ -706,9 +697,6 @@ export class GameService {
   }
 
   isAutoMinerVisible(miner: AutoMiner, planetId: string = this.state.currentPlanetId): boolean {
-    if (!this.getPlanet(planetId)) {
-      return false;
-    }
     const meetsTotal = this.state.totalMined[miner.resourceId] >= miner.unlockAtTotal;
     const meetsPlanetAssociation = this.isPlanetAssociatedResource(miner.resourceId, planetId);
     const meetsCraftRequirement =
@@ -1161,13 +1149,8 @@ export class GameService {
 
   private applyAutoProduction(seconds: number): void {
     this.state.discoveredPlanetIds.forEach(planetId => {
-      const rateCache = new Map<string, number>();
       RESOURCE_IDS.forEach(resourceId => {
-        rateCache.set(resourceId, this.getAutoRateForPlanetResource(planetId, resourceId));
-      });
-
-      RESOURCE_IDS.forEach(resourceId => {
-        const rate = rateCache.get(resourceId) ?? 0;
+        const rate = this.getAutoRateForPlanetResource(planetId, resourceId);
         if (rate <= 0) {
           return;
         }
@@ -1182,10 +1165,6 @@ export class GameService {
   private processFleet(now: number): void {
     let changed = true;
     let guard = 0;
-
-    const routeByShipId = new Map<string, ShipRoute>(
-      this.state.shipRoutes.map(route => [route.shipId, route])
-    );
 
     while (changed && guard < 100) {
       changed = false;
@@ -1203,7 +1182,7 @@ export class GameService {
           return;
         }
 
-        const route = routeByShipId.get(ship.id);
+        const route = this.getShipRoute(ship.id);
         if (!route || !route.enabled) {
           return;
         }
@@ -1212,10 +1191,6 @@ export class GameService {
           changed = true;
         }
       });
-    }
-
-    if (guard >= 100) {
-      console.warn(`[GameService] processFleet guard limit reached (${guard} iterations). Possible infinite loop in ship routing.`);
     }
   }
 
@@ -1308,7 +1283,7 @@ export class GameService {
       this.state.discoveredPlanetIds = [...this.state.discoveredPlanetIds, seed.id];
     }
 
-    this.state.expedition.expeditionsCompleted += 1;
+    this.state.expedition.expeditionsCompleted = Math.max(this.state.expedition.expeditionsCompleted, mission.targetSequence);
     this.state.expedition.activeMission = null;
   }
 
@@ -1581,11 +1556,7 @@ export class GameService {
   }
 
   private save(): void {
-    try {
-      localStorage.setItem(CURRENT_SAVE_KEY, JSON.stringify(this.state));
-    } catch {
-      // Quota exceeded or storage unavailable — game state is preserved in memory
-    }
+    localStorage.setItem(CURRENT_SAVE_KEY, JSON.stringify(this.state));
   }
 
   private encodeSavePayload(state: GameState): string {
