@@ -1001,28 +1001,19 @@ export class GameService {
       return false;
     }
 
+    const inventory = this.state.planetInventories[this.state.currentPlanetId];
+    if (!inventory) return false;
+
     let totalStrength = 0;
     const unitsLaunched = {} as Record<MilitaryUnitId, number>;
-    const garrisonDeductions: Array<{ garrison: DeployedGarrison; amount: number }> = [];
 
     for (const [unitId, requested] of Object.entries(unitsToSend)) {
       if (!requested || requested <= 0) continue;
-
       const unitDef = MILITARY_UNIT_DEFS.find(u => u.id === unitId as MilitaryUnitId);
       if (!unitDef) continue;
-
-      let remaining = requested;
-      for (const garrison of this.state.deployedGarrisons) {
-        if (remaining <= 0) break;
-        if (garrison.unitId !== unitId as MilitaryUnitId) continue;
-        const toTake = Math.min(garrison.count, remaining);
-        garrisonDeductions.push({ garrison, amount: toTake });
-        remaining -= toTake;
-      }
-
-      const actual = requested - remaining;
+      const available = inventory[unitId as ItemId] ?? 0;
+      const actual = Math.min(available, requested);
       if (actual <= 0) continue;
-
       unitsLaunched[unitId as MilitaryUnitId] = actual;
       totalStrength += unitDef.defenseStrength * actual;
     }
@@ -1031,10 +1022,9 @@ export class GameService {
       return false;
     }
 
-    for (const { garrison, amount } of garrisonDeductions) {
-      garrison.count -= amount;
+    for (const [unitId, count] of Object.entries(unitsLaunched)) {
+      inventory[unitId as ItemId] = (inventory[unitId as ItemId] ?? 0) - count;
     }
-    this.state.deployedGarrisons = this.state.deployedGarrisons.filter(g => g.count > 0);
 
     const travelTime = this.calculateAttackTravelTime(enemySystem);
     const attack: ActiveAttack = {

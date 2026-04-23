@@ -305,8 +305,16 @@ export class UpgradePanelComponent implements OnDestroy {
     return this.state.deployedGarrisons.filter(g => g.planetId === planetId);
   }
 
+  getUnitTotalAvailable(unitId: string): number {
+    const inv = this.game.getInventoryAmount(unitId as ItemId);
+    const garrison = this.state.deployedGarrisons.find(
+      g => g.planetId === this.currentPlanet.id && g.unitId === unitId as MilitaryUnitId,
+    );
+    return inv + (garrison?.count ?? 0);
+  }
+
   hasAvailableUnits(): boolean {
-    return this.game.militaryUnits.some(unit => this.game.getInventoryAmount(unit.id) > 0);
+    return this.game.militaryUnits.some(unit => this.getUnitTotalAvailable(unit.id) > 0);
   }
 
   get visibleMilitaryBuildings(): MilitaryBuilding[] {
@@ -424,7 +432,7 @@ export class UpgradePanelComponent implements OnDestroy {
   }
 
   addInvasionUnit(unitId: string): void {
-    const available = this.game.getInventoryAmount(unitId as ItemId);
+    const available = this.getUnitTotalAvailable(unitId);
     const current = this.getInvasionUnitCount(unitId);
     if (current < available) {
       this.invasionAttackUnits[unitId] = current + 1;
