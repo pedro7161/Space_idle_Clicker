@@ -15,6 +15,7 @@ import {
   MAX_OFFLINE_RAID_CYCLES,
   MILITARY_UNIT_DEFS,
   MILITARY_RECIPES,
+  MILITARY_BUILDINGS,
   PLANETS,
   RAID_INTERVAL_BASE_MS,
   RAID_JITTER_MAX,
@@ -45,6 +46,8 @@ import {
   ItemId,
   LogisticsLocation,
   LogisticsLocationKind,
+  MilitaryBuilding,
+  MilitaryBuildingId,
   MilitaryUnitDef,
   MilitaryUnitId,
   OwnedShip,
@@ -211,6 +214,7 @@ export class GameService {
   readonly shipDefinitions = SHIPS;
   readonly spaceStationBlueprints = SPACE_STATION_BLUEPRINTS;
   readonly militaryUnits = MILITARY_UNIT_DEFS;
+  readonly militaryBuildings = MILITARY_BUILDINGS;
   readonly enemySystems = ENEMY_SYSTEMS;
 
   readonly state$ = new BehaviorSubject<GameState>(buildDefaultGameState());
@@ -721,6 +725,41 @@ export class GameService {
     return this.state.autoMinerCounts[this.getPlanetScopedKey(planetId, minerId)] ?? 0;
   }
 
+  getMilitaryBuildingLevel(planetId: string, buildingId: MilitaryBuildingId): number {
+    return this.state.militaryBuildingLevels[this.getPlanetScopedKey(planetId, buildingId)] ?? 0;
+  }
+
+  getMilitaryBuildingCost(building: MilitaryBuilding, planetId: string = this.state.currentPlanetId): ItemCost[] {
+    return this.getScaledCost(
+      building.baseCost,
+      this.getMilitaryBuildingLevel(planetId, building.id),
+      building.costScaling,
+    );
+  }
+
+  isMilitaryBuildingVisible(building: MilitaryBuilding): boolean {
+    return this.isMilitaryUnlocked() && this.getProgressScore() >= building.unlockAtScore;
+  }
+
+  buyMilitaryBuilding(buildingId: MilitaryBuildingId): boolean {
+    const building = MILITARY_BUILDINGS.find(b => b.id === buildingId);
+    if (!building || !this.isMilitaryBuildingVisible(building)) {
+      return false;
+    }
+    const level = this.getMilitaryBuildingLevel(this.state.currentPlanetId, buildingId);
+    if (level >= building.maxLevel) {
+      return false;
+    }
+    const cost = this.getMilitaryBuildingCost(building);
+    if (!this.canAfford(cost, this.state.currentPlanetId)) {
+      return false;
+    }
+    this.spendItems(cost, this.state.currentPlanetId);
+    this.state.militaryBuildingLevels[this.getPlanetScopedKey(this.state.currentPlanetId, buildingId)] = level + 1;
+    this.emit();
+    return true;
+  }
+
   getAutoMinerCost(miner: AutoMiner, planetId: string = this.state.currentPlanetId): ItemCost[] {
     return this.getScaledCost(
       miner.baseCost,
@@ -783,12 +822,15 @@ export class GameService {
   }
 
   getDefensePoints(planetId: string): number {
-    return this.state.deployedGarrisons
+    const barracksMultiplier = 1 + 0.2 * this.getMilitaryBuildingLevel(planetId, 'garrisonBarracks');
+    const wallBonus = 8 * this.getMilitaryBuildingLevel(planetId, 'fortificationWall');
+    const garrisonPoints = this.state.deployedGarrisons
       .filter(garrison => garrison.planetId === planetId)
       .reduce((total, garrison) => {
         const unitDef = MILITARY_UNIT_DEFS.find(unit => unit.id === garrison.unitId);
         return total + (unitDef?.defenseStrength ?? 0) * garrison.count;
       }, 0);
+    return garrisonPoints * barracksMultiplier + wallBonus;
   }
 
   deployUnit(planetId: string, unitId: MilitaryUnitId, count: number): boolean {
@@ -888,7 +930,8 @@ export class GameService {
     }
 
     this.spendItems(recipe.ingredients, this.state.currentPlanetId);
-    this.addItem(recipe.outputId, recipe.outputAmount, this.state.currentPlanetId);
+    const armoryLevel = this.getMilitaryBuildingLevel(this.state.currentPlanetId, 'armory');
+    this.addItem(recipe.outputId, recipe.outputAmount + armoryLevel, this.state.currentPlanetId);
     this.emit();
 
     return true;
@@ -1620,14 +1663,14 @@ export class GameService {
       }
 
       if (threatState.nextRaidAt === 0) {
-        threatState.nextRaidAt = now + this.getRaidIntervalMs(dangerLevel) * this.getJitterMultiplier();
+        threatState.nextRaidAt = now + this.getRaidIntervalMs(dangerLevel, planetId) * this.getJitterMultiplier();
         continue;
       }
 
       let raidsCycled = 0;
       while (threatState.nextRaidAt <= now && raidsCycled < maxRaidCycles) {
         this.executeRaid(planetId, threatState, now);
-        threatState.nextRaidAt = now + this.getRaidIntervalMs(dangerLevel) * this.getJitterMultiplier();
+        threatState.nextRaidAt = now + this.getRaidIntervalMs(dangerLevel, planetId) * this.getJitterMultiplier();
         raidsCycled++;
       }
     }
@@ -1872,8 +1915,10 @@ export class GameService {
     threatState.lastRaidAt = now;
   }
 
-  private getRaidIntervalMs(dangerLevel: number): number {
-    return RAID_INTERVAL_BASE_MS / (dangerLevel * dangerLevel);
+  private getRaidIntervalMs(dangerLevel: number, planetId: string): number {
+    const base = RAID_INTERVAL_BASE_MS / (dangerLevel * dangerLevel);
+    const sensorLevel = this.getMilitaryBuildingLevel(planetId, 'sensorArray');
+    return base * (1 + 0.4 * sensorLevel);
   }
 
   private getJitterMultiplier(): number {
@@ -2135,6 +2180,7 @@ export class GameService {
       },
       upgradeLevels: { ...this.state.upgradeLevels },
       autoMinerCounts: { ...this.state.autoMinerCounts },
+      militaryBuildingLevels: { ...this.state.militaryBuildingLevels },
       totalMined: { ...this.state.totalMined },
       builtShipPartIds: [...this.state.builtShipPartIds],
       discoveredPlanetIds: [...this.state.discoveredPlanetIds],

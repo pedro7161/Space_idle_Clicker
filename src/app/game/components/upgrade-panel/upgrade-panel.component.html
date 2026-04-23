@@ -1,3 +1,5 @@
+<app-map [isOpen]="mapOpen" (closeMap)="mapOpen = false"></app-map>
+
 @if (isWorkspaceLayout) {
   <div class="relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden px-5 pt-5 pb-5 min-[1600px]:px-6 min-[1600px]:pt-6 min-[1600px]:pb-6 min-[1920px]:px-7 min-[1920px]:pt-7 min-[1920px]:pb-7 max-[820px]:px-4 max-[820px]:pt-4 max-[820px]:pb-4">
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.14),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(249,115,22,0.16),transparent_24%),linear-gradient(180deg,#06111d_0%,#02060d_100%)]"></div>
@@ -23,6 +25,14 @@
         <span class="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[0.76rem] font-semibold text-slate-200">
           {{ activeTabLabel }}
         </span>
+        <button
+          class="inline-flex items-center justify-center gap-2 rounded-[0.85rem] border border-cyan-500/30 bg-cyan-600/20 px-4 py-2.5 text-[0.76rem] font-bold text-cyan-200 transition hover:-translate-y-px hover:bg-cyan-600/30"
+          type="button"
+          (click)="mapOpen = true"
+        >
+          <span aria-hidden="true">🗺</span>
+          <span>Map</span>
+        </button>
         <button
           class="inline-flex items-center justify-center gap-2 rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-4 py-2.5 text-[0.76rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1]"
           type="button"
@@ -528,6 +538,375 @@
           </div>
         }
       </div>
+    </section>
+  }
+
+  @if (activeTab === 'military') {
+    <section class="grid gap-4">
+
+      <!-- Lock gate -->
+      @if (!game.isMilitaryUnlocked()) {
+        <div class="rounded-2xl border border-slate-600/40 bg-slate-800/40 p-5 text-center">
+          <div class="text-[0.8rem] font-semibold text-slate-300 mb-1">Military systems locked</div>
+          <div class="text-[0.72rem] text-slate-500">Requires progress score 1200 — current: {{ game.getProgressScore() }}</div>
+        </div>
+      }
+
+      @if (game.isMilitaryUnlocked()) {
+
+        <!-- UNIT PRODUCTION -->
+        <div class="grid gap-3">
+          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Unit Production</h3>
+          <div class="grid grid-cols-2 gap-3 min-[1400px]:grid-cols-4">
+            @for (unit of game.militaryUnits; track unit.id) {
+              @if (game.getProgressScore() >= unit.unlockAtScore) {
+                <div class="flex flex-col rounded-2xl border border-blue-500/20 bg-blue-500/[0.06] p-3">
+                  <!-- Header -->
+                  <div class="flex items-start justify-between gap-1 mb-2">
+                    <div class="flex-1 min-w-0">
+                      <strong class="block text-[0.82rem] text-slate-50 leading-tight">{{ unit.name }}</strong>
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        <span class="text-[0.6rem] text-blue-400 border border-blue-500/30 rounded px-1 py-0.5">T{{ unit.tier }}</span>
+                        <span class="text-[0.6rem] text-blue-300 border border-blue-400/20 rounded px-1 py-0.5">⚔ {{ unit.defenseStrength }}</span>
+                      </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <div class="text-[0.9rem] font-bold text-blue-300 leading-tight">{{ game.getInventoryAmount(unit.id) }}</div>
+                      @if (getUnitsInTransitCount(unit.id) > 0) {
+                        <div class="text-[0.58rem] text-sky-400/70">+{{ getUnitsInTransitCount(unit.id) }}</div>
+                      }
+                    </div>
+                  </div>
+                  <!-- Ingredients -->
+                  @if (getMilitaryRecipeIngredients(unit.recipeId); as ingredients) {
+                    <div class="flex-1 mb-2 grid grid-cols-1 gap-y-1">
+                      @for (ing of ingredients; track ing.itemId) {
+                        <div class="flex items-center justify-between text-[0.63rem]">
+                          <span class="text-slate-400 truncate">{{ getItemLabel(ing.itemId) }}</span>
+                          <span class="ml-1 font-mono shrink-0" [ngClass]="getItemAmount(ing.itemId) >= ing.amount ? 'text-green-400' : 'text-red-400'">
+                            {{ getItemAmount(ing.itemId) }}/{{ ing.amount }}
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  }
+                  <!-- Build button -->
+                  <button
+                    class="mt-auto w-full rounded-lg border border-blue-500/30 bg-blue-600/20 px-2 py-1.5 text-[0.68rem] font-bold text-blue-200 transition hover:bg-blue-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                    (click)="game.craftMilitaryUnit(unit.recipeId)"
+                    [disabled]="!canCraftMilitary(unit.recipeId)"
+                  >
+                    Build
+                  </button>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- PLANETARY GARRISONS -->
+        <div class="grid gap-3">
+          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Planetary Garrisons</h3>
+          @for (planet of game.getDiscoveredPlanets(); track planet.id) {
+            @if (planet.id !== 'solara') {
+              <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+
+                <!-- Planet header -->
+                <div class="flex items-start justify-between gap-3 mb-2">
+                  <strong class="text-[0.86rem] text-slate-50">{{ planet.name }}</strong>
+                  <div class="text-right shrink-0">
+                    <div class="text-[0.68rem] text-orange-400">Danger {{ planet.requiredShipTier }}</div>
+                    @if (getNextRaidETA(planet.id)) {
+                      <div class="text-[0.65rem] text-red-400/70">Raid in {{ getNextRaidETA(planet.id) }}</div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Defense bar -->
+                <div class="mb-1 flex items-center justify-between text-[0.68rem]">
+                  <span class="text-slate-500">Defense</span>
+                  <span [ngClass]="game.getDefensePoints(planet.id) >= getDefenseTarget(planet.requiredShipTier) ? 'text-green-400' : 'text-slate-400'">
+                    {{ game.getDefensePoints(planet.id) }} / {{ getDefenseTarget(planet.requiredShipTier) }} (cap)
+                  </span>
+                </div>
+                <div class="w-full bg-slate-700/50 rounded-full h-1.5 mb-3">
+                  <div
+                    class="h-full rounded-full transition-all"
+                    [ngClass]="game.getDefensePoints(planet.id) >= getDefenseTarget(planet.requiredShipTier) ? 'bg-green-500' : 'bg-blue-500'"
+                    [style.width.%]="getDefenseBarWidth(game.getDefensePoints(planet.id), getDefenseTarget(planet.requiredShipTier))"
+                  ></div>
+                </div>
+
+                <!-- Deployed garrisons -->
+                @for (garrison of getGarrisonsForPlanet(planet.id); track garrison.unitId) {
+                  @if (getMilitaryUnitDef(garrison.unitId); as unitDef) {
+                    <div class="flex items-center justify-between gap-2 text-[0.7rem] bg-slate-700/30 rounded-lg px-3 py-2 mb-1.5">
+                      <span class="text-slate-200">{{ unitDef.name }} × {{ garrison.count }}</span>
+                      <div class="flex gap-1">
+                        <button
+                          class="px-2 py-1 rounded bg-slate-600/40 border border-slate-500/30 text-slate-300 hover:bg-red-600/30 hover:text-red-200 transition text-[0.62rem]"
+                          (click)="game.recallUnits(planet.id, garrison.unitId, 1)"
+                        >Recall 1</button>
+                        <button
+                          class="px-2 py-1 rounded bg-slate-600/40 border border-slate-500/30 text-slate-300 hover:bg-red-600/30 hover:text-red-200 transition text-[0.62rem]"
+                          (click)="game.recallAllUnits(planet.id, garrison.unitId)"
+                        >All</button>
+                      </div>
+                    </div>
+                  }
+                }
+
+                <!-- Units in transit -->
+                @for (transit of getUnitsInTransitTo(planet.id); track transit.id) {
+                  @if (getMilitaryUnitDef(transit.unitId); as unitDef) {
+                    <div class="rounded-lg border border-sky-500/20 bg-sky-500/[0.06] px-3 py-2 mb-1.5">
+                      <div class="flex items-center justify-between text-[0.7rem] mb-1">
+                        <span class="text-sky-300">{{ unitDef.name }} × {{ transit.count }} — in transit</span>
+                        <span class="text-sky-400/70">{{ formatCountdown(transit.arriveAt, 'Arriving') }}</span>
+                      </div>
+                      <div class="w-full bg-slate-700/50 rounded-full h-1">
+                        <div class="bg-sky-500 h-full rounded-full transition-all" [style.width.%]="getTransitProgress(transit)"></div>
+                      </div>
+                    </div>
+                  }
+                }
+
+                <!-- Deploy available units -->
+                @for (unit of game.militaryUnits; track unit.id) {
+                  @if (game.getProgressScore() >= unit.unlockAtScore && game.getInventoryAmount(unit.id) > 0) {
+                    <div class="flex items-center justify-between gap-2 text-[0.7rem] mt-1.5">
+                      <span class="text-slate-400">{{ unit.name }} <span class="text-slate-500">({{ game.getInventoryAmount(unit.id) }} avail)</span></span>
+                      <div class="flex gap-1">
+                        <button
+                          class="px-2 py-1 rounded bg-blue-600/30 border border-blue-500/30 text-blue-200 hover:bg-blue-600/40 transition text-[0.62rem]"
+                          (click)="game.deployUnit(planet.id, unit.id, 1)"
+                        >Deploy 1</button>
+                        <button
+                          class="px-2 py-1 rounded bg-blue-600/30 border border-blue-500/30 text-blue-200 hover:bg-blue-600/40 transition text-[0.62rem]"
+                          (click)="game.deployAllUnits(planet.id, unit.id)"
+                        >All</button>
+                      </div>
+                    </div>
+                  }
+                }
+
+              </div>
+            }
+          }
+        </div>
+
+      }
+
+      <!-- MILITARY INFRASTRUCTURE -->
+      @if (visibleMilitaryBuildings.length > 0) {
+        <div class="grid gap-3">
+          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Infrastructure</h3>
+          @for (building of visibleMilitaryBuildings; track building.id) {
+            <div class="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <div class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-[0.75rem] font-bold text-slate-50">
+                    {{ building.icon }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <strong class="text-[0.86rem] text-slate-50">{{ building.name }}</strong>
+                      <span class="text-[0.72rem] text-slate-500">{{ getMilitaryBuildingLevel(building.id) }}/{{ building.maxLevel }}</span>
+                    </div>
+                    <p class="mt-0.5 text-[0.75rem] text-slate-400">{{ building.description }}</p>
+                    @if (getMilitaryBuildingLevel(building.id) > 0) {
+                      <span class="mt-1 inline-block rounded-full border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-[0.68rem] text-green-300">
+                        {{ getMilitaryBuildingEffectLabel(building) }}
+                      </span>
+                    }
+                    @if (!isMilitaryBuildingMaxed(building)) {
+                      <div class="mt-2 flex flex-wrap gap-1.5">
+                        @for (cost of getMilitaryBuildingCost(building); track cost.itemId) {
+                          <span
+                            class="rounded-full border px-2 py-0.5 text-[0.7rem] text-slate-300"
+                            [style.borderColor]="getItemColor(cost.itemId)"
+                          >
+                            {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}
+                          </span>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+                <button
+                  class="shrink-0 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[0.75rem] font-bold text-slate-50 transition hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+                  [disabled]="isMilitaryBuildingMaxed(building) || !canAffordMilitaryBuilding(building)"
+                  (click)="buyMilitaryBuilding(building)"
+                >
+                  {{ isMilitaryBuildingMaxed(building) ? 'Max' : 'Build' }}
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- OFFENSIVE OPERATIONS -->
+      @if (game.isOffensiveUnlocked()) {
+        <div class="grid gap-3">
+          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Offensive Operations</h3>
+
+          <!-- INVASION FLEETS IN PLAYER SPACE -->
+          @if (game.getInvasionFleets().length > 0) {
+            <h4 class="text-[0.72rem] uppercase tracking-[0.12em] text-orange-500/80 -mb-1">⚠ Invasion Fleets</h4>
+            @for (fleet of game.getInvasionFleets(); track fleet.id) {
+              <div class="rounded-2xl border border-orange-500/30 bg-orange-500/[0.07] p-4">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                  <div class="flex-1 min-w-0">
+                    <strong class="text-[0.86rem] text-orange-200">{{ fleet.name }}</strong>
+                    <div class="text-[0.68rem] text-slate-500">Enemy fleet in player space — attacking your planets</div>
+                  </div>
+                  <span class="text-[0.65rem] text-orange-400 border border-orange-500/30 rounded px-1.5 py-0.5 shrink-0">Tier {{ fleet.tier }}</span>
+                </div>
+                <!-- HP bar -->
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="flex-1 bg-slate-700/50 rounded-full h-2 overflow-hidden">
+                    <div
+                      class="h-full rounded-full transition-all"
+                      [ngClass]="getInvasionHpPercent(fleet.hp, fleet.maxHp) > 50 ? 'bg-orange-400' : 'bg-red-500'"
+                      [style.width.%]="getInvasionHpPercent(fleet.hp, fleet.maxHp)"
+                    ></div>
+                  </div>
+                  <span class="text-[0.65rem] text-orange-300 shrink-0 font-mono">{{ fleet.hp }}/{{ fleet.maxHp }}</span>
+                </div>
+                <button
+                  class="w-full rounded-lg border border-orange-500/30 bg-orange-600/20 px-3 py-2 text-[0.72rem] font-bold text-orange-200 transition hover:bg-orange-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                  (click)="invasionAttackModal = fleet.id; invasionAttackUnits = {}"
+                  [disabled]="!hasAvailableUnits()"
+                >
+                  Strike Fleet
+                </button>
+              </div>
+            }
+          }
+
+          @for (system of game.enemySystems; track system.id) {
+            @if (game.getProgressScore() >= system.revealAtScore) {
+              <div class="rounded-2xl border border-purple-500/20 bg-purple-500/[0.06] p-4">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                  <div class="flex-1 min-w-0">
+                    <strong class="text-[0.86rem] text-purple-200">{{ system.name }}</strong>
+                    <div class="text-[0.68rem] text-slate-500">{{ system.description }}</div>
+                  </div>
+                  <span class="text-[0.65rem] text-purple-400 border border-purple-500/30 rounded px-1.5 py-0.5 shrink-0">Tier {{ system.tier }}</span>
+                </div>
+                <div class="flex items-center justify-between text-[0.68rem] mb-3">
+                  <span class="text-slate-500">Required strength</span>
+                  <span [ngClass]="getAttackTotalStrength() >= system.requiredDefenseStrength ? 'text-green-400' : 'text-slate-400'">
+                    {{ system.requiredDefenseStrength }}
+                  </span>
+                </div>
+                <button
+                  class="w-full rounded-lg border border-purple-500/30 bg-purple-600/20 px-3 py-2 text-[0.72rem] font-bold text-purple-200 transition hover:bg-purple-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                  (click)="attackSystemModal = system.id; attackUnits = {}"
+                  [disabled]="!hasAvailableUnits()"
+                >
+                  Launch Strike
+                </button>
+              </div>
+            }
+          }
+
+          @if (state.activeAttacks.length > 0) {
+            <h4 class="text-[0.78rem] uppercase tracking-[0.12em] text-slate-500 mt-1">Active Strikes</h4>
+            @for (attack of state.activeAttacks; track attack.id) {
+              @if (game.getEnemySystemDef(attack.targetSystemId); as sys) {
+                <div class="rounded-2xl border border-purple-500/20 bg-purple-500/[0.06] p-4">
+                  <div class="flex items-center justify-between text-[0.78rem] mb-2">
+                    <strong class="text-purple-200">{{ sys.name }}</strong>
+                    <span class="text-purple-400/70">⚔ {{ attack.totalStrength }} str · {{ formatCountdown(attack.arriveAt) }}</span>
+                  </div>
+                  <div class="w-full bg-slate-700/50 rounded-full h-1">
+                    <div class="bg-purple-500 h-full rounded-full transition-all"
+                      [style.width.%]="progressBetween(attack.launchedAt, attack.arriveAt)">
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+          }
+        </div>
+      }
+
+      @if (!game.isOffensiveUnlocked() && game.isMilitaryUnlocked()) {
+        <div class="rounded-2xl border border-slate-600/40 bg-slate-800/40 p-4 text-center">
+          <div class="text-[0.78rem] font-semibold text-slate-400 mb-1">Offensive operations locked</div>
+          <div class="text-[0.68rem] text-slate-600">Requires score 3500 — current: {{ game.getProgressScore() }}</div>
+        </div>
+      }
+
+      <!-- Combat log -->
+      @if (state.combatLog.length > 0) {
+        <div class="grid gap-2">
+          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Recent Raids</h3>
+          @for (event of state.combatLog.slice(-5).reverse(); track event.id) {
+            @if (event.kind === 'raid') {
+              <div class="rounded-xl border border-red-500/20 bg-red-500/[0.05] px-4 py-3 flex items-center justify-between text-[0.72rem]">
+                <span class="text-slate-300">{{ game.getPlanet(event.planetId)?.name }}</span>
+                <span [ngClass]="event.defensePointsActive > 0 ? 'text-green-400' : 'text-red-400'">
+                  {{ event.defensePointsActive > 0 ? 'Defended' : 'Raided' }}
+                </span>
+              </div>
+            }
+          }
+        </div>
+      }
+
+      <!-- Attack modal -->
+      @if (attackSystemModal) {
+        <div class="fixed inset-0 bg-black/75 flex items-center justify-center z-50" (click)="attackSystemModal = null; attackUnits = {}">
+          <div class="bg-slate-900 border border-purple-500/40 rounded-2xl p-6 max-w-sm w-full mx-4" (click)="$event.stopPropagation()">
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <h3 class="text-[0.95rem] font-bold text-slate-50">Launch Strike</h3>
+              <button class="text-slate-400 hover:text-slate-200" (click)="attackSystemModal = null; attackUnits = {}">✕</button>
+            </div>
+            @if (game.getEnemySystemDef(attackSystemModal); as system) {
+              <div class="mb-4 p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                <div class="font-semibold text-purple-200 text-[0.82rem]">{{ system.name }}</div>
+                <div class="text-[0.7rem] text-purple-400/70 mt-0.5">Required: {{ system.requiredDefenseStrength }} — Your fleet: {{ getAttackTotalStrength() }}</div>
+              </div>
+              <div class="grid gap-2 mb-4 max-h-52 overflow-y-auto">
+                @for (unit of game.militaryUnits; track unit.id) {
+                  @if (game.getInventoryAmount(unit.id) > 0) {
+                    <div class="flex items-center justify-between gap-2 p-2.5 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                      <div class="min-w-0">
+                        <div class="text-[0.75rem] font-semibold text-slate-200">{{ unit.name }}</div>
+                        <div class="text-[0.64rem] text-slate-500">⚔ {{ unit.defenseStrength }} each · {{ game.getInventoryAmount(unit.id) }} avail</div>
+                      </div>
+                      <div class="flex items-center gap-1 shrink-0">
+                        <button class="w-6 h-6 flex items-center justify-center rounded bg-slate-700/60 border border-slate-600/50 text-slate-300 hover:bg-red-600/30 hover:text-red-200 text-[0.75rem]"
+                          (click)="removeUnitFromAttack(unit.id)" [disabled]="getUnitCountForAttack(unit.id) === 0">−</button>
+                        <span class="w-6 text-center text-[0.78rem] font-bold text-slate-200">{{ getUnitCountForAttack(unit.id) }}</span>
+                        <button class="w-6 h-6 flex items-center justify-center rounded bg-slate-700/60 border border-slate-600/50 text-slate-300 hover:bg-blue-600/30 hover:text-blue-200 text-[0.75rem]"
+                          (click)="addUnitToAttack(unit.id)">+</button>
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+              <div class="flex items-center justify-between text-[0.72rem] mb-4 px-1">
+                <span class="text-slate-500">Fleet strength</span>
+                <span [ngClass]="getAttackTotalStrength() >= system.requiredDefenseStrength ? 'text-green-400 font-bold' : 'text-red-400'">
+                  {{ getAttackTotalStrength() }} / {{ system.requiredDefenseStrength }}
+                </span>
+              </div>
+              <button
+                class="w-full rounded-xl border border-purple-500/30 bg-purple-600/30 px-3 py-2.5 text-[0.75rem] font-bold text-purple-200 transition hover:bg-purple-600/40 disabled:opacity-40 disabled:cursor-not-allowed"
+                (click)="launchAttack(attackSystemModal)"
+                [disabled]="getAttackTotalStrength() < system.requiredDefenseStrength"
+              >
+                Launch Strike
+              </button>
+            }
+          </div>
+        </div>
+      }
+
     </section>
   }
 </ng-template>

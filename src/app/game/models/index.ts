@@ -1,5 +1,8 @@
 export type { Automation } from './automation.model';
 export type { AutoMiner } from './auto-miner.model';
+export type { InvasionFleet, PlanetThreatState, RaidEvent } from './combat.model';
+export type { DeployedGarrison, MilitaryBuilding, MilitaryBuildingId, MilitaryUnitDef, MilitaryUnitId, MilitaryUnitTransit } from './military.model';
+export type { ActiveAttack, AttackResult, EnemyLootEntry, EnemySystem } from './enemy-system.model';
 export type { ExpeditionMission, ExpeditionState, GeneratedPlanetSeed } from './expedition.model';
 export type { FloatingText } from './floating-text.model';
 export type { GameState } from './game-state.model';

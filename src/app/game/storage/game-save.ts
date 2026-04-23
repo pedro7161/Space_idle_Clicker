@@ -34,7 +34,7 @@ export interface StorageLike {
   setItem(key: string, value: string): void;
 }
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 export const SAVE_KEY_PREFIX = 'space-idle-save-v';
 export const CURRENT_SAVE_KEY = `${SAVE_KEY_PREFIX}${SAVE_VERSION}`;
 export const SAVE_TRANSFER_PREFIX = 'frontier-miner-save:';
@@ -391,6 +391,7 @@ export function buildDefaultGameState(): GameState {
     invasionFleets: [],
     nextInvasionAt: 0,
     attackCooldowns: {},
+    militaryBuildingLevels: {},
   };
 }
 
@@ -590,6 +591,7 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
     invasionFleets: saved.invasionFleets ?? defaults.invasionFleets,
     nextInvasionAt: saved.nextInvasionAt ?? defaults.nextInvasionAt,
     attackCooldowns: saved.attackCooldowns ?? defaults.attackCooldowns,
+    militaryBuildingLevels: saved.militaryBuildingLevels ?? defaults.militaryBuildingLevels,
   };
 
   if (merged.shipLaunched && merged.ships.length === 0) {

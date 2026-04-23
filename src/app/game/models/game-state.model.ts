@@ -39,4 +39,5 @@ export interface GameState {
   invasionFleets: InvasionFleet[];
   nextInvasionAt: number;
   attackCooldowns: Record<string, number>;
+  militaryBuildingLevels: Record<string, number>;
 }
