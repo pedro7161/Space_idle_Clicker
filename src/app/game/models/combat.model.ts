@@ -1,4 +1,5 @@
 import { ItemId, ResourceId } from './resource.model';
+import { MilitaryUnitId } from './military.model';
 
 export interface InvasionFleet {
   id: string;
@@ -16,6 +17,16 @@ export interface PlanetThreatState {
   nextRaidAt: number; // epoch ms, 0 if not yet scheduled
   raidCount: number;
   lastRaidAt: number | null;
+}
+
+export interface ActiveInvasionStrike {
+  id: string;
+  originPlanetId: string;
+  targetFleetId: string;
+  unitsLaunched: Record<MilitaryUnitId, number>;
+  totalDamage: number;
+  launchedAt: number;
+  arriveAt: number;
 }
 
 export interface RaidEvent {

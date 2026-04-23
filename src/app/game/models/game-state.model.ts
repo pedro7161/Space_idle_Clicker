@@ -2,7 +2,7 @@ import { ExpeditionState, GeneratedPlanetSeed } from './expedition.model';
 import { ItemId, ResourceId } from './resource.model';
 import { OwnedShip, ShipRoute } from './ship.model';
 import { OwnedSpaceStation } from './space-station.model';
-import { InvasionFleet, PlanetThreatState, RaidEvent } from './combat.model';
+import { ActiveInvasionStrike, InvasionFleet, PlanetThreatState, RaidEvent } from './combat.model';
 import { DeployedGarrison, MilitaryUnitTransit } from './military.model';
 import { ActiveAttack, AttackResult } from './enemy-system.model';
 
@@ -37,6 +37,7 @@ export interface GameState {
   discoveredEnemySystemIds: string[];
   offensiveUnlocked: boolean;
   invasionFleets: InvasionFleet[];
+  activeInvasionStrikes: ActiveInvasionStrike[];
   nextInvasionAt: number;
   attackCooldowns: Record<string, number>;
   militaryBuildingLevels: Record<string, number>;

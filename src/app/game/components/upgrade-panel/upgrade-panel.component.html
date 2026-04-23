@@ -752,6 +752,23 @@
           <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Offensive Operations</h3>
 
           <!-- INVASION FLEETS IN PLAYER SPACE -->
+          @if (state.activeInvasionStrikes.length > 0) {
+            <h4 class="text-[0.78rem] uppercase tracking-[0.12em] text-slate-500 -mb-1">Strike Fleets En Route</h4>
+            @for (strike of state.activeInvasionStrikes; track strike.id) {
+              <div class="rounded-2xl border border-orange-500/20 bg-orange-500/[0.05] p-4">
+                <div class="flex items-center justify-between text-[0.78rem] mb-2">
+                  <strong class="text-orange-200">Strike inbound</strong>
+                  <span class="text-orange-400/70">⚔ {{ strike.totalDamage }} dmg · {{ formatCountdown(strike.arriveAt) }}</span>
+                </div>
+                <div class="w-full bg-slate-700/50 rounded-full h-1">
+                  <div class="bg-orange-500 h-full rounded-full transition-all"
+                    [style.width.%]="progressBetween(strike.launchedAt, strike.arriveAt)">
+                  </div>
+                </div>
+              </div>
+            }
+          }
+
           @if (game.getInvasionFleets().length > 0) {
             <h4 class="text-[0.72rem] uppercase tracking-[0.12em] text-orange-500/80 -mb-1">⚠ Invasion Fleets</h4>
             @for (fleet of game.getInvasionFleets(); track fleet.id) {

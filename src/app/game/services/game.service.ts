@@ -33,6 +33,7 @@ import {
 import { GAME_MESSAGES, formatMessage } from '../i18n/game-messages';
 import {
   ActiveAttack,
+  ActiveInvasionStrike,
   AttackResult,
   AutoMiner,
   DeployedGarrison,
@@ -1756,6 +1757,7 @@ export class GameService {
 
   private processInvasions(now: number): void {
     if (!this.state.combatUnlocked) return;
+    this.processInvasionStrikes(now);
 
     for (const fleet of this.state.invasionFleets) {
       if (fleet.nextAttackAt <= now) {
@@ -1818,7 +1820,9 @@ export class GameService {
     const inventory = this.state.planetInventories[planetId];
     if (!inventory) return false;
 
+    const unitsLaunched = {} as Record<MilitaryUnitId, number>;
     let totalDamage = 0;
+
     for (const [unitId, count] of Object.entries(unitsToSend)) {
       if (!count || count <= 0) continue;
       const garrison = this.state.deployedGarrisons.find(
@@ -1829,12 +1833,12 @@ export class GameService {
       if (garrisonCount + inventoryCount < count) return false;
       const unitDef = MILITARY_UNIT_DEFS.find(u => u.id === unitId as MilitaryUnitId);
       if (!unitDef) continue;
+      unitsLaunched[unitId as MilitaryUnitId] = count;
       totalDamage += unitDef.defenseStrength * count;
     }
     if (totalDamage === 0) return false;
 
-    for (const [unitId, count] of Object.entries(unitsToSend)) {
-      if (!count || count <= 0) continue;
+    for (const [unitId, count] of Object.entries(unitsLaunched)) {
       const garrison = this.state.deployedGarrisons.find(
         g => g.planetId === planetId && g.unitId === unitId as MilitaryUnitId,
       );
@@ -1850,17 +1854,74 @@ export class GameService {
     }
     this.state.deployedGarrisons = this.state.deployedGarrisons.filter(g => g.count > 0);
 
-    fleet.hp = Math.max(0, fleet.hp - totalDamage);
-
-    if (fleet.hp <= 0) {
-      const salvageLoot = fleet.tier * 5;
-      inventory['salvage'] = (inventory['salvage'] ?? 0) + salvageLoot;
-      this.state.totalMined['salvage'] = (this.state.totalMined['salvage'] ?? 0) + salvageLoot;
-      this.state.invasionFleets = this.state.invasionFleets.filter(f => f.id !== fleetId);
-    }
+    const now = Date.now();
+    const travelMs = 30_000 + (fleet.tier - 1) * 15_000;
+    const strike: ActiveInvasionStrike = {
+      id: `invasion-strike-${now}-${Math.random().toString(36).substr(2, 9)}`,
+      originPlanetId: planetId,
+      targetFleetId: fleetId,
+      unitsLaunched,
+      totalDamage,
+      launchedAt: now,
+      arriveAt: now + travelMs,
+    };
+    this.state.activeInvasionStrikes.push(strike);
 
     this.emit();
     return true;
+  }
+
+  private processInvasionStrikes(now: number): void {
+    const resolved: ActiveInvasionStrike[] = [];
+
+    for (const strike of this.state.activeInvasionStrikes) {
+      if (strike.arriveAt > now) continue;
+
+      const fleet = this.state.invasionFleets.find(f => f.id === strike.targetFleetId);
+      const originInventory = this.state.planetInventories[strike.originPlanetId];
+
+      if (fleet) {
+        fleet.hp = Math.max(0, fleet.hp - strike.totalDamage);
+        if (fleet.hp <= 0) {
+          const salvageLoot = fleet.tier * 5;
+          if (originInventory) {
+            originInventory['salvage'] = (originInventory['salvage'] ?? 0) + salvageLoot;
+          }
+          this.state.totalMined['salvage'] = (this.state.totalMined['salvage'] ?? 0) + salvageLoot;
+          this.state.invasionFleets = this.state.invasionFleets.filter(f => f.id !== fleet.id);
+        }
+      }
+
+      const totalUnits = Object.values(strike.unitsLaunched).reduce((s, c) => s + (c ?? 0), 0);
+      const fleetTier = fleet?.tier ?? 1;
+      const casualties = Math.floor(totalUnits * fleetTier * 0.04);
+      this.returnStrikeSurvivors(strike, casualties);
+
+      resolved.push(strike);
+    }
+
+    this.state.activeInvasionStrikes = this.state.activeInvasionStrikes.filter(
+      s => !resolved.includes(s),
+    );
+  }
+
+  private returnStrikeSurvivors(strike: ActiveInvasionStrike, totalCasualties: number): void {
+    const inventory = this.state.planetInventories[strike.originPlanetId];
+    if (!inventory) return;
+
+    let remaining = totalCasualties;
+    const byStrength = [...MILITARY_UNIT_DEFS].sort((a, b) => a.defenseStrength - b.defenseStrength);
+
+    for (const unitDef of byStrength) {
+      const count = strike.unitsLaunched[unitDef.id] ?? 0;
+      if (count === 0) continue;
+      const lost = Math.min(count, remaining);
+      remaining -= lost;
+      const survivors = count - lost;
+      if (survivors > 0) {
+        inventory[unitDef.id as ItemId] = (inventory[unitDef.id as ItemId] ?? 0) + survivors;
+      }
+    }
   }
 
   private executeRaid(planetId: string, threatState: PlanetThreatState, now: number): void {
@@ -2171,6 +2232,7 @@ export class GameService {
       upgradeLevels: { ...this.state.upgradeLevels },
       autoMinerCounts: { ...this.state.autoMinerCounts },
       militaryBuildingLevels: { ...this.state.militaryBuildingLevels },
+      activeInvasionStrikes: this.state.activeInvasionStrikes.map(s => ({ ...s, unitsLaunched: { ...s.unitsLaunched } })),
       totalMined: { ...this.state.totalMined },
       builtShipPartIds: [...this.state.builtShipPartIds],
       discoveredPlanetIds: [...this.state.discoveredPlanetIds],
