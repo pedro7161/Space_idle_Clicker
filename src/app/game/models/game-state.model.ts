@@ -2,6 +2,9 @@ import { ExpeditionState, GeneratedPlanetSeed } from './expedition.model';
 import { ItemId, ResourceId } from './resource.model';
 import { OwnedShip, ShipRoute } from './ship.model';
 import { OwnedSpaceStation } from './space-station.model';
+import { InvasionFleet, PlanetThreatState, RaidEvent } from './combat.model';
+import { DeployedGarrison, MilitaryUnitTransit } from './military.model';
+import { ActiveAttack, AttackResult } from './enemy-system.model';
 
 export interface GameState {
   version: number;
@@ -24,4 +27,16 @@ export interface GameState {
   nextShipId: number;
   nextShipRouteId: number;
   lastTickAt: number;
+  planetThreats: Record<string, PlanetThreatState>;
+  combatLog: (RaidEvent | AttackResult)[];
+  combatUnlocked: boolean;
+  deployedGarrisons: DeployedGarrison[];
+  militaryUnlocked: boolean;
+  unitsInTransit: MilitaryUnitTransit[];
+  activeAttacks: ActiveAttack[];
+  discoveredEnemySystemIds: string[];
+  offensiveUnlocked: boolean;
+  invasionFleets: InvasionFleet[];
+  nextInvasionAt: number;
+  attackCooldowns: Record<string, number>;
 }

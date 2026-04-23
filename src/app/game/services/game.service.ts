@@ -3,8 +3,24 @@ import { BehaviorSubject } from 'rxjs';
 import {
   ALL_ITEM_IDS,
   AUTO_MINERS,
+  COMBAT_LOG_MAX_ENTRIES,
+  COMBAT_UNLOCK_SCORE,
   CRAFTED_DEFS,
+  DEFENSE_STEAL_REDUCTION_PER_POINT,
+  ENEMY_SYSTEMS,
+  INVASION_ATTACK_INTERVAL_BASE_MS,
+  INVASION_FLEET_NAMES,
+  INVASION_SPAWN_INTERVAL_MS,
+  MAX_INVASION_FLEETS,
+  MAX_OFFLINE_RAID_CYCLES,
+  MILITARY_UNIT_DEFS,
+  MILITARY_RECIPES,
   PLANETS,
+  RAID_INTERVAL_BASE_MS,
+  RAID_JITTER_MAX,
+  RAID_JITTER_MIN,
+  RAID_STEAL_BASE_PERCENT,
+  RAID_STEAL_MIN_PERCENT,
   RECIPES,
   RESOURCE_DEFS,
   RESOURCE_IDS,
@@ -15,17 +31,27 @@ import {
 } from '../constants';
 import { GAME_MESSAGES, formatMessage } from '../i18n/game-messages';
 import {
+  ActiveAttack,
+  AttackResult,
   AutoMiner,
+  DeployedGarrison,
+  EnemySystem,
+  InvasionFleet,
   ExpeditionState,
   GameState,
   GeneratedPlanetSeed,
   ItemCost,
+  MilitaryUnitTransit,
   ItemId,
   LogisticsLocation,
   LogisticsLocationKind,
+  MilitaryUnitDef,
+  MilitaryUnitId,
   OwnedShip,
   OwnedSpaceStation,
   Planet,
+  PlanetThreatState,
+  RaidEvent,
   Recipe,
   ResourceDef,
   ResourceId,
@@ -184,6 +210,8 @@ export class GameService {
   readonly shipParts = SHIP_PARTS;
   readonly shipDefinitions = SHIPS;
   readonly spaceStationBlueprints = SPACE_STATION_BLUEPRINTS;
+  readonly militaryUnits = MILITARY_UNIT_DEFS;
+  readonly enemySystems = ENEMY_SYSTEMS;
 
   readonly state$ = new BehaviorSubject<GameState>(buildDefaultGameState());
 
@@ -746,6 +774,246 @@ export class GameService {
     return this.basePlanets.every(planet => this.isPlanetDiscovered(planet.id));
   }
 
+  isCombatUnlocked(): boolean {
+    return this.getProgressScore() >= COMBAT_UNLOCK_SCORE;
+  }
+
+  isMilitaryUnlocked(): boolean {
+    return this.getProgressScore() >= 1200;
+  }
+
+  getDefensePoints(planetId: string): number {
+    return this.state.deployedGarrisons
+      .filter(garrison => garrison.planetId === planetId)
+      .reduce((total, garrison) => {
+        const unitDef = MILITARY_UNIT_DEFS.find(unit => unit.id === garrison.unitId);
+        return total + (unitDef?.defenseStrength ?? 0) * garrison.count;
+      }, 0);
+  }
+
+  deployUnit(planetId: string, unitId: MilitaryUnitId, count: number): boolean {
+    if (count <= 0) {
+      return false;
+    }
+
+    const sourcePlanetId = this.state.currentPlanetId;
+    const inventory = this.state.planetInventories[sourcePlanetId];
+    if (!inventory) {
+      return false;
+    }
+
+    const available = inventory[unitId] ?? 0;
+    if (available < count) {
+      return false;
+    }
+
+    inventory[unitId] -= count;
+
+    const now = Date.now();
+    const travelTime = this.calculateUnitTravelTime(this.state.currentPlanetId, planetId);
+    const transitId = `transit-${now}-${Math.random().toString(36).substr(2, 9)}`;
+
+    this.state.unitsInTransit.push({
+      id: transitId,
+      unitId,
+      count,
+      fromPlanetId: this.state.currentPlanetId,
+      toPlanetId: planetId,
+      departAt: now,
+      arriveAt: now + travelTime,
+    });
+
+    this.emit();
+    return true;
+  }
+
+  recallUnits(planetId: string, unitId: MilitaryUnitId, count: number): boolean {
+    if (count <= 0) {
+      return false;
+    }
+
+    const garrison = this.state.deployedGarrisons.find(g => g.planetId === planetId && g.unitId === unitId);
+    if (!garrison || garrison.count < count) {
+      return false;
+    }
+
+    garrison.count -= count;
+    if (garrison.count === 0) {
+      const index = this.state.deployedGarrisons.indexOf(garrison);
+      if (index !== -1) {
+        this.state.deployedGarrisons.splice(index, 1);
+      }
+    }
+
+    const now = Date.now();
+    const travelTime = this.calculateUnitTravelTime(planetId, this.state.currentPlanetId);
+    const transitId = `transit-${now}-${Math.random().toString(36).substr(2, 9)}`;
+
+    this.state.unitsInTransit.push({
+      id: transitId,
+      unitId,
+      count,
+      fromPlanetId: planetId,
+      toPlanetId: this.state.currentPlanetId,
+      departAt: now,
+      arriveAt: now + travelTime,
+    });
+
+    this.emit();
+    return true;
+  }
+
+  private processUnitTransit(now: number): void {
+    for (let i = this.state.unitsInTransit.length - 1; i >= 0; i--) {
+      const transit = this.state.unitsInTransit[i];
+      if (transit.arriveAt <= now) {
+        const inventory = this.state.planetInventories[transit.toPlanetId];
+        if (inventory) {
+          inventory[transit.unitId] = (inventory[transit.unitId] ?? 0) + transit.count;
+        }
+        this.state.unitsInTransit.splice(i, 1);
+      }
+    }
+  }
+
+  craftMilitaryUnit(recipeId: string): boolean {
+    const recipe = MILITARY_RECIPES.find(item => item.id === recipeId);
+    if (
+      !recipe ||
+      !this.isMilitaryUnlocked() ||
+      this.getProgressScore() < recipe.unlockAtTotal ||
+      !this.canAfford(recipe.ingredients, this.state.currentPlanetId)
+    ) {
+      return false;
+    }
+
+    this.spendItems(recipe.ingredients, this.state.currentPlanetId);
+    this.addItem(recipe.outputId, recipe.outputAmount, this.state.currentPlanetId);
+    this.emit();
+
+    return true;
+  }
+
+  isOffensiveUnlocked(): boolean {
+    return this.getProgressScore() >= 3500;
+  }
+
+  getEnemySystemDef(systemId: string): EnemySystem | undefined {
+    return ENEMY_SYSTEMS.find(sys => sys.id === systemId);
+  }
+
+  private calculateAttackTravelTime(enemySystem: EnemySystem): number {
+    // Base travel time increases with enemy tier (distance)
+    // Tier 1 = 60s, Tier 2 = 75s, Tier 3 = 90s, Tier 4 = 105s, Tier 5 = 120s
+    const BASE_ATTACK_TIME = 60_000;
+    const TIER_TIME_MULTIPLIER = 15_000;
+    return BASE_ATTACK_TIME + (enemySystem.tier - 1) * TIER_TIME_MULTIPLIER;
+  }
+
+  private calculateUnitTravelTime(fromPlanetId: string, toPlanetId: string): number {
+    const fromPlanet = this.basePlanets.find(p => p.id === fromPlanetId);
+    const toPlanet = this.basePlanets.find(p => p.id === toPlanetId);
+    if (!fromPlanet || !toPlanet || fromPlanetId === toPlanetId) return 10_000;
+    const tierDifference = Math.abs(toPlanet.requiredShipTier - fromPlanet.requiredShipTier);
+    // 10s base + 20s per tier gap — same-tier: 10s, max 5 gap: 110s
+    return 10_000 + tierDifference * 20_000;
+  }
+
+  getNextRaidAt(planetId: string): number | null {
+    const threat = this.state.planetThreats[planetId];
+    return threat?.nextRaidAt ?? null;
+  }
+
+  // Returns the defense strength at which raid steal is capped at its minimum (2%)
+  getDefenseNeutralizeTarget(dangerLevel: number): number {
+    return Math.ceil(
+      (dangerLevel * RAID_STEAL_BASE_PERCENT - RAID_STEAL_MIN_PERCENT) / DEFENSE_STEAL_REDUCTION_PER_POINT
+    );
+  }
+
+  deployAllUnits(planetId: string, unitId: MilitaryUnitId): boolean {
+    const count = this.getInventoryAmount(unitId, this.state.currentPlanetId);
+    if (count <= 0) return false;
+    return this.deployUnit(planetId, unitId, count);
+  }
+
+  recallAllUnits(planetId: string, unitId: MilitaryUnitId): boolean {
+    const garrison = this.state.deployedGarrisons.find(g => g.planetId === planetId && g.unitId === unitId);
+    if (!garrison || garrison.count <= 0) return false;
+    return this.recallUnits(planetId, unitId, garrison.count);
+  }
+
+  launchAttack(targetSystemId: string, unitsToSend: Partial<Record<MilitaryUnitId, number>>): boolean {
+    if (!this.isOffensiveUnlocked()) {
+      return false;
+    }
+
+    const enemySystem = ENEMY_SYSTEMS.find(sys => sys.id === targetSystemId);
+    if (!enemySystem) {
+      return false;
+    }
+
+    const now = Date.now();
+    if (now < (this.state.attackCooldowns[targetSystemId] ?? 0)) {
+      return false;
+    }
+
+    let totalStrength = 0;
+    const unitsLaunched = {} as Record<MilitaryUnitId, number>;
+    const garrisonDeductions: Array<{ garrison: DeployedGarrison; amount: number }> = [];
+
+    for (const [unitId, requested] of Object.entries(unitsToSend)) {
+      if (!requested || requested <= 0) continue;
+
+      const unitDef = MILITARY_UNIT_DEFS.find(u => u.id === unitId as MilitaryUnitId);
+      if (!unitDef) continue;
+
+      let remaining = requested;
+      for (const garrison of this.state.deployedGarrisons) {
+        if (remaining <= 0) break;
+        if (garrison.unitId !== unitId as MilitaryUnitId) continue;
+        const toTake = Math.min(garrison.count, remaining);
+        garrisonDeductions.push({ garrison, amount: toTake });
+        remaining -= toTake;
+      }
+
+      const actual = requested - remaining;
+      if (actual <= 0) continue;
+
+      unitsLaunched[unitId as MilitaryUnitId] = actual;
+      totalStrength += unitDef.defenseStrength * actual;
+    }
+
+    if (totalStrength < enemySystem.requiredDefenseStrength || Object.keys(unitsLaunched).length === 0) {
+      return false;
+    }
+
+    for (const { garrison, amount } of garrisonDeductions) {
+      garrison.count -= amount;
+    }
+    this.state.deployedGarrisons = this.state.deployedGarrisons.filter(g => g.count > 0);
+
+    const travelTime = this.calculateAttackTravelTime(enemySystem);
+    const attack: ActiveAttack = {
+      id: `attack-${now}-${Math.random().toString(36).substr(2, 9)}`,
+      originPlanetId: this.state.currentPlanetId,
+      targetSystemId,
+      unitsLaunched,
+      launchedAt: now,
+      arriveAt: now + travelTime,
+      totalStrength,
+    };
+
+    this.state.activeAttacks.push(attack);
+
+    if (!this.state.discoveredEnemySystemIds.includes(targetSystemId)) {
+      this.state.discoveredEnemySystemIds.push(targetSystemId);
+    }
+
+    this.emit();
+    return true;
+  }
+
   hasExplorerShip(): boolean {
     return this.state.expedition.shipBuilt;
   }
@@ -1127,6 +1395,7 @@ export class GameService {
       this.applyAutoProduction(elapsedSeconds);
       this.processFleet(now);
       this.processExpeditions(now);
+      this.processCombat(now);
     }
 
     this.state.lastTickAt = now;
@@ -1287,6 +1556,8 @@ export class GameService {
       this.applyAutoProduction(elapsedSeconds);
       this.processFleet(now);
       this.processExpeditions(now);
+      this.processUnitTransit(now);
+      this.processCombat(now);
       this.emit();
     }, TICK_INTERVAL_MS);
   }
@@ -1310,6 +1581,303 @@ export class GameService {
 
     this.state.expedition.expeditionsCompleted += 1;
     this.state.expedition.activeMission = null;
+  }
+
+  private processCombat(now: number): void {
+    const progressScore = this.getProgressScore();
+    if (progressScore < COMBAT_UNLOCK_SCORE) {
+      return;
+    }
+
+    if (!this.state.combatUnlocked) {
+      this.state.combatUnlocked = true;
+    }
+
+    const offline = now - this.state.lastTickAt > 1000; // roughly offline if > 1 second since last tick
+    const maxRaidCycles = offline ? MAX_OFFLINE_RAID_CYCLES : 1;
+
+    for (const planetId of this.state.discoveredPlanetIds) {
+      const planet = this.getPlanet(planetId);
+      if (!planet || planet.id === 'solara') {
+        continue;
+      }
+
+      const dangerLevel = planet.requiredShipTier;
+      if (dangerLevel === 0) {
+        continue;
+      }
+
+      let threatState = this.state.planetThreats[planetId];
+      if (!threatState) {
+        threatState = {
+          planetId,
+          dangerLevel,
+          nextRaidAt: 0,
+          raidCount: 0,
+          lastRaidAt: null,
+        };
+        this.state.planetThreats[planetId] = threatState;
+      }
+
+      if (threatState.nextRaidAt === 0) {
+        threatState.nextRaidAt = now + this.getRaidIntervalMs(dangerLevel) * this.getJitterMultiplier();
+        continue;
+      }
+
+      let raidsCycled = 0;
+      while (threatState.nextRaidAt <= now && raidsCycled < maxRaidCycles) {
+        this.executeRaid(planetId, threatState, now);
+        threatState.nextRaidAt = now + this.getRaidIntervalMs(dangerLevel) * this.getJitterMultiplier();
+        raidsCycled++;
+      }
+    }
+
+    this.processAttacks(now);
+    this.processInvasions(now);
+
+    if (this.state.combatLog.length > COMBAT_LOG_MAX_ENTRIES) {
+      this.state.combatLog = this.state.combatLog.slice(-COMBAT_LOG_MAX_ENTRIES);
+    }
+  }
+
+  private processAttacks(now: number): void {
+    if (!this.isOffensiveUnlocked()) {
+      return;
+    }
+
+    for (const attack of this.state.activeAttacks) {
+      if (attack.arriveAt > now) {
+        continue;
+      }
+
+      const enemySystem = ENEMY_SYSTEMS.find(sys => sys.id === attack.targetSystemId);
+      if (!enemySystem) {
+        continue;
+      }
+
+      const lootObtained = {} as Record<ItemId, number>;
+      for (const lootEntry of enemySystem.lootTable) {
+        const amount = Math.floor(lootEntry.baseAmount + (Math.random() * lootEntry.variance * 2 - lootEntry.variance));
+        lootObtained[lootEntry.itemId] = Math.max(1, amount);
+      }
+
+      const originInventory = this.state.planetInventories[attack.originPlanetId];
+      if (originInventory) {
+        for (const [itemId, amount] of Object.entries(lootObtained)) {
+          originInventory[itemId as ItemId] = (originInventory[itemId as ItemId] ?? 0) + amount;
+          if ((itemId as ItemId) === 'salvage') {
+            this.state.totalMined[itemId as ResourceId] = (this.state.totalMined[itemId as ResourceId] ?? 0) + amount;
+          }
+        }
+      }
+
+      const casualtyCount = this.calculateAttackCasualties(attack, enemySystem);
+      this.returnAttackSurvivors(attack, casualtyCount);
+
+      this.state.attackCooldowns[attack.targetSystemId] = now + enemySystem.attackDurationMs;
+
+      this.state.combatLog.push({
+        id: `attack-result-${attack.id}`,
+        kind: 'attack',
+        systemId: attack.targetSystemId,
+        systemName: enemySystem.name,
+        success: true,
+        lootObtained,
+        casualtyCount,
+        timestamp: now,
+      });
+    }
+
+    this.state.activeAttacks = this.state.activeAttacks.filter(attack => attack.arriveAt > now);
+  }
+
+  private calculateAttackCasualties(attack: ActiveAttack, enemySystem: EnemySystem): number {
+    const totalUnits = Object.values(attack.unitsLaunched).reduce((sum, c) => sum + (c ?? 0), 0);
+    return Math.floor(totalUnits * enemySystem.tier * 0.02);
+  }
+
+  private returnAttackSurvivors(attack: ActiveAttack, totalCasualties: number): void {
+    const inventory = this.state.planetInventories[attack.originPlanetId];
+    if (!inventory) return;
+
+    let remaining = totalCasualties;
+    const byStrength = [...MILITARY_UNIT_DEFS].sort((a, b) => a.defenseStrength - b.defenseStrength);
+
+    for (const unitDef of byStrength) {
+      const count = attack.unitsLaunched[unitDef.id] ?? 0;
+      if (count === 0) continue;
+      const lost = Math.min(count, remaining);
+      remaining -= lost;
+      const survivors = count - lost;
+      if (survivors > 0) {
+        inventory[unitDef.id as ItemId] = (inventory[unitDef.id as ItemId] ?? 0) + survivors;
+      }
+    }
+  }
+
+  // ── Invasion fleet logic ─────────────────────────────────────────────────
+
+  getInvasionFleets(): InvasionFleet[] {
+    return this.state.invasionFleets;
+  }
+
+  private processInvasions(now: number): void {
+    if (!this.state.combatUnlocked) return;
+
+    for (const fleet of this.state.invasionFleets) {
+      if (fleet.nextAttackAt <= now) {
+        this.executeInvasionRaid(fleet, now);
+        fleet.nextAttackAt = now + Math.round(
+          (INVASION_ATTACK_INTERVAL_BASE_MS / fleet.tier) * (0.8 + Math.random() * 0.4),
+        );
+      }
+    }
+
+    if (
+      this.state.invasionFleets.length < MAX_INVASION_FLEETS &&
+      now >= this.state.nextInvasionAt &&
+      this.state.discoveredPlanetIds.some(id => id !== 'solara')
+    ) {
+      this.spawnInvasionFleet(now);
+    }
+  }
+
+  private spawnInvasionFleet(now: number): void {
+    const score = this.getProgressScore();
+    const maxTier = score >= 5000 ? 5 : score >= 3500 ? 4 : score >= 2500 ? 3 : score >= 1200 ? 2 : 1;
+    const tier = Math.max(1, Math.ceil(Math.random() * maxTier));
+    const name = INVASION_FLEET_NAMES[Math.floor(Math.random() * INVASION_FLEET_NAMES.length)];
+    const id = `invasion-${now}-${Math.random().toString(36).slice(2, 8)}`;
+    const hp = tier * 15;
+
+    this.state.invasionFleets.push({
+      id,
+      name,
+      tier,
+      hp,
+      maxHp: hp,
+      spawnedAt: now,
+      nextAttackAt: now + 30_000,
+    });
+
+    this.state.nextInvasionAt = now + INVASION_SPAWN_INTERVAL_MS * (0.75 + Math.random() * 0.5);
+  }
+
+  private executeInvasionRaid(fleet: InvasionFleet, now: number): void {
+    const targets = this.state.discoveredPlanetIds.filter(id => id !== 'solara');
+    if (targets.length === 0) return;
+    const targetId = targets[Math.floor(Math.random() * targets.length)];
+    const fakeThreats: PlanetThreatState = {
+      planetId: targetId,
+      dangerLevel: fleet.tier,
+      nextRaidAt: 0,
+      raidCount: 0,
+      lastRaidAt: null,
+    };
+    this.executeRaid(targetId, fakeThreats, now);
+  }
+
+  attackInvasionFleet(fleetId: string, unitsToSend: Partial<Record<MilitaryUnitId, number>>): boolean {
+    const fleet = this.state.invasionFleets.find(f => f.id === fleetId);
+    if (!fleet) return false;
+
+    const planetId = this.state.currentPlanetId;
+    const inventory = this.state.planetInventories[planetId];
+    if (!inventory) return false;
+
+    let totalDamage = 0;
+    for (const [unitId, count] of Object.entries(unitsToSend)) {
+      if (!count || count <= 0) continue;
+      const garrison = this.state.deployedGarrisons.find(
+        g => g.planetId === planetId && g.unitId === unitId as MilitaryUnitId,
+      );
+      const garrisonCount = garrison?.count ?? 0;
+      const inventoryCount = inventory[unitId as ItemId] ?? 0;
+      if (garrisonCount + inventoryCount < count) return false;
+      const unitDef = MILITARY_UNIT_DEFS.find(u => u.id === unitId as MilitaryUnitId);
+      if (!unitDef) continue;
+      totalDamage += unitDef.defenseStrength * count;
+    }
+    if (totalDamage === 0) return false;
+
+    for (const [unitId, count] of Object.entries(unitsToSend)) {
+      if (!count || count <= 0) continue;
+      const garrison = this.state.deployedGarrisons.find(
+        g => g.planetId === planetId && g.unitId === unitId as MilitaryUnitId,
+      );
+      let remaining = count;
+      if (garrison && garrison.count > 0) {
+        const fromGarrison = Math.min(garrison.count, remaining);
+        garrison.count -= fromGarrison;
+        remaining -= fromGarrison;
+      }
+      if (remaining > 0) {
+        inventory[unitId as ItemId] = Math.max(0, (inventory[unitId as ItemId] ?? 0) - remaining);
+      }
+    }
+    this.state.deployedGarrisons = this.state.deployedGarrisons.filter(g => g.count > 0);
+
+    fleet.hp = Math.max(0, fleet.hp - totalDamage);
+
+    if (fleet.hp <= 0) {
+      const salvageLoot = fleet.tier * 5;
+      inventory['salvage'] = (inventory['salvage'] ?? 0) + salvageLoot;
+      this.state.totalMined['salvage'] = (this.state.totalMined['salvage'] ?? 0) + salvageLoot;
+      this.state.invasionFleets = this.state.invasionFleets.filter(f => f.id !== fleetId);
+    }
+
+    this.emit();
+    return true;
+  }
+
+  private executeRaid(planetId: string, threatState: PlanetThreatState, now: number): void {
+    const inventory = this.state.planetInventories[planetId];
+    if (!inventory) {
+      return;
+    }
+
+    const defensePoints = this.getDefensePoints(planetId);
+    const stealPercent = Math.max(
+      RAID_STEAL_MIN_PERCENT,
+      threatState.dangerLevel * RAID_STEAL_BASE_PERCENT - defensePoints * DEFENSE_STEAL_REDUCTION_PER_POINT,
+    );
+
+    const resourcesStolen = {} as Record<ItemId, number>;
+    let totalStolen = 0;
+
+    for (const itemId of ALL_ITEM_IDS) {
+      const amount = inventory[itemId] ?? 0;
+      if (amount === 0) {
+        continue;
+      }
+
+      const stolen = Math.floor(amount * stealPercent);
+      const finalStolen = stolen === 0 ? 1 : stolen;
+      resourcesStolen[itemId] = finalStolen;
+      inventory[itemId] -= finalStolen;
+      totalStolen += finalStolen;
+    }
+
+    const raidEvent: RaidEvent = {
+      id: `raid-${planetId}-${now}`,
+      kind: 'raid',
+      planetId,
+      resourcesStolen,
+      resolvedAt: now,
+      defensePointsActive: defensePoints,
+    };
+
+    this.state.combatLog.push(raidEvent);
+    threatState.raidCount += 1;
+    threatState.lastRaidAt = now;
+  }
+
+  private getRaidIntervalMs(dangerLevel: number): number {
+    return RAID_INTERVAL_BASE_MS / (dangerLevel * dangerLevel);
+  }
+
+  private getJitterMultiplier(): number {
+    return RAID_JITTER_MIN + Math.random() * (RAID_JITTER_MAX - RAID_JITTER_MIN);
   }
 
   private startShipTransit(
