@@ -13,10 +13,12 @@ export interface InvasionFleet {
 
 export interface PlanetThreatState {
   planetId: string;
-  dangerLevel: number; // 0-5
+  dangerLevel: number; // starts at planet.requiredShipTier, can escalate/de-escalate
   nextRaidAt: number; // epoch ms, 0 if not yet scheduled
   raidCount: number;
   lastRaidAt: number | null;
+  consecutiveUndefendedRaids: number;
+  consecutiveDefendedRaids: number;
 }
 
 export interface ActiveInvasionStrike {
@@ -29,6 +31,16 @@ export interface ActiveInvasionStrike {
   arriveAt: number;
 }
 
+export interface ActiveInvasionRaid {
+  id: string;
+  fleetId: string;
+  fleetName: string;
+  fleetTier: number;
+  targetPlanetId: string;
+  launchedAt: number;
+  arriveAt: number;
+}
+
 export interface RaidEvent {
   id: string; // "raid-{planetId}-{timestamp}"
   kind: 'raid';
@@ -36,4 +48,14 @@ export interface RaidEvent {
   resourcesStolen: Record<ItemId, number>;
   resolvedAt: number;
   defensePointsActive: number;
+  garrisonLost: number;
+  dangerLevelAfter: number;
+}
+
+export interface FactionAngerEvent {
+  id: string;
+  kind: 'factionAnger';
+  previousTier: 'calm' | 'alert' | 'enraged';
+  newTier: 'calm' | 'alert' | 'enraged';
+  timestamp: number;
 }

@@ -21,6 +21,8 @@ export class SettingsDialogComponent {
   readonly resetRequested = output<void>();
   readonly changelogRequested = output<void>();
   readonly devGrantRequested = output<{ amount: number; scope: 'currentPlanet' | 'allPlanets' }>();
+  readonly tutorialRestartRequested = output<void>();
+  readonly tutorialDisableRequested = output<void>();
 
   importValue = '';
   devGrantAmount = 1000;

@@ -3,10 +3,13 @@ import { Component, ElementRef, OnDestroy, effect, input, output, viewChild } fr
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { MapComponent } from '../map/map.component';
 import { GameService } from '../../services/game.service';
+import { TutorialService } from '../../services/tutorial.service';
 import { GameMessagesService } from '../../i18n/game-messages';
 import { MILITARY_RECIPES, MILITARY_BUILDINGS } from '../../constants';
 import {
+  AttackResult,
   AutoMiner,
+  FactionAngerEvent,
   ItemCost,
   ItemId,
   MilitaryBuilding,
@@ -15,6 +18,7 @@ import {
   MilitaryUnitId,
   MilitaryUnitTransit,
   Planet,
+  RaidEvent,
   Recipe,
   ResourceDef,
   ResourceUpgrade,
@@ -86,6 +90,7 @@ export class UpgradePanelComponent implements OnDestroy {
   constructor(
     public game: GameService,
     public copy: GameMessagesService,
+    public tutorial: TutorialService,
   ) {
     this.nowTimer = setInterval(() => { this.now = Date.now(); }, 1000);
     const tabMessages = this.copy.messages.ui.upgradePanel.tabs;
@@ -136,6 +141,14 @@ export class UpgradePanelComponent implements OnDestroy {
 
   get visibleRecipes(): Recipe[] {
     return this.game.recipes.filter(recipe => this.game.isRecipeVisible(recipe));
+  }
+
+  isRecipeGloballyUnlocked(recipe: Recipe): boolean {
+    return this.game.isRecipeGloballyUnlocked(recipe.id);
+  }
+
+  unlockRecipeGlobally(recipe: Recipe): void {
+    this.game.unlockRecipeGlobally(recipe.id);
   }
 
   get visibleAutoMiners(): AutoMiner[] {
@@ -257,6 +270,26 @@ export class UpgradePanelComponent implements OnDestroy {
     return this.game.getUpgradeLevel(this.currentPlanet.id, upgrade.id);
   }
 
+  canAffordUpgrade(upgrade: ResourceUpgrade): boolean {
+    return this.getUpgradeLevel(upgrade) < upgrade.maxLevel
+      && this.game.canAfford(this.game.getUpgradeCost(upgrade));
+  }
+
+  hasAffordableUpgrades(): boolean {
+    return this.game.upgrades
+      .filter(u => this.game.isUpgradeVisible(u))
+      .some(u => this.canAffordUpgrade(u));
+  }
+
+  shouldHighlightTab(tabKey: Tab): boolean {
+    const step = this.tutorial.activeStep$.value;
+    if (!step) return false;
+    if (tabKey === 'upgrades') {
+      return step.id === 'tut_open_upgrades' || step.id === 'tut_buy_first_upgrade';
+    }
+    return false;
+  }
+
   getAutoMinerCount(miner: AutoMiner): number {
     return this.game.getAutoMinerCount(this.currentPlanet.id, miner.id);
   }
@@ -374,6 +407,10 @@ export class UpgradePanelComponent implements OnDestroy {
     const total = arriveAt - departAt;
     if (total <= 0) return 100;
     return Math.min(100, Math.round(((this.now - departAt) / total) * 100));
+  }
+
+  getIncomingRaidsForPlanet(planetId: string) {
+    return this.state.activeInvasionRaids.filter(r => r.targetPlanetId === planetId);
   }
 
   getNextRaidETA(planetId: string): string | null {
@@ -674,6 +711,79 @@ export class UpgradePanelComponent implements OnDestroy {
 
   travelToPlanet(planet: Planet): void {
     this.game.travelToPlanet(planet.id);
+  }
+
+  readonly objectKeys = Object.keys as (obj: object) => string[];
+
+  private readonly collapsedSections = new Set<string>();
+
+  isSectionCollapsed(key: string): boolean {
+    return this.collapsedSections.has(key);
+  }
+
+  toggleSection(key: string): void {
+    if (this.collapsedSections.has(key)) {
+      this.collapsedSections.delete(key);
+    } else {
+      this.collapsedSections.add(key);
+    }
+  }
+
+  get pendingAttackResult(): AttackResult | null {
+    return this.state.pendingAttackResults[0] ?? null;
+  }
+
+  acknowledgePendingResult(): void {
+    if (this.pendingAttackResult) {
+      this.game.acknowledgeAttackResult(this.pendingAttackResult.id);
+    }
+  }
+
+  getFactionAnger(): number {
+    return this.state.factionAnger;
+  }
+
+  getFactionAngerTier(): 'calm' | 'alert' | 'enraged' {
+    const a = this.getFactionAnger();
+    if (a >= 60) return 'enraged';
+    if (a >= 30) return 'alert';
+    return 'calm';
+  }
+
+  getFactionAngerLabel(): string {
+    const t = this.getFactionAngerTier();
+    return t === 'enraged' ? 'Enraged' : t === 'alert' ? 'Alert' : 'Calm';
+  }
+
+  getPlanetThreatLevel(planetId: string): number {
+    return this.state.planetThreats[planetId]?.dangerLevel
+      ?? this.game.getPlanet(planetId)?.requiredShipTier
+      ?? 0;
+  }
+
+  getEventTimestamp(event: RaidEvent | AttackResult | FactionAngerEvent): number {
+    return event.kind === 'raid' ? event.resolvedAt : event.timestamp;
+  }
+
+  formatCombatEntry(event: RaidEvent | AttackResult | FactionAngerEvent): string {
+    if (event.kind === 'raid') {
+      const planet = this.game.getPlanet(event.planetId)?.name ?? event.planetId;
+      const attrition = event.garrisonLost > 0 ? ` · ${event.garrisonLost} units lost` : '';
+      return `${planet} raided${attrition}`;
+    }
+    if (event.kind === 'attack') {
+      const icon = event.success ? '✓' : '✗';
+      const ratio = event.strengthRatio != null ? event.strengthRatio.toFixed(1) : '?';
+      return `${event.systemName} ${icon} (${ratio}×)`;
+    }
+    const icons: Record<string, string> = { calm: '●', alert: '▲', enraged: '★' };
+    return `Syndicate: ${icons[event.previousTier]} → ${icons[event.newTier]}`;
+  }
+
+  formatSecondsAgo(ts: number): string {
+    const secs = Math.floor((Date.now() - ts) / 1000);
+    if (secs < 60) return `${secs}s ago`;
+    return `${Math.floor(secs / 60)}m ago`;
   }
 
   private clampInventoryHeight(height: number): number {

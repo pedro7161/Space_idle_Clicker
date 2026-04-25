@@ -2,15 +2,27 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import {
   ALL_ITEM_IDS,
+  ANGER_ALERT_THRESHOLD,
+  ANGER_DECAY_PER_SECOND,
+  ANGER_ENRAGED_THRESHOLD,
+  ANGER_MAX,
+  ANGER_PER_FLEET_STRIKE,
+  ANGER_PER_PLAYER_ATTACK,
+  ATTACK_CASUALTY_RATE_MAX,
+  ATTACK_CASUALTY_RATE_MIN,
+  ATTACK_OVERKILL_RATIO_THRESHOLD,
   AUTO_MINERS,
   COMBAT_LOG_MAX_ENTRIES,
   COMBAT_UNLOCK_SCORE,
   CRAFTED_DEFS,
   DEFENSE_STEAL_REDUCTION_PER_POINT,
   ENEMY_SYSTEMS,
+  GARRISON_ATTRITION_MAX_RATE,
   INVASION_ATTACK_INTERVAL_BASE_MS,
   INVASION_FLEET_NAMES,
   INVASION_SPAWN_INTERVAL_MS,
+  INVASION_STRIKE_CASUALTY_RATE,
+  LOOT_OVERKILL_MAX_MULT,
   MAX_INVASION_FLEETS,
   MAX_OFFLINE_RAID_CYCLES,
   MILITARY_UNIT_DEFS,
@@ -23,21 +35,30 @@ import {
   RAID_STEAL_BASE_PERCENT,
   RAID_STEAL_MIN_PERCENT,
   RECIPES,
+  RETALIATION_WINDOW_MS,
   RESOURCE_DEFS,
   RESOURCE_IDS,
   RESOURCE_UPGRADES,
   SPACE_STATION_BLUEPRINTS,
   SHIPS,
   SHIP_PARTS,
+  SPAWN_INTERVAL_ALERT_MULT,
+  SPAWN_INTERVAL_ENRAGED_MULT,
+  THREAT_DEESCALATION_RAIDS_REQUIRED,
+  THREAT_ESCALATION_RAIDS_REQUIRED,
+  THREAT_LEVEL_MAX_ABOVE_TIER,
+  THREAT_LEVEL_MIN,
 } from '../constants';
 import { GAME_MESSAGES, formatMessage } from '../i18n/game-messages';
 import {
   ActiveAttack,
+  ActiveInvasionRaid,
   ActiveInvasionStrike,
   AttackResult,
   AutoMiner,
   DeployedGarrison,
   EnemySystem,
+  FactionAngerEvent,
   InvasionFleet,
   ExpeditionState,
   GameState,
@@ -76,6 +97,7 @@ import {
   SAVE_TRANSFER_PREFIX,
 } from '../storage/game-save';
 import type { LegacySavedState } from '../storage/game-save';
+import type { TutorialStepId } from '../models';
 const SAVE_INTERVAL_MS = 10_000;
 const TICK_INTERVAL_MS = 200;
 const MAX_OFFLINE_SECONDS = 60 * 60 * 4;
@@ -127,6 +149,9 @@ const FRONTIER_SUPPORT_RESOURCES: ResourceId[] = [
   'ferrite',
   'oxygen',
 ];
+
+const BASE_PLANET_UNIT_CAP = 200;
+const PLANETARY_HANGAR_UNIT_CAP_PER_LEVEL = 50;
 
 function buildNumberRecord<T extends string>(ids: readonly T[]): Record<T, number> {
   return ids.reduce(
@@ -362,6 +387,35 @@ export class GameService {
     return true;
   }
 
+  getRecipeGlobalUnlockCost(recipeId: string): ItemCost[] | null {
+    const recipe = this.recipes.find(item => item.id === recipeId);
+    if (!recipe) {
+      return null;
+    }
+    return recipe.ingredients;
+  }
+
+  isRecipeGloballyUnlocked(recipeId: string): boolean {
+    return this.state.globallyUnlockedRecipeIds.includes(recipeId);
+  }
+
+  unlockRecipeGlobally(recipeId: string): boolean {
+    const recipe = this.recipes.find(item => item.id === recipeId);
+    if (!recipe || this.isRecipeGloballyUnlocked(recipeId) || !this.isRecipeVisible(recipe)) {
+      return false;
+    }
+
+    const cost = this.getRecipeGlobalUnlockCost(recipeId);
+    if (!cost || !this.canAfford(cost, this.state.currentPlanetId)) {
+      return false;
+    }
+
+    this.spendItems(cost, this.state.currentPlanetId);
+    this.state.globallyUnlockedRecipeIds = [...this.state.globallyUnlockedRecipeIds, recipeId];
+    this.emit();
+    return true;
+  }
+
   buildShipPart(partId: string): boolean {
     const part = this.shipParts.find(item => item.id === partId);
     if (
@@ -571,6 +625,28 @@ export class GameService {
 
   getState(): GameState {
     return this.state$.value;
+  }
+
+  completeTutorialStep(stepId: TutorialStepId): void {
+    if (this.state.tutorial.dismissed || this.state.tutorial.completedStepIds.includes(stepId)) {
+      return;
+    }
+    this.state.tutorial.completedStepIds = [...this.state.tutorial.completedStepIds, stepId];
+    this.emit();
+  }
+
+  dismissTutorial(dismissed: boolean): void {
+    if (this.state.tutorial.dismissed === dismissed) {
+      return;
+    }
+    this.state.tutorial.dismissed = dismissed;
+    this.emit();
+  }
+
+  restartTutorial(): void {
+    this.state.tutorial.dismissed = false;
+    this.state.tutorial.completedStepIds = [];
+    this.emit();
   }
 
   getCurrentPlanet(): Planet {
@@ -786,6 +862,10 @@ export class GameService {
   }
 
   isRecipeVisible(recipe: Recipe, planetId: string = this.state.currentPlanetId): boolean {
+    if (this.isRecipeGloballyUnlocked(recipe.id)) {
+      return true;
+    }
+
     return this.getProgressScore() >= recipe.unlockAtTotal
       && recipe.resourceIds.some(resourceId => this.isPlanetAssociatedResource(resourceId, planetId));
   }
@@ -825,17 +905,59 @@ export class GameService {
   getDefensePoints(planetId: string): number {
     const barracksMultiplier = 1 + 0.2 * this.getMilitaryBuildingLevel(planetId, 'garrisonBarracks');
     const wallBonus = 8 * this.getMilitaryBuildingLevel(planetId, 'fortificationWall');
-    const garrisonPoints = this.state.deployedGarrisons
+    return this.getGarrisonStrength(planetId) * barracksMultiplier + wallBonus;
+  }
+
+  getProjectedDefensePoints(planetId: string): number {
+    const barracksMultiplier = 1 + 0.2 * this.getMilitaryBuildingLevel(planetId, 'garrisonBarracks');
+    const wallBonus = 8 * this.getMilitaryBuildingLevel(planetId, 'fortificationWall');
+
+    const incoming = this.state.unitsInTransit
+      .filter(transit => transit.kind === 'deploy' && transit.toPlanetId === planetId)
+      .reduce((total, transit) => {
+        const unitDef = MILITARY_UNIT_DEFS.find(unit => unit.id === transit.unitId);
+        return total + (unitDef?.defenseStrength ?? 0) * transit.count;
+      }, 0);
+
+    return (this.getGarrisonStrength(planetId) + incoming) * barracksMultiplier + wallBonus;
+  }
+
+  private getGarrisonStrength(planetId: string): number {
+    return this.state.deployedGarrisons
       .filter(garrison => garrison.planetId === planetId)
       .reduce((total, garrison) => {
         const unitDef = MILITARY_UNIT_DEFS.find(unit => unit.id === garrison.unitId);
         return total + (unitDef?.defenseStrength ?? 0) * garrison.count;
       }, 0);
-    return garrisonPoints * barracksMultiplier + wallBonus;
+  }
+
+  getPlanetUnitCap(planetId: string): number {
+    return BASE_PLANET_UNIT_CAP + PLANETARY_HANGAR_UNIT_CAP_PER_LEVEL * this.getMilitaryBuildingLevel(planetId, 'planetaryHangar');
+  }
+
+  getPlanetTotalUnits(planetId: string): number {
+    const garrisonUnits = this.state.deployedGarrisons
+      .filter(g => g.planetId === planetId)
+      .reduce((total, g) => total + g.count, 0);
+    const incomingUnits = this.state.unitsInTransit
+      .filter(t => t.toPlanetId === planetId)
+      .reduce((total, t) => total + t.count, 0);
+    return garrisonUnits + incomingUnits;
   }
 
   deployUnit(planetId: string, unitId: MilitaryUnitId, count: number): boolean {
     if (count <= 0) {
+      return false;
+    }
+
+    const planet = this.getPlanet(planetId);
+    if (!planet) {
+      return false;
+    }
+
+    const defenseCap = this.getDefenseNeutralizeTarget(planet.requiredShipTier);
+    const projectedDefense = this.getProjectedDefensePoints(planetId);
+    if (projectedDefense >= defenseCap) {
       return false;
     }
 
@@ -846,22 +968,39 @@ export class GameService {
     }
 
     const available = inventory[unitId] ?? 0;
-    if (available < count) {
+    if (available <= 0) {
       return false;
     }
 
-    inventory[unitId] -= count;
+    const remainingCapacity = this.getPlanetUnitCap(planetId) - this.getPlanetTotalUnits(planetId);
+    const unitDef = MILITARY_UNIT_DEFS.find(unit => unit.id === unitId);
+    if (!unitDef) {
+      return false;
+    }
+
+    const barracksMultiplier = 1 + 0.2 * this.getMilitaryBuildingLevel(planetId, 'garrisonBarracks');
+    const perUnitDefense = unitDef.defenseStrength * barracksMultiplier;
+    const remainingDefense = defenseCap - projectedDefense;
+    const maxByDefense = Math.floor(remainingDefense / perUnitDefense);
+
+    const actual = Math.min(available, count, remainingCapacity, maxByDefense);
+    if (actual <= 0) {
+      return false;
+    }
+
+    inventory[unitId] -= actual;
 
     const now = Date.now();
     const travelTime = this.calculateUnitTravelTime(this.state.currentPlanetId, planetId);
-    const transitId = `transit-${now}-${Math.random().toString(36).substr(2, 9)}`;
+    const transitId = `transit-${now}-${Math.random().toString(36).slice(2, 9)}`;
 
     this.state.unitsInTransit.push({
       id: transitId,
       unitId,
-      count,
+      count: actual,
       fromPlanetId: this.state.currentPlanetId,
       toPlanetId: planetId,
+      kind: 'deploy',
       departAt: now,
       arriveAt: now + travelTime,
     });
@@ -890,7 +1029,7 @@ export class GameService {
 
     const now = Date.now();
     const travelTime = this.calculateUnitTravelTime(planetId, this.state.currentPlanetId);
-    const transitId = `transit-${now}-${Math.random().toString(36).substr(2, 9)}`;
+    const transitId = `transit-${now}-${Math.random().toString(36).slice(2, 9)}`;
 
     this.state.unitsInTransit.push({
       id: transitId,
@@ -898,6 +1037,7 @@ export class GameService {
       count,
       fromPlanetId: planetId,
       toPlanetId: this.state.currentPlanetId,
+      kind: 'recall',
       departAt: now,
       arriveAt: now + travelTime,
     });
@@ -910,9 +1050,22 @@ export class GameService {
     for (let i = this.state.unitsInTransit.length - 1; i >= 0; i--) {
       const transit = this.state.unitsInTransit[i];
       if (transit.arriveAt <= now) {
-        const inventory = this.state.planetInventories[transit.toPlanetId];
-        if (inventory) {
-          inventory[transit.unitId] = (inventory[transit.unitId] ?? 0) + transit.count;
+        if (transit.kind === 'recall') {
+          const inventory = this.state.planetInventories[transit.toPlanetId];
+          if (inventory) {
+            inventory[transit.unitId] = (inventory[transit.unitId] ?? 0) + transit.count;
+          }
+        } else {
+          const existing = this.state.deployedGarrisons.find(g => g.planetId === transit.toPlanetId && g.unitId === transit.unitId);
+          if (existing) {
+            existing.count += transit.count;
+          } else {
+            this.state.deployedGarrisons.push({
+              planetId: transit.toPlanetId,
+              unitId: transit.unitId,
+              count: transit.count,
+            });
+          }
         }
         this.state.unitsInTransit.splice(i, 1);
       }
@@ -936,6 +1089,24 @@ export class GameService {
     this.emit();
 
     return true;
+  }
+
+  getMilitaryMaxCraftCount(recipeId: string): number {
+    const recipe = MILITARY_RECIPES.find(r => r.id === recipeId);
+    if (!recipe || !this.isMilitaryUnlocked()) return 0;
+    return Math.min(
+      ...recipe.ingredients.map(ing =>
+        Math.floor(this.getInventoryAmount(ing.itemId) / ing.amount),
+      ),
+    );
+  }
+
+  craftMilitaryUnitN(recipeId: string, count: number): void {
+    const max = this.getMilitaryMaxCraftCount(recipeId);
+    const times = Math.min(count, max);
+    for (let i = 0; i < times; i++) {
+      this.craftMilitaryUnit(recipeId);
+    }
   }
 
   isOffensiveUnlocked(): boolean {
@@ -1029,7 +1200,7 @@ export class GameService {
 
     const travelTime = this.calculateAttackTravelTime(enemySystem);
     const attack: ActiveAttack = {
-      id: `attack-${now}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `attack-${now}-${Math.random().toString(36).slice(2, 9)}`,
       originPlanetId: this.state.currentPlanetId,
       targetSystemId,
       unitsLaunched,
@@ -1043,6 +1214,10 @@ export class GameService {
     if (!this.state.discoveredEnemySystemIds.includes(targetSystemId)) {
       this.state.discoveredEnemySystemIds.push(targetSystemId);
     }
+
+    const prevAnger = this.state.factionAnger;
+    this.state.factionAnger = Math.min(ANGER_MAX, this.state.factionAnger + ANGER_PER_PLAYER_ATTACK);
+    this.emitAngerTierChange(prevAnger, now);
 
     this.emit();
     return true;
@@ -1429,7 +1604,7 @@ export class GameService {
       this.applyAutoProduction(elapsedSeconds);
       this.processFleet(now);
       this.processExpeditions(now);
-      this.processCombat(now);
+      this.processCombat(now, elapsedSeconds);
     }
 
     this.state.lastTickAt = now;
@@ -1591,7 +1766,7 @@ export class GameService {
       this.processFleet(now);
       this.processExpeditions(now);
       this.processUnitTransit(now);
-      this.processCombat(now);
+      this.processCombat(now, elapsedSeconds);
       this.emit();
     }, TICK_INTERVAL_MS);
   }
@@ -1617,7 +1792,7 @@ export class GameService {
     this.state.expedition.activeMission = null;
   }
 
-  private processCombat(now: number): void {
+  private processCombat(now: number, elapsedSeconds: number): void {
     const progressScore = this.getProgressScore();
     if (progressScore < COMBAT_UNLOCK_SCORE) {
       return;
@@ -1626,6 +1801,8 @@ export class GameService {
     if (!this.state.combatUnlocked) {
       this.state.combatUnlocked = true;
     }
+
+    this.processFactionAnger(elapsedSeconds, now);
 
     const offline = now - this.state.lastTickAt > 1000; // roughly offline if > 1 second since last tick
     const maxRaidCycles = offline ? MAX_OFFLINE_RAID_CYCLES : 1;
@@ -1649,6 +1826,8 @@ export class GameService {
           nextRaidAt: 0,
           raidCount: 0,
           lastRaidAt: null,
+          consecutiveUndefendedRaids: 0,
+          consecutiveDefendedRaids: 0,
         };
         this.state.planetThreats[planetId] = threatState;
       }
@@ -1689,45 +1868,73 @@ export class GameService {
         continue;
       }
 
-      const lootObtained = {} as Record<ItemId, number>;
-      for (const lootEntry of enemySystem.lootTable) {
-        const amount = Math.floor(lootEntry.baseAmount + (Math.random() * lootEntry.variance * 2 - lootEntry.variance));
-        lootObtained[lootEntry.itemId] = Math.max(1, amount);
-      }
+      const strengthRatio = attack.totalStrength / enemySystem.requiredDefenseStrength;
+      const success = strengthRatio >= 1.0;
 
-      const originInventory = this.state.planetInventories[attack.originPlanetId];
-      if (originInventory) {
-        for (const [itemId, amount] of Object.entries(lootObtained)) {
-          originInventory[itemId as ItemId] = (originInventory[itemId as ItemId] ?? 0) + amount;
-          if ((itemId as ItemId) === 'salvage') {
-            this.state.totalMined[itemId as ResourceId] = (this.state.totalMined[itemId as ResourceId] ?? 0) + amount;
+      this.state.lastPlayerAttackAt = now;
+      this.state.lastPlayerAttackOriginPlanetId = attack.originPlanetId;
+
+      const lootObtained = {} as Record<ItemId, number>;
+
+      if (success) {
+        const overkillT = Math.min(1, Math.max(0,
+          (strengthRatio - 1) / (ATTACK_OVERKILL_RATIO_THRESHOLD - 1),
+        ));
+        const lootMult = 1 + overkillT * (LOOT_OVERKILL_MAX_MULT - 1);
+
+        for (const lootEntry of enemySystem.lootTable) {
+          const base = lootEntry.baseAmount * lootMult;
+          const jitter = (Math.random() * lootEntry.variance * 2 - lootEntry.variance) * lootMult;
+          lootObtained[lootEntry.itemId] = Math.max(1, Math.floor(base + jitter));
+        }
+
+        const originInventory = this.state.planetInventories[attack.originPlanetId];
+        if (originInventory) {
+          for (const [itemId, amount] of Object.entries(lootObtained)) {
+            originInventory[itemId as ItemId] = (originInventory[itemId as ItemId] ?? 0) + amount;
+            if ((itemId as ItemId) === 'salvage') {
+              this.state.totalMined[itemId as ResourceId] = (this.state.totalMined[itemId as ResourceId] ?? 0) + amount;
+            }
           }
         }
+
+        this.state.attackCooldowns[attack.targetSystemId] = now + enemySystem.attackDurationMs;
       }
 
-      const casualtyCount = this.calculateAttackCasualties(attack, enemySystem);
+      const casualtyCount = this.calculateAttackCasualties(attack, enemySystem, strengthRatio);
       this.returnAttackSurvivors(attack, casualtyCount);
 
-      this.state.attackCooldowns[attack.targetSystemId] = now + enemySystem.attackDurationMs;
-
-      this.state.combatLog.push({
+      const attackResult: AttackResult = {
         id: `attack-result-${attack.id}`,
         kind: 'attack',
         systemId: attack.targetSystemId,
         systemName: enemySystem.name,
-        success: true,
+        success,
         lootObtained,
         casualtyCount,
+        strengthRatio,
         timestamp: now,
-      });
+      };
+      this.state.combatLog.push(attackResult);
+      this.state.pendingAttackResults.push(attackResult);
     }
 
     this.state.activeAttacks = this.state.activeAttacks.filter(attack => attack.arriveAt > now);
   }
 
-  private calculateAttackCasualties(attack: ActiveAttack, enemySystem: EnemySystem): number {
+  acknowledgeAttackResult(id: string): void {
+    this.state.pendingAttackResults = this.state.pendingAttackResults.filter(r => r.id !== id);
+  }
+
+  private calculateAttackCasualties(
+    attack: ActiveAttack,
+    enemySystem: EnemySystem,
+    strengthRatio: number,
+  ): number {
     const totalUnits = Object.values(attack.unitsLaunched).reduce((sum, c) => sum + (c ?? 0), 0);
-    return Math.floor(totalUnits * enemySystem.tier * 0.02);
+    const t = Math.min(1, Math.max(0, (strengthRatio - 1) / (ATTACK_OVERKILL_RATIO_THRESHOLD - 1)));
+    const rate = ATTACK_CASUALTY_RATE_MAX - t * (ATTACK_CASUALTY_RATE_MAX - ATTACK_CASUALTY_RATE_MIN);
+    return Math.floor(totalUnits * enemySystem.tier * rate);
   }
 
   private returnAttackSurvivors(attack: ActiveAttack, totalCasualties: number): void {
@@ -1749,6 +1956,40 @@ export class GameService {
     }
   }
 
+  // ── Faction Anger ─────────────────────────────────────────────────────────
+
+  getFactionAnger(): number {
+    return this.state.factionAnger;
+  }
+
+  private getAngerTier(anger: number): 'calm' | 'alert' | 'enraged' {
+    if (anger >= ANGER_ENRAGED_THRESHOLD) return 'enraged';
+    if (anger >= ANGER_ALERT_THRESHOLD) return 'alert';
+    return 'calm';
+  }
+
+  private emitAngerTierChange(prevAnger: number, now: number): void {
+    const prevTier = this.getAngerTier(prevAnger);
+    const newTier = this.getAngerTier(this.state.factionAnger);
+    if (prevTier !== newTier) {
+      const event: FactionAngerEvent = {
+        id: `anger-${now}-${Math.random().toString(36).slice(2, 6)}`,
+        kind: 'factionAnger',
+        previousTier: prevTier,
+        newTier,
+        timestamp: now,
+      };
+      this.state.combatLog.push(event);
+    }
+  }
+
+  private processFactionAnger(elapsedSeconds: number, now: number): void {
+    if (!this.state.combatUnlocked) return;
+    const prev = this.state.factionAnger;
+    this.state.factionAnger = Math.max(0, prev - ANGER_DECAY_PER_SECOND * elapsedSeconds);
+    this.emitAngerTierChange(prev, now);
+  }
+
   // ── Invasion fleet logic ─────────────────────────────────────────────────
 
   getInvasionFleets(): InvasionFleet[] {
@@ -1758,6 +1999,7 @@ export class GameService {
   private processInvasions(now: number): void {
     if (!this.state.combatUnlocked) return;
     this.processInvasionStrikes(now);
+    this.processInvasionRaids(now);
 
     for (const fleet of this.state.invasionFleets) {
       if (fleet.nextAttackAt <= now) {
@@ -1779,7 +2021,9 @@ export class GameService {
 
   private spawnInvasionFleet(now: number): void {
     const score = this.getProgressScore();
-    const maxTier = score >= 5000 ? 5 : score >= 3500 ? 4 : score >= 2500 ? 3 : score >= 1200 ? 2 : 1;
+    const angerTierBonus = this.state.factionAnger >= ANGER_ENRAGED_THRESHOLD ? 1 : 0;
+    const baseTier = score >= 5000 ? 5 : score >= 3500 ? 4 : score >= 2500 ? 3 : score >= 1200 ? 2 : 1;
+    const maxTier = Math.min(5, baseTier + angerTierBonus);
     const tier = Math.max(1, Math.ceil(Math.random() * maxTier));
     const name = INVASION_FLEET_NAMES[Math.floor(Math.random() * INVASION_FLEET_NAMES.length)];
     const id = `invasion-${now}-${Math.random().toString(36).slice(2, 8)}`;
@@ -1795,21 +2039,89 @@ export class GameService {
       nextAttackAt: now + 30_000,
     });
 
-    this.state.nextInvasionAt = now + INVASION_SPAWN_INTERVAL_MS * (0.75 + Math.random() * 0.5);
+    const angerMult = this.state.factionAnger >= ANGER_ENRAGED_THRESHOLD
+      ? SPAWN_INTERVAL_ENRAGED_MULT
+      : this.state.factionAnger >= ANGER_ALERT_THRESHOLD
+      ? SPAWN_INTERVAL_ALERT_MULT
+      : 1.0;
+    this.state.nextInvasionAt = now + INVASION_SPAWN_INTERVAL_MS * angerMult * (0.75 + Math.random() * 0.5);
+  }
+
+  private chooseInvasionRaidTarget(now: number): string | null {
+    const candidates = this.state.discoveredPlanetIds.filter(id => id !== 'solara');
+    if (candidates.length === 0) return null;
+
+    const anger = this.state.factionAnger;
+    const isEnraged = anger >= ANGER_ENRAGED_THRESHOLD;
+
+    // Retaliation: when enraged and player attacked recently, hit them back at origin planet
+    if (isEnraged) {
+      const sinceAttack = now - this.state.lastPlayerAttackAt;
+      const originId = this.state.lastPlayerAttackOriginPlanetId;
+      if (sinceAttack <= RETALIATION_WINDOW_MS && originId && candidates.includes(originId)) {
+        return originId;
+      }
+    }
+
+    // Score each planet by vulnerability (higher = more vulnerable = more likely target)
+    const scored = candidates.map(planetId => {
+      const defensePoints = this.getDefensePoints(planetId);
+      const danger = this.state.planetThreats[planetId]?.dangerLevel
+        ?? this.getPlanet(planetId)?.requiredShipTier ?? 1;
+      const neutralize = this.getDefenseNeutralizeTarget(danger);
+      const weaknessScore = neutralize > 0 ? Math.max(0, 1 - defensePoints / neutralize) : 0;
+      const angerWeight = isEnraged ? 3.0 : anger >= ANGER_ALERT_THRESHOLD ? 1.5 : 0.5;
+      return { planetId, score: 1 + weaknessScore * angerWeight };
+    });
+
+    // Weighted random selection proportional to score
+    const totalScore = scored.reduce((s, e) => s + e.score, 0);
+    let roll = Math.random() * totalScore;
+    for (const entry of scored) {
+      roll -= entry.score;
+      if (roll <= 0) return entry.planetId;
+    }
+    return scored[scored.length - 1].planetId;
   }
 
   private executeInvasionRaid(fleet: InvasionFleet, now: number): void {
-    const targets = this.state.discoveredPlanetIds.filter(id => id !== 'solara');
-    if (targets.length === 0) return;
-    const targetId = targets[Math.floor(Math.random() * targets.length)];
-    const fakeThreats: PlanetThreatState = {
-      planetId: targetId,
-      dangerLevel: fleet.tier,
-      nextRaidAt: 0,
-      raidCount: 0,
-      lastRaidAt: null,
+    const targetId = this.chooseInvasionRaidTarget(now);
+    if (!targetId) return;
+    const travelMs = 20_000 + (fleet.tier - 1) * 10_000;
+    const raid: ActiveInvasionRaid = {
+      id: `inv-raid-${now}-${Math.random().toString(36).slice(2, 8)}`,
+      fleetId: fleet.id,
+      fleetName: fleet.name,
+      fleetTier: fleet.tier,
+      targetPlanetId: targetId,
+      launchedAt: now,
+      arriveAt: now + travelMs,
     };
-    this.executeRaid(targetId, fakeThreats, now);
+    this.state.activeInvasionRaids.push(raid);
+  }
+
+  private processInvasionRaids(now: number): void {
+    const arrived: ActiveInvasionRaid[] = [];
+    for (const raid of this.state.activeInvasionRaids) {
+      if (raid.arriveAt > now) continue;
+      const tempThreatState: PlanetThreatState = {
+        planetId: raid.targetPlanetId,
+        dangerLevel: raid.fleetTier,
+        nextRaidAt: 0,
+        raidCount: 0,
+        lastRaidAt: null,
+        consecutiveUndefendedRaids: 0,
+        consecutiveDefendedRaids: 0,
+      };
+      this.executeRaid(raid.targetPlanetId, tempThreatState, now);
+      const persistedThreat = this.state.planetThreats[raid.targetPlanetId];
+      if (persistedThreat) {
+        persistedThreat.raidCount += tempThreatState.raidCount;
+        persistedThreat.lastRaidAt = tempThreatState.lastRaidAt;
+      }
+      arrived.push(raid);
+    }
+    this.state.activeInvasionRaids = this.state.activeInvasionRaids.filter(r => !arrived.includes(r));
   }
 
   attackInvasionFleet(fleetId: string, unitsToSend: Partial<Record<MilitaryUnitId, number>>): boolean {
@@ -1857,7 +2169,7 @@ export class GameService {
     const now = Date.now();
     const travelMs = 30_000 + (fleet.tier - 1) * 15_000;
     const strike: ActiveInvasionStrike = {
-      id: `invasion-strike-${now}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `invasion-strike-${now}-${Math.random().toString(36).slice(2, 9)}`,
       originPlanetId: planetId,
       targetFleetId: fleetId,
       unitsLaunched,
@@ -1866,6 +2178,8 @@ export class GameService {
       arriveAt: now + travelMs,
     };
     this.state.activeInvasionStrikes.push(strike);
+
+    this.state.factionAnger = Math.min(ANGER_MAX, this.state.factionAnger + ANGER_PER_FLEET_STRIKE);
 
     this.emit();
     return true;
@@ -1894,7 +2208,7 @@ export class GameService {
 
       const totalUnits = Object.values(strike.unitsLaunched).reduce((s, c) => s + (c ?? 0), 0);
       const fleetTier = fleet?.tier ?? 1;
-      const casualties = Math.floor(totalUnits * fleetTier * 0.04);
+      const casualties = Math.floor(totalUnits * fleetTier * INVASION_STRIKE_CASUALTY_RATE);
       this.returnStrikeSurvivors(strike, casualties);
 
       resolved.push(strike);
@@ -1931,15 +2245,15 @@ export class GameService {
     }
 
     const defensePoints = this.getDefensePoints(planetId);
+    const neutralizeTarget = this.getDefenseNeutralizeTarget(threatState.dangerLevel);
     const stealPercent = Math.max(
       RAID_STEAL_MIN_PERCENT,
       threatState.dangerLevel * RAID_STEAL_BASE_PERCENT - defensePoints * DEFENSE_STEAL_REDUCTION_PER_POINT,
     );
 
     const resourcesStolen = {} as Record<ItemId, number>;
-    let totalStolen = 0;
 
-    for (const itemId of ALL_ITEM_IDS) {
+    for (const itemId of RESOURCE_IDS) {
       const amount = inventory[itemId] ?? 0;
       if (amount === 0) {
         continue;
@@ -1949,7 +2263,50 @@ export class GameService {
       const finalStolen = stolen === 0 ? 1 : stolen;
       resourcesStolen[itemId] = finalStolen;
       inventory[itemId] -= finalStolen;
-      totalStolen += finalStolen;
+    }
+
+    // Garrison attrition: weakest units die when overwhelmed
+    let garrisonLost = 0;
+    if (neutralizeTarget > 0 && defensePoints < neutralizeTarget) {
+      const overwhelmFraction = 1 - defensePoints / neutralizeTarget;
+      const attritionRate = overwhelmFraction * GARRISON_ATTRITION_MAX_RATE;
+      const garrisons = this.state.deployedGarrisons
+        .filter(g => g.planetId === planetId)
+        .sort((a, b) => {
+          const aStr = MILITARY_UNIT_DEFS.find(u => u.id === a.unitId)?.defenseStrength ?? 0;
+          const bStr = MILITARY_UNIT_DEFS.find(u => u.id === b.unitId)?.defenseStrength ?? 0;
+          return aStr - bStr;
+        });
+      const totalGarrison = garrisons.reduce((s, g) => s + g.count, 0);
+      let toRemove = Math.floor(totalGarrison * attritionRate);
+      garrisonLost = toRemove;
+      for (const slot of garrisons) {
+        if (toRemove <= 0) break;
+        const removed = Math.min(slot.count, toRemove);
+        slot.count -= removed;
+        toRemove -= removed;
+      }
+      this.state.deployedGarrisons = this.state.deployedGarrisons.filter(g => g.count > 0);
+    }
+
+    // Threat escalation / de-escalation
+    const wasDefended = defensePoints >= neutralizeTarget;
+    if (wasDefended) {
+      threatState.consecutiveUndefendedRaids = 0;
+      threatState.consecutiveDefendedRaids = (threatState.consecutiveDefendedRaids ?? 0) + 1;
+    } else {
+      threatState.consecutiveDefendedRaids = 0;
+      threatState.consecutiveUndefendedRaids = (threatState.consecutiveUndefendedRaids ?? 0) + 1;
+    }
+    const planet = this.getPlanet(planetId);
+    const maxDanger = (planet?.requiredShipTier ?? 1) + THREAT_LEVEL_MAX_ABOVE_TIER;
+    if (threatState.consecutiveUndefendedRaids >= THREAT_ESCALATION_RAIDS_REQUIRED) {
+      threatState.dangerLevel = Math.min(maxDanger, threatState.dangerLevel + 1);
+      threatState.consecutiveUndefendedRaids = 0;
+    }
+    if (threatState.consecutiveDefendedRaids >= THREAT_DEESCALATION_RAIDS_REQUIRED) {
+      threatState.dangerLevel = Math.max(THREAT_LEVEL_MIN, threatState.dangerLevel - 1);
+      threatState.consecutiveDefendedRaids = 0;
     }
 
     const raidEvent: RaidEvent = {
@@ -1959,6 +2316,8 @@ export class GameService {
       resourcesStolen,
       resolvedAt: now,
       defensePointsActive: defensePoints,
+      garrisonLost,
+      dangerLevelAfter: threatState.dangerLevel,
     };
 
     this.state.combatLog.push(raidEvent);
@@ -2232,7 +2591,12 @@ export class GameService {
       upgradeLevels: { ...this.state.upgradeLevels },
       autoMinerCounts: { ...this.state.autoMinerCounts },
       militaryBuildingLevels: { ...this.state.militaryBuildingLevels },
+      tutorial: {
+        ...this.state.tutorial,
+        completedStepIds: [...this.state.tutorial.completedStepIds],
+      },
       activeInvasionStrikes: this.state.activeInvasionStrikes.map(s => ({ ...s, unitsLaunched: { ...s.unitsLaunched } })),
+      activeInvasionRaids: this.state.activeInvasionRaids.map(r => ({ ...r })),
       totalMined: { ...this.state.totalMined },
       builtShipPartIds: [...this.state.builtShipPartIds],
       discoveredPlanetIds: [...this.state.discoveredPlanetIds],

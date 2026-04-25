@@ -2,9 +2,10 @@ import { ExpeditionState, GeneratedPlanetSeed } from './expedition.model';
 import { ItemId, ResourceId } from './resource.model';
 import { OwnedShip, ShipRoute } from './ship.model';
 import { OwnedSpaceStation } from './space-station.model';
-import { ActiveInvasionStrike, InvasionFleet, PlanetThreatState, RaidEvent } from './combat.model';
+import { ActiveInvasionRaid, ActiveInvasionStrike, FactionAngerEvent, InvasionFleet, PlanetThreatState, RaidEvent } from './combat.model';
 import { DeployedGarrison, MilitaryUnitTransit } from './military.model';
 import { ActiveAttack, AttackResult } from './enemy-system.model';
+import { TutorialState } from './tutorial.model';
 
 export interface GameState {
   version: number;
@@ -13,6 +14,8 @@ export interface GameState {
   generatedPlanets: GeneratedPlanetSeed[];
   expedition: ExpeditionState;
   activeResourceId: ResourceId;
+  globallyUnlockedRecipeIds: string[];
+  tutorial: TutorialState;
   upgradeLevels: Record<string, number>;
   autoMinerCounts: Record<string, number>;
   builtShipPartIds: string[];
@@ -28,7 +31,7 @@ export interface GameState {
   nextShipRouteId: number;
   lastTickAt: number;
   planetThreats: Record<string, PlanetThreatState>;
-  combatLog: (RaidEvent | AttackResult)[];
+  combatLog: (RaidEvent | AttackResult | FactionAngerEvent)[];
   combatUnlocked: boolean;
   deployedGarrisons: DeployedGarrison[];
   militaryUnlocked: boolean;
@@ -38,7 +41,12 @@ export interface GameState {
   offensiveUnlocked: boolean;
   invasionFleets: InvasionFleet[];
   activeInvasionStrikes: ActiveInvasionStrike[];
+  activeInvasionRaids: ActiveInvasionRaid[];
   nextInvasionAt: number;
   attackCooldowns: Record<string, number>;
   militaryBuildingLevels: Record<string, number>;
+  factionAnger: number;
+  lastPlayerAttackAt: number;
+  lastPlayerAttackOriginPlanetId: string | null;
+  pendingAttackResults: AttackResult[];
 }

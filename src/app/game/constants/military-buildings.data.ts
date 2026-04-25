@@ -57,6 +57,21 @@ export const MILITARY_BUILDINGS: MilitaryBuilding[] = [
     unlockAtScore: 2200,
     effectSummary: (l) => `+${l} unit(s) per craft`,
   },
+  {
+    id: 'planetaryHangar',
+    name: 'Planetary Hangar',
+    description: 'Expanded hangars and docks that increase the maximum number of military units a planet can host.',
+    icon: 'PH',
+    maxLevel: 6,
+    baseCost: [
+      { itemId: 'refinedMetal', amount: 30 },
+      { itemId: 'mechanicalParts', amount: 12 },
+      { itemId: 'basicCircuits', amount: 18 },
+    ],
+    costScaling: 2.0,
+    unlockAtScore: 2500,
+    effectSummary: (l) => `Unit cap +${50 * l}`,
+  },
 ];
 
 export function getMilitaryBuildingDef(id: string): MilitaryBuilding | undefined {

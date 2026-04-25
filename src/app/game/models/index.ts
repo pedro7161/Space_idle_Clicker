@@ -1,6 +1,6 @@
 export type { Automation } from './automation.model';
 export type { AutoMiner } from './auto-miner.model';
-export type { ActiveInvasionStrike, InvasionFleet, PlanetThreatState, RaidEvent } from './combat.model';
+export type { ActiveInvasionRaid, ActiveInvasionStrike, FactionAngerEvent, InvasionFleet, PlanetThreatState, RaidEvent } from './combat.model';
 export type { DeployedGarrison, MilitaryBuilding, MilitaryBuildingId, MilitaryUnitDef, MilitaryUnitId, MilitaryUnitTransit } from './military.model';
 export type { ActiveAttack, AttackResult, EnemyLootEntry, EnemySystem } from './enemy-system.model';
 export type { ExpeditionMission, ExpeditionState, GeneratedPlanetSeed } from './expedition.model';
@@ -12,6 +12,7 @@ export type { Planet } from './planet.model';
 export type { Recipe } from './recipe.model';
 export type { ResourceUpgrade, UpgradeEffect } from './resource-upgrade.model';
 export type { OwnedSpaceStation, SpaceStationBlueprint } from './space-station.model';
+export type { TutorialState, TutorialStepId } from './tutorial.model';
 export type {
   CraftedDef,
   CraftedId,

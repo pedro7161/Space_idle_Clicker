@@ -36,5 +36,6 @@ export interface AttackResult {
   success: boolean;
   lootObtained: Record<ItemId, number>;
   casualtyCount: number;
+  strengthRatio: number;
   timestamp: number;
 }

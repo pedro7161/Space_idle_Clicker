@@ -53,10 +53,19 @@
         >
           @for (tab of tabs; track tab.key) {
             <button
+              [attr.data-tutorial-id]="tab.key === 'upgrades'
+                ? 'tab-upgrades'
+                : tab.key === 'launch'
+                  ? 'tab-launch'
+                  : tab.key === 'military'
+                    ? 'tab-military'
+                    : null"
               class="rounded-[0.85rem] border px-2 py-2.5 text-[0.76rem] font-bold transition min-[1600px]:rounded-[1rem] min-[1600px]:px-3 min-[1600px]:py-3 min-[1600px]:text-[0.88rem]"
               [ngClass]="activeTab === tab.key
                 ? 'border-white/10 bg-white/[0.05] text-slate-50'
-                : 'border-transparent bg-transparent text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'"
+                : shouldHighlightTab(tab.key) || (tab.key === 'upgrades' && hasAffordableUpgrades())
+                  ? 'border-cyan-400/40 bg-cyan-500/20 text-cyan-100 hover:bg-cyan-500/30 shadow-[0_0_14px_rgba(34,211,238,0.18)]'
+                  : 'border-transparent bg-transparent text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'"
               (click)="activeTab = tab.key"
             >
               {{ tab.label }}
@@ -253,9 +262,15 @@
 
           @for (upgrade of getActiveResourceUpgrades(resource.id); track upgrade.id) {
             <div
-              class="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 min-[640px]:grid-cols-[auto_1fr_auto] min-[640px]:items-start min-[1600px]:gap-4 min-[1600px]:rounded-[1.2rem] min-[1600px]:p-5"
+              class="grid gap-3 rounded-2xl p-4 transition-[border-color,background-color,box-shadow] min-[640px]:grid-cols-[auto_1fr_auto] min-[640px]:items-start min-[1600px]:gap-4 min-[1600px]:rounded-[1.2rem] min-[1600px]:p-5"
+              [ngClass]="canAffordUpgrade(upgrade)
+                ? 'border border-cyan-400/30 bg-cyan-500/[0.06] shadow-[0_0_28px_rgba(34,211,238,0.09)]'
+                : 'border border-white/10 bg-white/[0.03]'"
             >
-              <div class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-[0.75rem] font-bold text-slate-50 min-[1600px]:h-10 min-[1600px]:w-10 min-[1600px]:text-[0.82rem]">
+              <div
+                class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[0.75rem] font-bold transition-[background-color] min-[1600px]:h-10 min-[1600px]:w-10 min-[1600px]:text-[0.82rem]"
+                [ngClass]="canAffordUpgrade(upgrade) ? 'bg-cyan-500/20 text-cyan-100' : 'bg-white/[0.05] text-slate-50'"
+              >
                 {{ upgrade.icon }}
               </div>
               <div class="min-w-0">
@@ -278,7 +293,11 @@
               </div>
 
               <button
-                class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.75rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-4 min-[1600px]:py-3 min-[1600px]:text-[0.82rem]"
+                data-tutorial-id="upgrade-buy"
+                class="inline-flex items-center justify-center rounded-[0.85rem] border px-3 py-2.5 text-[0.75rem] font-bold transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-45 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-4 min-[1600px]:py-3 min-[1600px]:text-[0.82rem]"
+                [ngClass]="canAffordUpgrade(upgrade)
+                  ? 'border-cyan-400/40 bg-cyan-500/20 text-cyan-100 hover:bg-cyan-500/30 shadow-[0_0_14px_rgba(34,211,238,0.18)]'
+                  : 'border-white/10 bg-white/[0.05] text-slate-50 hover:bg-white/[0.1]'"
                 [disabled]="getUpgradeLevel(upgrade) >= upgrade.maxLevel || !game.canAfford(game.getUpgradeCost(upgrade))"
                 (click)="buyUpgrade(upgrade)"
               >
@@ -347,6 +366,20 @@
           >
             {{ copy.messages.ui.upgradePanel.craft }}
           </button>
+          @if (!isRecipeGloballyUnlocked(recipe) && state.shipLaunched) {
+            <button
+              class="inline-flex flex-col items-center justify-center gap-0.5 rounded-[0.85rem] border border-cyan-400/25 bg-cyan-500/10 px-3 py-2.5 text-[0.75rem] font-bold text-cyan-100 transition hover:-translate-y-px hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-45 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-4 min-[1600px]:py-3 min-[1600px]:text-[0.82rem]"
+              [disabled]="!game.canAfford(recipe.ingredients)"
+              (click)="unlockRecipeGlobally(recipe)"
+            >
+              <span>Unlock (All Planets)</span>
+              <span class="text-[0.65rem] font-normal opacity-60">
+                @for (cost of recipe.ingredients; track cost.itemId) {
+                  {{ getItemLabel(cost.itemId) }} {{ cost.amount | formatNumber }}{{ !$last ? ' · ' : '' }}
+                }
+              </span>
+            </button>
+          }
         </div>
       }
     </section>
@@ -432,6 +465,7 @@
         </div>
 
         @for (part of shipParts; track part.id) {
+          @if (!game.isShipPartBuilt(part.id)) {
           <div
             class="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 min-[640px]:grid-cols-[auto_1fr_auto] min-[640px]:items-start"
           >
@@ -460,6 +494,7 @@
               </div>
             </div>
             <button
+              data-tutorial-id="ship-part-build"
               class="inline-flex items-center justify-center rounded-[0.85rem] border border-white/10 bg-white/[0.05] px-3 py-2.5 text-[0.75rem] font-bold text-slate-50 transition hover:-translate-y-px hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
               [disabled]="!canBuildShipPart(part)"
               (click)="buildShipPart(part)"
@@ -467,9 +502,11 @@
               {{ game.isShipPartBuilt(part.id) ? copy.messages.ui.upgradePanel.built : copy.messages.ui.upgradePanel.build }}
             </button>
           </div>
+          }
         }
 
         <button
+          data-tutorial-id="ship-launch"
           class="inline-flex w-full items-center justify-center rounded-[0.85rem] border border-emerald-400/30 bg-emerald-500/15 px-4 py-3 text-sm font-bold text-emerald-100 transition hover:-translate-y-px hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-45"
           [disabled]="state.shipLaunched || !game.canLaunchShip()"
           (click)="launchShip()"
@@ -478,16 +515,12 @@
         </button>
       </div>
 
+      @if (state.shipLaunched) {
       <div class="grid gap-3">
         <div class="flex items-center justify-between gap-3">
           <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">
             {{ copy.messages.ui.upgradePanel.planetRoutes }}
           </h3>
-          @if (!state.shipLaunched) {
-            <span class="text-[0.73rem] text-slate-400">
-              {{ copy.messages.ui.upgradePanel.launchRequired }}
-            </span>
-          }
         </div>
 
         @for (planet of planets; track planet.id) {
@@ -538,6 +571,7 @@
           </div>
         }
       </div>
+      }
     </section>
   }
 
@@ -554,9 +588,50 @@
 
       @if (game.isMilitaryUnlocked()) {
 
+        <!-- FACTION ANGER -->
+        <div class="rounded-2xl border border-slate-600/30 bg-slate-800/30">
+          <button class="w-full flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+            (click)="toggleSection('syndicate')">
+            <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Void Syndicate</h3>
+            <div class="flex items-center gap-2">
+              <span class="text-[0.72rem] font-semibold px-2 py-0.5 rounded border"
+                [ngClass]="{
+                  'text-green-300 border-green-500/30 bg-green-500/10': getFactionAngerTier() === 'calm',
+                  'text-orange-300 border-orange-500/30 bg-orange-500/10': getFactionAngerTier() === 'alert',
+                  'text-red-300 border-red-500/30 bg-red-500/10': getFactionAngerTier() === 'enraged'
+                }">{{ getFactionAngerLabel() }}</span>
+              <span class="text-slate-500 text-[0.65rem]">{{ isSectionCollapsed('syndicate') ? '▼' : '▲' }}</span>
+            </div>
+          </button>
+          @if (!isSectionCollapsed('syndicate')) {
+            <div class="px-4 pb-4">
+              <div class="w-full bg-slate-700/50 rounded-full h-2 mb-2">
+                <div class="h-full rounded-full transition-all"
+                  [ngClass]="{
+                    'bg-green-500': getFactionAngerTier() === 'calm',
+                    'bg-orange-500': getFactionAngerTier() === 'alert',
+                    'bg-red-500': getFactionAngerTier() === 'enraged'
+                  }"
+                  [style.width.%]="getFactionAnger()">
+                </div>
+              </div>
+              @if (getFactionAngerTier() === 'alert') {
+                <div class="text-[0.68rem] text-orange-400/80">The Syndicate is watching — fleets spawn 25% faster and target weak planets</div>
+              }
+              @if (getFactionAngerTier() === 'enraged') {
+                <div class="text-[0.68rem] text-red-400/80">Syndicate is enraged — fleets spawn 50% faster and will retaliate against your attacks</div>
+              }
+            </div>
+          }
+        </div>
+
         <!-- UNIT PRODUCTION -->
         <div class="grid gap-3">
-          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Unit Production</h3>
+          <button class="flex items-center justify-between cursor-pointer select-none group" (click)="toggleSection('production')">
+            <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 group-hover:text-slate-300 transition">Unit Production</h3>
+            <span class="text-slate-500 text-[0.65rem]">{{ isSectionCollapsed('production') ? '▼' : '▲' }}</span>
+          </button>
+          @if (!isSectionCollapsed('production')) {
           <div class="grid grid-cols-2 gap-3 min-[1400px]:grid-cols-4">
             @for (unit of game.militaryUnits; track unit.id) {
               @if (game.getProgressScore() >= unit.unlockAtScore) {
@@ -590,32 +665,54 @@
                       }
                     </div>
                   }
-                  <!-- Build button -->
-                  <button
-                    class="mt-auto w-full rounded-lg border border-blue-500/30 bg-blue-600/20 px-2 py-1.5 text-[0.68rem] font-bold text-blue-200 transition hover:bg-blue-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
-                    (click)="game.craftMilitaryUnit(unit.recipeId)"
-                    [disabled]="!canCraftMilitary(unit.recipeId)"
-                  >
-                    Build
-                  </button>
+                  <!-- Build buttons -->
+                  <div class="mt-auto grid grid-cols-2 gap-1">
+                    @for (qty of [1, 5, 10]; track qty) {
+                      <button
+                        class="rounded-lg border border-blue-500/30 bg-blue-600/20 px-1 py-1.5 text-[0.65rem] font-bold text-blue-200 transition hover:bg-blue-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                        (click)="game.craftMilitaryUnitN(unit.recipeId, qty)"
+                        [disabled]="game.getMilitaryMaxCraftCount(unit.recipeId) < 1"
+                      >×{{ qty }}</button>
+                    }
+                    <button
+                      class="rounded-lg border border-blue-500/30 bg-blue-600/20 px-1 py-1.5 text-[0.65rem] font-bold text-blue-200 transition hover:bg-blue-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                      (click)="game.craftMilitaryUnitN(unit.recipeId, game.getMilitaryMaxCraftCount(unit.recipeId))"
+                      [disabled]="game.getMilitaryMaxCraftCount(unit.recipeId) < 1"
+                    >Max ({{ game.getMilitaryMaxCraftCount(unit.recipeId) }})</button>
+                  </div>
                 </div>
               }
             }
           </div>
+          } <!-- end @if production -->
         </div>
 
         <!-- PLANETARY GARRISONS -->
         <div class="grid gap-3">
-          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Planetary Garrisons</h3>
+          <button class="flex items-center justify-between cursor-pointer select-none group" (click)="toggleSection('garrisons')">
+            <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 group-hover:text-slate-300 transition">Planetary Garrisons</h3>
+            <span class="text-slate-500 text-[0.65rem]">{{ isSectionCollapsed('garrisons') ? '▼' : '▲' }}</span>
+          </button>
+          @if (!isSectionCollapsed('garrisons')) {
+          <div class="grid grid-cols-2 gap-3">
           @for (planet of game.getDiscoveredPlanets(); track planet.id) {
             @if (planet.id !== 'solara') {
-              <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
 
                 <!-- Planet header -->
                 <div class="flex items-start justify-between gap-3 mb-2">
                   <strong class="text-[0.86rem] text-slate-50">{{ planet.name }}</strong>
                   <div class="text-right shrink-0">
-                    <div class="text-[0.68rem] text-orange-400">Danger {{ planet.requiredShipTier }}</div>
+                    <div class="text-[0.68rem]"
+                      [ngClass]="{
+                        'text-red-400': getPlanetThreatLevel(planet.id) > planet.requiredShipTier,
+                        'text-green-400': getPlanetThreatLevel(planet.id) < planet.requiredShipTier,
+                        'text-orange-400': getPlanetThreatLevel(planet.id) === planet.requiredShipTier
+                      }">
+                      Danger {{ getPlanetThreatLevel(planet.id) }}
+                      @if (getPlanetThreatLevel(planet.id) > planet.requiredShipTier) {<span class="text-red-400"> ↑</span>}
+                      @if (getPlanetThreatLevel(planet.id) < planet.requiredShipTier) {<span class="text-green-400"> ↓</span>}
+                    </div>
                     @if (getNextRaidETA(planet.id)) {
                       <div class="text-[0.65rem] text-red-400/70">Raid in {{ getNextRaidETA(planet.id) }}</div>
                     }
@@ -625,17 +722,31 @@
                 <!-- Defense bar -->
                 <div class="mb-1 flex items-center justify-between text-[0.68rem]">
                   <span class="text-slate-500">Defense</span>
-                  <span [ngClass]="game.getDefensePoints(planet.id) >= getDefenseTarget(planet.requiredShipTier) ? 'text-green-400' : 'text-slate-400'">
-                    {{ game.getDefensePoints(planet.id) }} / {{ getDefenseTarget(planet.requiredShipTier) }} (cap)
+                  <span [ngClass]="game.getDefensePoints(planet.id) >= getDefenseTarget(getPlanetThreatLevel(planet.id)) ? 'text-green-400' : 'text-slate-400'">
+                    {{ game.getDefensePoints(planet.id) }} / {{ getDefenseTarget(getPlanetThreatLevel(planet.id)) }} (cap)
                   </span>
                 </div>
                 <div class="w-full bg-slate-700/50 rounded-full h-1.5 mb-3">
                   <div
                     class="h-full rounded-full transition-all"
-                    [ngClass]="game.getDefensePoints(planet.id) >= getDefenseTarget(planet.requiredShipTier) ? 'bg-green-500' : 'bg-blue-500'"
-                    [style.width.%]="getDefenseBarWidth(game.getDefensePoints(planet.id), getDefenseTarget(planet.requiredShipTier))"
+                    [ngClass]="game.getDefensePoints(planet.id) >= getDefenseTarget(getPlanetThreatLevel(planet.id)) ? 'bg-green-500' : 'bg-blue-500'"
+                    [style.width.%]="getDefenseBarWidth(game.getDefensePoints(planet.id), getDefenseTarget(getPlanetThreatLevel(planet.id)))"
                   ></div>
                 </div>
+
+                <!-- Incoming raids -->
+                @for (raid of getIncomingRaidsForPlanet(planet.id); track raid.id) {
+                  <div class="rounded-lg border border-red-500/30 bg-red-500/[0.07] px-3 py-2 mb-1.5">
+                    <div class="flex items-center justify-between text-[0.7rem] mb-1">
+                      <span class="text-red-300">⚠ Raid from {{ raid.fleetName }} (Tier {{ raid.fleetTier }})</span>
+                      <span class="text-red-400/70">{{ formatCountdown(raid.arriveAt, 'Imminent') }}</span>
+                    </div>
+                    <div class="w-full bg-slate-700/50 rounded-full h-1">
+                      <div class="bg-red-500 h-full rounded-full transition-all"
+                        [style.width.%]="progressBetween(raid.launchedAt, raid.arriveAt)"></div>
+                    </div>
+                  </div>
+                }
 
                 <!-- Deployed garrisons -->
                 @for (garrison of getGarrisonsForPlanet(planet.id); track garrison.unitId) {
@@ -678,11 +789,15 @@
                       <span class="text-slate-400">{{ unit.name }} <span class="text-slate-500">({{ game.getInventoryAmount(unit.id) }} avail)</span></span>
                       <div class="flex gap-1">
                         <button
+                          data-tutorial-id="military-deploy-one"
                           class="px-2 py-1 rounded bg-blue-600/30 border border-blue-500/30 text-blue-200 hover:bg-blue-600/40 transition text-[0.62rem]"
+                          [disabled]="game.getProjectedDefensePoints(planet.id) >= getDefenseTarget(getPlanetThreatLevel(planet.id))"
                           (click)="game.deployUnit(planet.id, unit.id, 1)"
                         >Deploy 1</button>
                         <button
+                          data-tutorial-id="military-deploy-all"
                           class="px-2 py-1 rounded bg-blue-600/30 border border-blue-500/30 text-blue-200 hover:bg-blue-600/40 transition text-[0.62rem]"
+                          [disabled]="game.getProjectedDefensePoints(planet.id) >= getDefenseTarget(getPlanetThreatLevel(planet.id))"
                           (click)="game.deployAllUnits(planet.id, unit.id)"
                         >All</button>
                       </div>
@@ -693,6 +808,8 @@
               </div>
             }
           }
+          </div>
+          } <!-- end @if garrisons -->
         </div>
 
       }
@@ -700,9 +817,14 @@
       <!-- MILITARY INFRASTRUCTURE -->
       @if (visibleMilitaryBuildings.length > 0) {
         <div class="grid gap-3">
-          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Infrastructure</h3>
+          <button class="flex items-center justify-between cursor-pointer select-none group" (click)="toggleSection('infrastructure')">
+            <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 group-hover:text-slate-300 transition">Infrastructure</h3>
+            <span class="text-slate-500 text-[0.65rem]">{{ isSectionCollapsed('infrastructure') ? '▼' : '▲' }}</span>
+          </button>
+          @if (!isSectionCollapsed('infrastructure')) {
+          <div class="grid grid-cols-2 gap-3">
           @for (building of visibleMilitaryBuildings; track building.id) {
-            <div class="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <div class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
               <div class="flex items-start justify-between gap-3">
                 <div class="flex items-start gap-3 min-w-0">
                   <div class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-[0.75rem] font-bold text-slate-50">
@@ -743,13 +865,19 @@
               </div>
             </div>
           }
+          </div>
+          } <!-- end @if infrastructure -->
         </div>
       }
 
       <!-- OFFENSIVE OPERATIONS -->
       @if (game.isOffensiveUnlocked()) {
         <div class="grid gap-3">
-          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Offensive Operations</h3>
+          <button class="flex items-center justify-between cursor-pointer select-none group" (click)="toggleSection('offensive')">
+            <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 group-hover:text-slate-300 transition">Offensive Operations</h3>
+            <span class="text-slate-500 text-[0.65rem]">{{ isSectionCollapsed('offensive') ? '▼' : '▲' }}</span>
+          </button>
+          @if (!isSectionCollapsed('offensive')) {
 
           <!-- INVASION FLEETS IN PLAYER SPACE -->
           @if (state.activeInvasionStrikes.length > 0) {
@@ -802,9 +930,10 @@
             }
           }
 
+          <div class="grid grid-cols-2 gap-3">
           @for (system of game.enemySystems; track system.id) {
             @if (game.getProgressScore() >= system.revealAtScore) {
-              <div class="rounded-2xl border border-purple-500/20 bg-purple-500/[0.06] p-4">
+              <div class="flex flex-col rounded-2xl border border-purple-500/20 bg-purple-500/[0.06] p-3">
                 <div class="flex items-center justify-between gap-3 mb-2">
                   <div class="flex-1 min-w-0">
                     <strong class="text-[0.86rem] text-purple-200">{{ system.name }}</strong>
@@ -847,6 +976,8 @@
               }
             }
           }
+          </div>
+          } <!-- end @if offensive -->
         </div>
       }
 
@@ -860,14 +991,20 @@
       <!-- Combat log -->
       @if (state.combatLog.length > 0) {
         <div class="grid gap-2">
-          <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400">Recent Raids</h3>
-          @for (event of state.combatLog.slice(-5).reverse(); track event.id) {
-            @if (event.kind === 'raid') {
-              <div class="rounded-xl border border-red-500/20 bg-red-500/[0.05] px-4 py-3 flex items-center justify-between text-[0.72rem]">
-                <span class="text-slate-300">{{ game.getPlanet(event.planetId)?.name }}</span>
-                <span [ngClass]="event.defensePointsActive > 0 ? 'text-green-400' : 'text-red-400'">
-                  {{ event.defensePointsActive > 0 ? 'Defended' : 'Raided' }}
-                </span>
+          <button class="flex items-center justify-between cursor-pointer select-none group" (click)="toggleSection('combatLog')">
+            <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 group-hover:text-slate-300 transition">Combat Log</h3>
+            <span class="text-slate-500 text-[0.65rem]">{{ isSectionCollapsed('combatLog') ? '▼' : '▲' }}</span>
+          </button>
+          @if (!isSectionCollapsed('combatLog')) {
+            @for (event of state.combatLog.slice(-8).reverse(); track event.id) {
+              <div class="rounded-xl px-4 py-3 flex items-center justify-between text-[0.72rem]"
+                [ngClass]="{
+                  'border border-red-500/20 bg-red-500/[0.05]': event.kind === 'raid',
+                  'border border-purple-500/20 bg-purple-500/[0.05]': event.kind === 'attack',
+                  'border border-amber-500/20 bg-amber-500/[0.05]': event.kind === 'factionAnger'
+                }">
+                <span class="text-slate-300">{{ formatCombatEntry(event) }}</span>
+                <span class="text-slate-500 shrink-0 ml-3">{{ formatSecondsAgo(getEventTimestamp(event)) }}</span>
               </div>
             }
           }
@@ -975,6 +1112,80 @@
             >
               Strike
             </button>
+          </div>
+        </div>
+      }
+
+      <!-- Attack result modal -->
+      @if (pendingAttackResult; as result) {
+        <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div class="bg-slate-900 border rounded-2xl p-6 max-w-sm w-full mx-4"
+            [ngClass]="result.success ? 'border-green-500/40' : 'border-red-500/40'">
+
+            <!-- Header -->
+            <div class="text-center mb-5">
+              <div class="text-2xl mb-1">{{ result.success ? '✓' : '✗' }}</div>
+              <h3 class="text-[1rem] font-bold"
+                [ngClass]="result.success ? 'text-green-300' : 'text-red-300'">
+                {{ result.success ? 'Strike Successful' : 'Strike Failed' }}
+              </h3>
+              <div class="text-[0.72rem] text-slate-400 mt-0.5">{{ result.systemName }}</div>
+            </div>
+
+            <!-- Strength ratio -->
+            <div class="rounded-xl px-4 py-2.5 mb-4 text-center"
+              [ngClass]="result.success ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'">
+              <div class="text-[0.68rem] text-slate-500 mb-0.5">Fleet strength ratio</div>
+              <div class="text-[0.9rem] font-bold"
+                [ngClass]="result.success ? 'text-green-300' : 'text-red-300'">
+                {{ result.strengthRatio.toFixed(2) }}× required
+              </div>
+            </div>
+
+            <!-- Loot -->
+            @if (result.success && objectKeys(result.lootObtained).length > 0) {
+              <div class="rounded-xl border border-yellow-500/20 bg-yellow-500/[0.06] px-4 py-3 mb-4">
+                <div class="text-[0.68rem] text-yellow-400/70 uppercase tracking-wider mb-2">Loot obtained</div>
+                <div class="grid gap-1.5">
+                  @for (itemId of objectKeys(result.lootObtained); track itemId) {
+                    <div class="flex items-center justify-between text-[0.75rem]">
+                      <span class="text-slate-300">{{ getItemLabel($any(itemId)) }}</span>
+                      <span class="font-bold text-yellow-300">+{{ $any(result.lootObtained)[$any(itemId)] | formatNumber }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (!result.success) {
+              <div class="rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 mb-4 text-[0.72rem] text-red-300/80">
+                Your fleet lacked the strength to breach enemy defenses. No loot retrieved.
+              </div>
+            }
+
+            <!-- Casualties -->
+            @if (result.casualtyCount > 0) {
+              <div class="text-[0.68rem] text-slate-500 text-center mb-4">
+                {{ result.casualtyCount }} unit{{ result.casualtyCount !== 1 ? 's' : '' }} lost in the engagement
+              </div>
+            }
+
+            <!-- Confirm -->
+            <button
+              class="w-full rounded-xl px-3 py-2.5 text-[0.8rem] font-bold transition"
+              [ngClass]="result.success
+                ? 'border border-green-500/30 bg-green-600/20 text-green-200 hover:bg-green-600/30'
+                : 'border border-red-500/30 bg-red-600/20 text-red-200 hover:bg-red-600/30'"
+              (click)="acknowledgePendingResult()">
+              Confirm
+            </button>
+
+            <!-- Pending count badge -->
+            @if (state.pendingAttackResults.length > 1) {
+              <div class="text-[0.65rem] text-slate-600 text-center mt-2">
+                {{ state.pendingAttackResults.length - 1 }} more result{{ state.pendingAttackResults.length - 1 !== 1 ? 's' : '' }} pending
+              </div>
+            }
           </div>
         </div>
       }

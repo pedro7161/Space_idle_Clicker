@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { GameService } from './game.service';
-import { PLANETS } from '../constants';
+import { PLANETS, RESOURCE_IDS } from '../constants';
 import { CURRENT_SAVE_KEY } from '../storage/game-save';
 
 describe('GameService', () => {
@@ -82,6 +82,49 @@ describe('GameService', () => {
       service.mineActiveResource();
       expect(service.getInventoryAmount('ferrite')).toBeGreaterThan(0);
       expect(service.getInventoryAmount('carbon')).toBe(0);
+    });
+  });
+
+  describe('military unit cap', () => {
+    beforeEach(() => service.init());
+
+    function setScore(score: number) {
+      const state = service.getState();
+      RESOURCE_IDS.forEach(resourceId => {
+        state.totalMined[resourceId] = score;
+      });
+    }
+
+    it('should clamp deployments to planet unit cap (including units in transit)', () => {
+      setScore(3000);
+      const state = service.getState();
+      state.planetInventories['solara']['basicCircuits'] = 10_000;
+      state.planetInventories['solara']['mechanicalParts'] = 10_000;
+      state.planetInventories['solara']['copper'] = 10_000;
+
+      for (let i = 0; i < 201; i++) {
+        expect(service.craftMilitaryUnit('sentinel-drone')).toBe(true);
+      }
+
+      expect(service.getPlanetUnitCap('solara')).toBe(200);
+      expect(service.getPlanetTotalUnits('solara')).toBe(0);
+
+      expect(service.deployUnit('verdara', 'sentinelDrone', 999)).toBe(true);
+      expect(service.getPlanetTotalUnits('verdara')).toBe(200);
+      expect(service.getPlanetTotalUnits('verdara')).toBe(service.getPlanetUnitCap('verdara'));
+      expect(service.getInventoryAmount('sentinelDrone', 'solara')).toBe(1);
+    });
+
+    it('should increase planet unit cap with Planetary Hangar levels', () => {
+      setScore(3000);
+      const state = service.getState();
+      state.planetInventories['solara']['refinedMetal'] = 10_000;
+      state.planetInventories['solara']['mechanicalParts'] = 10_000;
+      state.planetInventories['solara']['basicCircuits'] = 10_000;
+
+      expect(service.getPlanetUnitCap('solara')).toBe(200);
+      expect(service.buyMilitaryBuilding('planetaryHangar')).toBe(true);
+      expect(service.getPlanetUnitCap('solara')).toBe(250);
     });
   });
 
@@ -191,6 +234,33 @@ describe('GameService', () => {
       state.planetInventories.cinder.ferrite = 30;
 
       expect(service.craft('refined-metal')).toBeFalse();
+    });
+
+    it('should allow crafting a globally unlocked recipe on any planet', () => {
+      const state = (service as any).state;
+      state.totalMined.ferrite = 30;
+
+      state.currentPlanetId = 'ferros';
+      state.planetInventories.ferros.ferrite = 30;
+      expect(service.unlockRecipeGlobally('refined-metal')).toBeTrue();
+
+      state.currentPlanetId = 'cinder';
+      state.planetInventories.cinder.ferrite = 30;
+      expect(service.craft('refined-metal')).toBeTrue();
+    });
+  });
+
+  describe('garrison defense cap', () => {
+    beforeEach(() => service.init());
+
+    it('should clamp deployments to defense cap (including units in transit)', () => {
+      const state = (service as any).state;
+      state.planetInventories.solara.sentinelDrone = 1000;
+
+      const target = service.getDefenseNeutralizeTarget(1);
+      expect(service.deployUnit('ferros', 'sentinelDrone', 999)).toBeTrue();
+      expect(service.getProjectedDefensePoints('ferros')).toBe(target);
+      expect(state.unitsInTransit.filter((t: any) => t.toPlanetId === 'ferros').reduce((sum: number, t: any) => sum + t.count, 0)).toBe(target);
     });
   });
 
@@ -1266,4 +1336,3 @@ describe('GameService', () => {
     });
   });
 });
-

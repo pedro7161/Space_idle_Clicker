@@ -24,11 +24,12 @@ export interface MilitaryUnitTransit {
   count: number;
   fromPlanetId: string;
   toPlanetId: string;
+  kind?: 'deploy' | 'recall';
   departAt: number;
   arriveAt: number;
 }
 
-export type MilitaryBuildingId = 'garrisonBarracks' | 'fortificationWall' | 'sensorArray' | 'armory';
+export type MilitaryBuildingId = 'garrisonBarracks' | 'fortificationWall' | 'sensorArray' | 'armory' | 'planetaryHangar';
 
 export interface MilitaryBuilding {
   id: MilitaryBuildingId;
