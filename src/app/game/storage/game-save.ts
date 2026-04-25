@@ -34,7 +34,7 @@ export interface StorageLike {
   setItem(key: string, value: string): void;
 }
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 14;
 export const SAVE_KEY_PREFIX = 'space-idle-save-v';
 export const CURRENT_SAVE_KEY = `${SAVE_KEY_PREFIX}${SAVE_VERSION}`;
 export const SAVE_TRANSFER_PREFIX = 'frontier-miner-save:';
@@ -351,11 +351,11 @@ export function buildDefaultGameState(): GameState {
     planetInventories: buildPlanetItemMatrix(
       PLANETS.map(planet => planet.id),
       ALL_ITEM_IDS,
-    ),
+    ) as Record<string, Record<ItemId, number>>,
     stationInventories: buildPlanetItemMatrix(
       PLANETS.map(planet => planet.id),
       ALL_ITEM_IDS,
-    ),
+    ) as Record<string, Record<ItemId, number>>,
     generatedPlanets: [],
     expedition: {
       shipBuilt: false,
@@ -365,12 +365,18 @@ export function buildDefaultGameState(): GameState {
       activeMission: null,
     },
     activeResourceId: 'carbon',
+    globallyUnlockedRecipeIds: [],
+    tutorial: {
+      version: 1,
+      completedStepIds: [],
+      dismissed: false,
+    },
     upgradeLevels: {},
     autoMinerCounts: {},
     builtShipPartIds: [],
     discoveredPlanetIds: [startingPlanet.id],
     totalClicks: 0,
-    totalMined: buildNumberRecord(RESOURCE_IDS),
+    totalMined: buildNumberRecord(RESOURCE_IDS) as Record<ResourceId, number>,
     currentPlanetId: startingPlanet.id,
     shipLaunched: false,
     ships: [],
@@ -379,7 +385,45 @@ export function buildDefaultGameState(): GameState {
     nextShipId: 1,
     nextShipRouteId: 1,
     lastTickAt: Date.now(),
+    planetThreats: {},
+    combatLog: [],
+    combatUnlocked: false,
+    deployedGarrisons: [],
+    militaryUnlocked: false,
+    unitsInTransit: [],
+    activeAttacks: [],
+    discoveredEnemySystemIds: [],
+    offensiveUnlocked: false,
+    invasionFleets: [],
+    activeInvasionStrikes: [],
+    activeInvasionRaids: [],
+    nextInvasionAt: 0,
+    attackCooldowns: {},
+    militaryBuildingLevels: {},
+    factionAnger: 0,
+    lastPlayerAttackAt: 0,
+    lastPlayerAttackOriginPlanetId: null,
+    pendingAttackResults: [],
   };
+}
+
+function normalizePlanetThreats(
+  raw: Record<string, unknown>,
+): Record<string, import('../models').PlanetThreatState> {
+  const result: Record<string, import('../models').PlanetThreatState> = {};
+  for (const [planetId, threat] of Object.entries(raw)) {
+    const t = threat as Record<string, unknown>;
+    result[planetId] = {
+      planetId: String(t['planetId'] ?? planetId),
+      dangerLevel: Number(t['dangerLevel'] ?? 1),
+      nextRaidAt: Number(t['nextRaidAt'] ?? 0),
+      raidCount: Number(t['raidCount'] ?? 0),
+      lastRaidAt: t['lastRaidAt'] != null ? Number(t['lastRaidAt']) : null,
+      consecutiveUndefendedRaids: Number(t['consecutiveUndefendedRaids'] ?? 0),
+      consecutiveDefendedRaids: Number(t['consecutiveDefendedRaids'] ?? 0),
+    };
+  }
+  return result;
 }
 
 export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState {
@@ -395,7 +439,7 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
   const planetInventories = buildPlanetItemMatrix(
     knownPlanetIds,
     ALL_ITEM_IDS,
-  );
+  ) as Record<string, Record<ItemId, number>>;
 
   Object.entries(saved.planetInventories ?? {}).forEach(([planetId, inventory]) => {
     if (!planetInventories[planetId]) {
@@ -435,7 +479,7 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
   const stationInventories = buildPlanetItemMatrix(
     knownPlanetIds,
     ALL_ITEM_IDS,
-  );
+  ) as Record<string, Record<ItemId, number>>;
 
   Object.entries(saved.stationInventories ?? {}).forEach(([planetId, inventory]) => {
     if (!stationPlanetIds.has(planetId) || !stationInventories[planetId]) {
@@ -554,7 +598,9 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
     totalMined: {
       ...defaults.totalMined,
       ...(saved.totalMined ?? {}),
-    },
+    } as Record<ResourceId, number>,
+    globallyUnlockedRecipeIds: saved.globallyUnlockedRecipeIds ?? defaults.globallyUnlockedRecipeIds,
+    tutorial: saved.tutorial ?? defaults.tutorial,
     upgradeLevels: saved.upgradeLevels ?? defaults.upgradeLevels,
     autoMinerCounts: saved.autoMinerCounts ?? defaults.autoMinerCounts,
     builtShipPartIds: saved.builtShipPartIds ?? defaults.builtShipPartIds,
@@ -566,6 +612,30 @@ export function mergeSavedStateWithDefaults(saved: LegacySavedState): GameState 
     nextShipId: saved.nextShipId ?? Math.max(ships.length + 1, defaults.nextShipId),
     nextShipRouteId: saved.nextShipRouteId ?? Math.max(routes.length + 1, defaults.nextShipRouteId),
     lastTickAt: saved.lastTickAt ?? defaults.lastTickAt,
+    planetThreats: normalizePlanetThreats(saved.planetThreats ?? defaults.planetThreats),
+    combatLog: saved.combatLog ?? defaults.combatLog,
+    combatUnlocked: saved.combatUnlocked ?? defaults.combatUnlocked,
+    deployedGarrisons: saved.deployedGarrisons ?? defaults.deployedGarrisons,
+    militaryUnlocked: saved.militaryUnlocked ?? defaults.militaryUnlocked,
+    unitsInTransit: (saved.unitsInTransit ?? defaults.unitsInTransit).filter(transit => transit.arriveAt > Date.now()),
+    activeAttacks: (saved.activeAttacks ?? defaults.activeAttacks).filter(attack => attack.arriveAt > Date.now()),
+    discoveredEnemySystemIds: saved.discoveredEnemySystemIds ?? defaults.discoveredEnemySystemIds,
+    offensiveUnlocked: saved.offensiveUnlocked ?? defaults.offensiveUnlocked,
+    invasionFleets: saved.invasionFleets ?? defaults.invasionFleets,
+    activeInvasionStrikes: (saved.activeInvasionStrikes ?? defaults.activeInvasionStrikes).filter(s => s.arriveAt > Date.now()),
+    activeInvasionRaids: (saved.activeInvasionRaids ?? defaults.activeInvasionRaids).filter(r => r.arriveAt > Date.now()),
+    nextInvasionAt: saved.nextInvasionAt ?? defaults.nextInvasionAt,
+    attackCooldowns: saved.attackCooldowns ?? defaults.attackCooldowns,
+    militaryBuildingLevels: saved.militaryBuildingLevels ?? defaults.militaryBuildingLevels,
+    factionAnger: typeof (saved as GameState).factionAnger === 'number'
+      ? Math.min(100, Math.max(0, (saved as GameState).factionAnger))
+      : defaults.factionAnger,
+    lastPlayerAttackAt: (saved as GameState).lastPlayerAttackAt ?? defaults.lastPlayerAttackAt,
+    lastPlayerAttackOriginPlanetId:
+      (saved as GameState).lastPlayerAttackOriginPlanetId ?? defaults.lastPlayerAttackOriginPlanetId,
+    pendingAttackResults: Array.isArray((saved as GameState).pendingAttackResults)
+      ? (saved as GameState).pendingAttackResults
+      : defaults.pendingAttackResults,
   };
 
   if (merged.shipLaunched && merged.ships.length === 0) {
