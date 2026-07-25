@@ -1,9 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component, output } from '@angular/core';
 import { FormatNumberPipe } from '../../pipes/format-number.pipe';
-import { CraftedDef, ItemId, Planet, ResourceDef } from '../../models';
+import { ItemId, Planet } from '../../models';
 import { GameMessagesService } from '../../i18n/game-messages';
 import { GameService } from '../../services/game.service';
+
+interface OverviewItem {
+  id: ItemId;
+  name: string;
+  icon: string;
+  color: string;
+  section: 'raw' | 'crafted';
+}
 
 @Component({
   selector: 'app-resource-overview',
@@ -19,12 +27,12 @@ export class ResourceOverviewComponent {
     public copy: GameMessagesService,
   ) {}
 
-  get rawResources(): ResourceDef[] {
-    return this.game.resources;
+  get rawItems(): OverviewItem[] {
+    return this.game.resources.map(r => ({ id: r.id as ItemId, name: r.name, icon: r.icon, color: r.color, section: 'raw' as const }));
   }
 
-  get craftedItems(): CraftedDef[] {
-    return this.game.craftedItems;
+  get craftedItems(): OverviewItem[] {
+    return this.game.craftedItems.map(c => ({ id: c.id as ItemId, name: c.name, icon: c.icon, color: c.color, section: 'crafted' as const }));
   }
 
   get trackedPlanets(): Planet[] {
@@ -40,7 +48,7 @@ export class ResourceOverviewComponent {
   }
 
   get networkTotalItems(): number {
-    return [...this.rawResources, ...this.craftedItems]
+    return [...this.rawItems, ...this.craftedItems]
       .reduce((total, item) => total + this.game.getNetworkInventoryAmount(item.id), 0);
   }
 

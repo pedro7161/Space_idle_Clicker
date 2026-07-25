@@ -1556,6 +1556,22 @@ export class GameService {
     return costs.every(cost => this.getInventoryAmount(cost.itemId, planetId) >= cost.amount);
   }
 
+  getItemLabel(itemId: ItemId): string {
+    const resource = this.resources.find(item => item.id === itemId);
+    if (resource) {
+      return resource.name;
+    }
+    return this.craftedItems.find(item => item.id === itemId)?.name ?? itemId;
+  }
+
+  getItemColor(itemId: ItemId): string {
+    const resource = this.resources.find(item => item.id === itemId);
+    if (resource) {
+      return resource.color;
+    }
+    return this.craftedItems.find(item => item.id === itemId)?.color ?? '#cbd5e1';
+  }
+
   getSpaceStationCargoBonusPercent(planetId: string): number {
     const blueprint = this.getSpaceStationBlueprintForPlanet(planetId);
     return Math.round((blueprint.cargoBonusMultiplier - 1) * 100);

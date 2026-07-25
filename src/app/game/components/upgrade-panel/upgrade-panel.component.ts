@@ -87,6 +87,8 @@ export class UpgradePanelComponent implements OnDestroy {
     window.removeEventListener('pointercancel', this.stopInventoryResize);
   };
 
+  private readonly formatNumber = new FormatNumberPipe();
+
   constructor(
     public game: GameService,
     public copy: GameMessagesService,
@@ -249,21 +251,11 @@ export class UpgradePanelComponent implements OnDestroy {
   }
 
   getItemLabel(itemId: ItemId): string {
-    const resource = this.game.resources.find(item => item.id === itemId);
-    if (resource) {
-      return resource.name;
-    }
-
-    return this.game.craftedItems.find(item => item.id === itemId)?.name ?? itemId;
+    return this.game.getItemLabel(itemId);
   }
 
   getItemColor(itemId: ItemId): string {
-    const resource = this.game.resources.find(item => item.id === itemId);
-    if (resource) {
-      return resource.color;
-    }
-
-    return this.game.craftedItems.find(item => item.id === itemId)?.color ?? '#cbd5e1';
+    return this.game.getItemColor(itemId);
   }
 
   getUpgradeLevel(upgrade: ResourceUpgrade): number {
@@ -547,7 +539,7 @@ export class UpgradePanelComponent implements OnDestroy {
 
   getAutomationOutputHereLabel(resource: ResourceDef): string {
     return this.copy.format(this.copy.messages.ui.upgradePanel.automationOutputHere, {
-      value: new FormatNumberPipe().transform(
+      value: this.formatNumber.transform(
         this.game.getAutoRateForPlanetResource(this.currentPlanet.id, resource.id),
       ),
     });
@@ -555,7 +547,7 @@ export class UpgradePanelComponent implements OnDestroy {
 
   getAutomationOutputOnPlanetLabel(miner: AutoMiner): string {
     return this.copy.format(this.copy.messages.ui.upgradePanel.automationOutputOnPlanet, {
-      value: new FormatNumberPipe().transform(this.getAutoMinerOutput(miner)),
+      value: this.formatNumber.transform(this.getAutoMinerOutput(miner)),
       planet: this.currentPlanet.name,
     });
   }
@@ -587,8 +579,8 @@ export class UpgradePanelComponent implements OnDestroy {
     if (minedAmount < nextMiner.unlockAtTotal) {
       requirements.push(
         this.copy.format(this.copy.messages.ui.upgradePanel.automationMineRequirement, {
-          current: new FormatNumberPipe().transform(minedAmount),
-          required: new FormatNumberPipe().transform(nextMiner.unlockAtTotal),
+          current: this.formatNumber.transform(minedAmount),
+          required: this.formatNumber.transform(nextMiner.unlockAtTotal),
           resource: resource.name.toLowerCase(),
         }),
       );
