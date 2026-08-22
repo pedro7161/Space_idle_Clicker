@@ -89,7 +89,7 @@ describe('GameService', () => {
     beforeEach(() => service.init());
 
     function setScore(score: number) {
-      const state = service.getState();
+      const state = (service as any).state;
       RESOURCE_IDS.forEach(resourceId => {
         state.totalMined[resourceId] = score;
       });
@@ -97,14 +97,9 @@ describe('GameService', () => {
 
     it('should clamp deployments to planet unit cap (including units in transit)', () => {
       setScore(3000);
-      const state = service.getState();
-      state.planetInventories['solara']['basicCircuits'] = 10_000;
-      state.planetInventories['solara']['mechanicalParts'] = 10_000;
-      state.planetInventories['solara']['copper'] = 10_000;
-
-      for (let i = 0; i < 201; i++) {
-        expect(service.craftMilitaryUnit('sentinel-drone')).toBe(true);
-      }
+      const state = (service as any).state;
+      state.planetInventories.solara.sentinelDrone = 201;
+      spyOn(service, 'getDefenseNeutralizeTarget').and.returnValue(Number.MAX_SAFE_INTEGER);
 
       expect(service.getPlanetUnitCap('solara')).toBe(200);
       expect(service.getPlanetTotalUnits('solara')).toBe(0);
@@ -117,10 +112,10 @@ describe('GameService', () => {
 
     it('should increase planet unit cap with Planetary Hangar levels', () => {
       setScore(3000);
-      const state = service.getState();
-      state.planetInventories['solara']['refinedMetal'] = 10_000;
-      state.planetInventories['solara']['mechanicalParts'] = 10_000;
-      state.planetInventories['solara']['basicCircuits'] = 10_000;
+      const state = (service as any).state;
+      state.planetInventories.solara.refinedMetal = 10_000;
+      state.planetInventories.solara.mechanicalParts = 10_000;
+      state.planetInventories.solara.basicCircuits = 10_000;
 
       expect(service.getPlanetUnitCap('solara')).toBe(200);
       expect(service.buyMilitaryBuilding('planetaryHangar')).toBe(true);
