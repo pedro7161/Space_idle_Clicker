@@ -7,7 +7,8 @@ export type ResourceId =
   | 'hydrogen'
   | 'titanium'
   | 'rareCrystal'
-  | 'uranium';
+  | 'uranium'
+  | 'salvage';
 
 export type CraftedId =
   | 'condensedCarbon'
@@ -16,7 +17,13 @@ export type CraftedId =
   | 'mechanicalParts'
   | 'basicCircuits'
   | 'titaniumAlloy'
-  | 'reactorCores';
+  | 'reactorCores'
+  | 'sentinelDrone'
+  | 'defenseArray'
+  | 'patrolCorvette'
+  | 'ionCruiser'
+  | 'voidBattleship'
+  | 'quantumDreadnought';
 
 export type ItemId = ResourceId | CraftedId;
 

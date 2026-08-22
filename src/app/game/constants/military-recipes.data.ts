@@ -1,0 +1,108 @@
+import { Recipe } from '../models';
+
+export const MILITARY_RECIPES: Recipe[] = [
+  {
+    id: 'sentinel-drone',
+    name: 'Build Sentinel Drone',
+    description: 'Construct an autonomous drone for basic planetary defense.',
+    resourceIds: ['copper'],
+    ingredients: [
+      { itemId: 'basicCircuits', amount: 3 },
+      { itemId: 'mechanicalParts', amount: 2 },
+      { itemId: 'copper', amount: 20 },
+    ],
+    outputId: 'sentinelDrone',
+    outputAmount: 1,
+    tier: 5,
+    unlockAtTotal: 1200,
+    icon: 'SD',
+  },
+  {
+    id: 'defense-array',
+    name: 'Assemble Defense Array',
+    description: 'Build modular defense turrets with targeting systems.',
+    resourceIds: ['oxygen', 'ferrite'],
+    ingredients: [
+      { itemId: 'titaniumAlloy', amount: 2 },
+      { itemId: 'basicCircuits', amount: 5 },
+      { itemId: 'oxygenCells', amount: 4 },
+    ],
+    outputId: 'defenseArray',
+    outputAmount: 1,
+    tier: 5,
+    unlockAtTotal: 1800,
+    icon: 'DA',
+  },
+  {
+    id: 'patrol-corvette',
+    name: 'Construct Patrol Corvette',
+    description: 'Assemble a light armed vessel for planetary patrols.',
+    resourceIds: ['titanium', 'hydrogen'],
+    ingredients: [
+      { itemId: 'titaniumAlloy', amount: 4 },
+      { itemId: 'reactorCores', amount: 1 },
+      { itemId: 'basicCircuits', amount: 8 },
+      { itemId: 'hydrogen', amount: 30 },
+    ],
+    outputId: 'patrolCorvette',
+    outputAmount: 1,
+    tier: 5,
+    unlockAtTotal: 2500,
+    icon: 'PC',
+  },
+  {
+    id: 'ion-cruiser',
+    name: 'Build Ion Cruiser',
+    description: 'Fabricate a mid-size combat vessel with ion weapons.',
+    resourceIds: ['uranium', 'rareCrystal', 'titanium'],
+    ingredients: [
+      { itemId: 'reactorCores', amount: 3 },
+      { itemId: 'titaniumAlloy', amount: 6 },
+      { itemId: 'rareCrystal', amount: 12 },
+      { itemId: 'basicCircuits', amount: 10 },
+    ],
+    outputId: 'ionCruiser',
+    outputAmount: 1,
+    tier: 5,
+    unlockAtTotal: 3500,
+    icon: 'IC',
+  },
+  {
+    id: 'void-battleship',
+    name: 'Assemble Void Battleship',
+    description: 'Construct a heavy capital ship for major defense operations.',
+    resourceIds: ['uranium', 'rareCrystal', 'titanium'],
+    ingredients: [
+      { itemId: 'reactorCores', amount: 5 },
+      { itemId: 'titaniumAlloy', amount: 10 },
+      { itemId: 'rareCrystal', amount: 20 },
+      { itemId: 'uranium', amount: 15 },
+    ],
+    outputId: 'voidBattleship',
+    outputAmount: 1,
+    tier: 6,
+    unlockAtTotal: 5000,
+    icon: 'VB',
+  },
+  {
+    id: 'quantum-dreadnought',
+    name: 'Forge Quantum Dreadnought',
+    description: 'Fabricate the apex military platform with quantum weapons.',
+    resourceIds: ['uranium', 'rareCrystal', 'titanium'],
+    ingredients: [
+      { itemId: 'reactorCores', amount: 8 },
+      { itemId: 'titaniumAlloy', amount: 14 },
+      { itemId: 'rareCrystal', amount: 30 },
+      { itemId: 'uranium', amount: 25 },
+    ],
+    outputId: 'quantumDreadnought',
+    outputAmount: 1,
+    tier: 6,
+    unlockAtTotal: 7500,
+    icon: 'QD',
+  },
+];
+
+export function getMilitaryRecipe(recipeId: string): Recipe | undefined {
+  return MILITARY_RECIPES.find(recipe => recipe.id === recipeId);
+}

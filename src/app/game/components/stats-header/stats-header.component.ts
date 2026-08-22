@@ -23,6 +23,8 @@ export class StatsHeaderComponent {
   readonly shipsWorkspaceToggleRequested = output<void>();
   readonly mobileMenuToggleRequested = output<void>();
 
+  private readonly formatNumber = new FormatNumberPipe();
+
   constructor(
     public game: GameService,
     public copy: GameMessagesService,
@@ -70,19 +72,19 @@ export class StatsHeaderComponent {
 
   get clickRateLabel(): string {
     return this.copy.format(this.copy.messages.ui.statsHeader.clickRate, {
-      value: new FormatNumberPipe().transform(this.perClick),
+      value: this.formatNumber.transform(this.perClick),
     });
   }
 
   get autoRateLabel(): string {
     return this.copy.format(this.copy.messages.ui.statsHeader.totalAutoRate, {
-      value: new FormatNumberPipe().transform(this.totalAutoRate),
+      value: this.formatNumber.transform(this.totalAutoRate),
     });
   }
 
   get totalClicksLabel(): string {
     return this.copy.format(this.copy.messages.ui.statsHeader.clicks, {
-      value: new FormatNumberPipe().transform(this.totalClicks),
+      value: this.formatNumber.transform(this.totalClicks),
     });
   }
 

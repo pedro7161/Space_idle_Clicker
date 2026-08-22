@@ -12,6 +12,8 @@ import { SettingsDialogComponent } from './components/settings-dialog/settings-d
 import { ChangelogDialogComponent } from './components/changelog-dialog/changelog-dialog.component';
 import { SupportedLocale } from './i18n/game-messages';
 import { environment } from '../../environments/environment';
+import { TutorialOverlayComponent } from './components/tutorial-overlay/tutorial-overlay.component';
+import { TutorialService } from './services/tutorial.service';
 
 @Component({
   selector: 'app-game',
@@ -26,6 +28,7 @@ import { environment } from '../../environments/environment';
     ResetDialogComponent,
     SettingsDialogComponent,
     ChangelogDialogComponent,
+    TutorialOverlayComponent,
   ],
   templateUrl: './game.component.html',
 })
@@ -47,6 +50,7 @@ export class GameComponent implements OnDestroy {
   constructor(
     private game: GameService,
     public copy: GameMessagesService,
+    public tutorial: TutorialService,
   ) {
     this.hasSavedGame = this.game.hasSavedGame();
   }
@@ -123,6 +127,9 @@ export class GameComponent implements OnDestroy {
 
     this.showMobilePanel = false;
     this.activeWorkspace = this.activeWorkspace === 'ships' ? 'surface' : 'ships';
+    if (this.activeWorkspace === 'ships') {
+      this.tutorial.notifyShipsWorkspaceOpened();
+    }
   }
 
   toggleOverviewWorkspace(): void {

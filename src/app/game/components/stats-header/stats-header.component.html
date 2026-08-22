@@ -78,6 +78,7 @@
 
         @if (shipsUnlocked()) {
           <button
+            data-tutorial-id="ships-toggle"
             class="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border px-4 py-2.5 text-[0.76rem] font-bold transition min-[1600px]:gap-2.5 min-[1600px]:rounded-[0.95rem] min-[1600px]:px-5 min-[1600px]:py-3 min-[1600px]:text-[0.84rem]"
             [ngClass]="shipsViewActive()
               ? 'border-emerald-400/35 bg-emerald-500/15 text-emerald-100 shadow-[inset_0_0_0_1px_rgba(209,250,229,0.08)] hover:-translate-y-px hover:bg-emerald-500/22'

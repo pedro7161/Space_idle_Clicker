@@ -159,11 +159,17 @@
         (importRequested)="handleImport(settingsDialog, $event)"
         (localeChanged)="changeLanguage(settingsDialog, $event)"
         (resetRequested)="requestResetFromSettings()"
+        (tutorialDisableRequested)="tutorial.disable(); showSettingsDialog = false"
+        (tutorialRestartRequested)="tutorial.restart(); showSettingsDialog = false"
       ></app-settings-dialog>
     }
 
     @if (showChangelogDialog) {
       <app-changelog-dialog (closed)="showChangelogDialog = false"></app-changelog-dialog>
+    }
+
+    @if (hasStarted) {
+      <app-tutorial-overlay></app-tutorial-overlay>
     }
   }
 </div>
