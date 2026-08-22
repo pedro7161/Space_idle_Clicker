@@ -31,6 +31,16 @@ describe('ResourceOverviewComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('should reuse static resource metadata lists', () => {
+    const rawItems = component.rawItems;
+    const craftedItems = component.craftedItems;
+
+    fixture.detectChanges();
+
+    expect(component.rawItems).toBe(rawItems);
+    expect(component.craftedItems).toBe(craftedItems);
+  });
+
   it('should expose discovered planets for the overview', () => {
     expect(component.trackedPlanets.length).toBeGreaterThan(0);
     expect(component.trackedPlanets[0].id).toBe('solara');

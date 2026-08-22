@@ -7,7 +7,7 @@ describe('formatMessage', () => {
   });
 
   it('keeps placeholder when param missing', () => {
-    const result = formatMessage('Hello {name}, level {level}', { name: 'Bob' } as any);
+    const result = formatMessage('Hello {name}, level {level}', { name: 'Bob' });
     expect(result).toBe('Hello Bob, level {level}');
   });
 });

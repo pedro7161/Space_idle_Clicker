@@ -13,7 +13,7 @@ export class SettingsDialogComponent {
   readonly exportCode = input.required<string>();
   readonly exportFileContents = input.required<string>();
   readonly currentLocale = input.required<SupportedLocale>();
-  readonly localeOptions = input.required<Array<{ id: SupportedLocale; label: string }>>();
+  readonly localeOptions = input.required<ReadonlyArray<{ id: SupportedLocale; label: string }>>();
   readonly devModeEnabled = input(false);
   readonly closed = output<void>();
   readonly importRequested = output<string>();
@@ -65,6 +65,8 @@ export class SettingsDialogComponent {
     try {
       const raw = await file.text();
       this.importRequested.emit(raw);
+    } catch {
+      this.setFeedback(this.copy.messages.ui.startScreen.importReadError, 'error');
     } finally {
       input.value = '';
     }
