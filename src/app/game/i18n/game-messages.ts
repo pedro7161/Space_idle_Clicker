@@ -1,3 +1,4 @@
+import { Injectable } from '@angular/core';
 import esProgression from './messages/es/progression.json';
 import esResources from './messages/es/resources.json';
 import esUi from './messages/es/ui.json';
@@ -6,7 +7,6 @@ import frProgression from './messages/fr/progression.json';
 import frResources from './messages/fr/resources.json';
 import frUi from './messages/fr/ui.json';
 import frWorld from './messages/fr/world.json';
-import { Injectable } from '@angular/core';
 import ptProgression from './messages/pt/progression.json';
 import ptResources from './messages/pt/resources.json';
 import ptUi from './messages/pt/ui.json';
@@ -21,7 +21,15 @@ import ui from './messages/en/ui.json';
 import world from './messages/en/world.json';
 
 type MessageValue = string | number;
-export type SupportedLocale = 'en' | 'pt' | 'pt-BR' | 'es' | 'fr';
+const LOCALE_OPTIONS = [
+  { id: 'en', label: 'English' },
+  { id: 'pt', label: 'Português (Portugal)' },
+  { id: 'pt-BR', label: 'Português (Brasil)' },
+  { id: 'es', label: 'Español' },
+  { id: 'fr', label: 'Français' },
+] as const;
+export type SupportedLocale = (typeof LOCALE_OPTIONS)[number]['id'];
+const SUPPORTED_LOCALES = new Set<string>(LOCALE_OPTIONS.map(option => option.id));
 const LOCALE_STORAGE_KEY = 'frontier-miner-locale';
 
 export interface GameMessages {
@@ -31,9 +39,13 @@ export interface GameMessages {
   progression: typeof progression;
 }
 
+function isSupportedLocale(value: string | null): value is SupportedLocale {
+  return value !== null && SUPPORTED_LOCALES.has(value);
+}
+
 function getInitialLocale(): SupportedLocale {
   const stored = typeof localStorage === 'undefined' ? null : localStorage.getItem(LOCALE_STORAGE_KEY);
-  if (stored === 'en' || stored === 'pt' || stored === 'pt-BR' || stored === 'es' || stored === 'fr') {
+  if (isSupportedLocale(stored)) {
     return stored;
   }
 
@@ -105,13 +117,7 @@ export const GAME_MESSAGES = MESSAGE_CATALOGS[getInitialLocale()];
 export class GameMessagesService {
   private locale: SupportedLocale = getInitialLocale();
 
-  readonly localeOptions: Array<{ id: SupportedLocale; label: string }> = [
-    { id: 'en', label: 'English' },
-    { id: 'pt', label: 'Português (Portugal)' },
-    { id: 'pt-BR', label: 'Português (Brasil)' },
-    { id: 'es', label: 'Español' },
-    { id: 'fr', label: 'Français' },
-  ];
+  readonly localeOptions = LOCALE_OPTIONS;
 
   get messages(): GameMessages {
     return MESSAGE_CATALOGS[this.locale];

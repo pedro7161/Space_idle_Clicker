@@ -36,66 +36,16 @@
   <section class="relative z-10 mt-4 min-h-0 overflow-hidden rounded-[1.4rem] border border-white/10 bg-[rgba(8,15,26,0.72)] shadow-[0_24px_70px_rgba(2,6,23,0.45)] backdrop-blur-xl">
     <div class="h-full overflow-y-auto overscroll-contain p-4 min-[1600px]:p-5">
       <div class="grid gap-5 min-[1600px]:gap-6">
+
         <section class="grid gap-4">
           <div class="flex items-center justify-between gap-3">
             <h3 class="text-[0.82rem] uppercase tracking-[0.12em] text-slate-400 min-[1600px]:text-[0.88rem]">
               {{ copy.messages.ui.resourceOverview.rawSection }}
             </h3>
           </div>
-
           <div class="grid gap-3 min-[1200px]:grid-cols-2">
-            @for (resource of rawResources; track resource.id) {
-              <article class="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 min-[1600px]:gap-4 min-[1600px]:p-5">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="flex items-start gap-3">
-                    <span
-                      class="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-white/[0.05] text-[0.92rem] font-bold tracking-[0.04em]"
-                      [style.color]="resource.color"
-                    >
-                      {{ resource.icon }}
-                    </span>
-                    <div class="min-w-0">
-                      <div class="text-[0.94rem] font-semibold text-slate-50">{{ resource.name }}</div>
-                      <div class="mt-1 text-[0.76rem] text-slate-400">{{ copy.messages.ui.resourceOverview.networkTotal }}</div>
-                    </div>
-                  </div>
-                  <span class="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[0.74rem] font-semibold text-slate-200">
-                    {{ getTotalAmount(resource.id) | formatNumber }}
-                  </span>
-                </div>
-
-                <div class="grid gap-2 rounded-[1rem] border border-white/8 bg-slate-950/30 px-3.5 py-3">
-                  @for (planet of trackedPlanets; track planet.id) {
-                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
-                      <span class="flex items-center gap-2 text-slate-300">
-                        <span class="h-2.5 w-2.5 rounded-full" [style.background]="planet.color"></span>
-                        <span>{{ getPlanetStorageLabel(planet) }}</span>
-                      </span>
-                      <span class="font-semibold text-slate-50">{{ getPlanetAmount(resource.id, planet.id) | formatNumber }}</span>
-                    </div>
-                  }
-
-                  @for (planet of trackedStations; track 'station-' + planet.id) {
-                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
-                      <span class="flex items-center gap-2 text-slate-300">
-                        <span class="inline-flex h-2.5 w-2.5 rotate-45 rounded-[0.15rem] border border-cyan-300/70 bg-cyan-400/30"></span>
-                        <span>{{ getStationStorageLabel(planet) }}</span>
-                      </span>
-                      <span class="font-semibold text-cyan-100">{{ getStationAmount(resource.id, planet.id) | formatNumber }}</span>
-                    </div>
-                  }
-
-                  @if (getFleetCargoAmount(resource.id) > 0) {
-                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
-                      <span class="flex items-center gap-2 text-slate-300">
-                        <span class="inline-flex h-2.5 w-2.5 rounded-full border border-amber-300/70 bg-amber-400/35"></span>
-                        <span>{{ copy.messages.ui.resourceOverview.fleetCargo }}</span>
-                      </span>
-                      <span class="font-semibold text-amber-100">{{ getFleetCargoAmount(resource.id) | formatNumber }}</span>
-                    </div>
-                  }
-                </div>
-              </article>
+            @for (item of rawItems; track item.id) {
+              <ng-container [ngTemplateOutlet]="itemCard" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
             }
           </div>
         </section>
@@ -106,64 +56,68 @@
               {{ copy.messages.ui.resourceOverview.craftedSection }}
             </h3>
           </div>
-
           <div class="grid gap-3 min-[1200px]:grid-cols-2">
             @for (item of craftedItems; track item.id) {
-              <article class="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 min-[1600px]:gap-4 min-[1600px]:p-5">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="flex items-start gap-3">
-                    <span
-                      class="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-white/[0.05] text-[0.92rem] font-bold tracking-[0.04em]"
-                      [style.color]="item.color"
-                    >
-                      {{ item.icon }}
-                    </span>
-                    <div class="min-w-0">
-                      <div class="text-[0.94rem] font-semibold text-slate-50">{{ item.name }}</div>
-                      <div class="mt-1 text-[0.76rem] text-slate-400">{{ copy.messages.ui.resourceOverview.networkTotal }}</div>
-                    </div>
-                  </div>
-                  <span class="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[0.74rem] font-semibold text-slate-200">
-                    {{ getTotalAmount(item.id) | formatNumber }}
-                  </span>
-                </div>
-
-                <div class="grid gap-2 rounded-[1rem] border border-white/8 bg-slate-950/30 px-3.5 py-3">
-                  @for (planet of trackedPlanets; track planet.id) {
-                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
-                      <span class="flex items-center gap-2 text-slate-300">
-                        <span class="h-2.5 w-2.5 rounded-full" [style.background]="planet.color"></span>
-                        <span>{{ getPlanetStorageLabel(planet) }}</span>
-                      </span>
-                      <span class="font-semibold text-slate-50">{{ getPlanetAmount(item.id, planet.id) | formatNumber }}</span>
-                    </div>
-                  }
-
-                  @for (planet of trackedStations; track 'station-' + planet.id) {
-                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
-                      <span class="flex items-center gap-2 text-slate-300">
-                        <span class="inline-flex h-2.5 w-2.5 rotate-45 rounded-[0.15rem] border border-cyan-300/70 bg-cyan-400/30"></span>
-                        <span>{{ getStationStorageLabel(planet) }}</span>
-                      </span>
-                      <span class="font-semibold text-cyan-100">{{ getStationAmount(item.id, planet.id) | formatNumber }}</span>
-                    </div>
-                  }
-
-                  @if (getFleetCargoAmount(item.id) > 0) {
-                    <div class="flex items-center justify-between gap-3 text-[0.78rem]">
-                      <span class="flex items-center gap-2 text-slate-300">
-                        <span class="inline-flex h-2.5 w-2.5 rounded-full border border-amber-300/70 bg-amber-400/35"></span>
-                        <span>{{ copy.messages.ui.resourceOverview.fleetCargo }}</span>
-                      </span>
-                      <span class="font-semibold text-amber-100">{{ getFleetCargoAmount(item.id) | formatNumber }}</span>
-                    </div>
-                  }
-                </div>
-              </article>
+              <ng-container [ngTemplateOutlet]="itemCard" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
             }
           </div>
         </section>
+
       </div>
     </div>
   </section>
 </div>
+
+<ng-template #itemCard let-item>
+  <article class="grid gap-3 rounded-[1.2rem] border border-white/10 bg-white/[0.03] p-4 min-[1600px]:gap-4 min-[1600px]:p-5">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <span
+          class="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-white/[0.05] text-[0.92rem] font-bold tracking-[0.04em]"
+          [style.color]="item.color"
+        >
+          {{ item.icon }}
+        </span>
+        <div class="min-w-0">
+          <div class="text-[0.94rem] font-semibold text-slate-50">{{ item.name }}</div>
+          <div class="mt-1 text-[0.76rem] text-slate-400">{{ copy.messages.ui.resourceOverview.networkTotal }}</div>
+        </div>
+      </div>
+      <span class="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[0.74rem] font-semibold text-slate-200">
+        {{ getTotalAmount(item.id) | formatNumber }}
+      </span>
+    </div>
+
+    <div class="grid gap-2 rounded-[1rem] border border-white/8 bg-slate-950/30 px-3.5 py-3">
+      @for (planet of trackedPlanets; track planet.id) {
+        <div class="flex items-center justify-between gap-3 text-[0.78rem]">
+          <span class="flex items-center gap-2 text-slate-300">
+            <span class="h-2.5 w-2.5 rounded-full" [style.background]="planet.color"></span>
+            <span>{{ getPlanetStorageLabel(planet) }}</span>
+          </span>
+          <span class="font-semibold text-slate-50">{{ getPlanetAmount(item.id, planet.id) | formatNumber }}</span>
+        </div>
+      }
+
+      @for (planet of trackedStations; track 'station-' + planet.id) {
+        <div class="flex items-center justify-between gap-3 text-[0.78rem]">
+          <span class="flex items-center gap-2 text-slate-300">
+            <span class="inline-flex h-2.5 w-2.5 rotate-45 rounded-[0.15rem] border border-cyan-300/70 bg-cyan-400/30"></span>
+            <span>{{ getStationStorageLabel(planet) }}</span>
+          </span>
+          <span class="font-semibold text-cyan-100">{{ getStationAmount(item.id, planet.id) | formatNumber }}</span>
+        </div>
+      }
+
+      @if (getFleetCargoAmount(item.id) > 0) {
+        <div class="flex items-center justify-between gap-3 text-[0.78rem]">
+          <span class="flex items-center gap-2 text-slate-300">
+            <span class="inline-flex h-2.5 w-2.5 rounded-full border border-amber-300/70 bg-amber-400/35"></span>
+            <span>{{ copy.messages.ui.resourceOverview.fleetCargo }}</span>
+          </span>
+          <span class="font-semibold text-amber-100">{{ getFleetCargoAmount(item.id) | formatNumber }}</span>
+        </div>
+      }
+    </div>
+  </article>
+</ng-template>

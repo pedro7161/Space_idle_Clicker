@@ -19,6 +19,7 @@ export const PLANETS: Planet[] = [
       titanium: 0,
       rareCrystal: 0,
       uranium: 0,
+      salvage: 0,
     },
     travelCost: [],
     requiredShipTier: 0,
@@ -44,6 +45,7 @@ export const PLANETS: Planet[] = [
       titanium: 0,
       rareCrystal: 0,
       uranium: 0,
+      salvage: 0,
     },
     travelCost: [
       { itemId: 'oxygenCells', amount: 4 },
@@ -72,6 +74,7 @@ export const PLANETS: Planet[] = [
       titanium: 0,
       rareCrystal: 0,
       uranium: 0,
+      salvage: 0,
     },
     travelCost: [
       { itemId: 'oxygenCells', amount: 6 },
@@ -100,6 +103,7 @@ export const PLANETS: Planet[] = [
       titanium: 0,
       rareCrystal: 0,
       uranium: 0,
+      salvage: 0,
     },
     travelCost: [
       { itemId: 'oxygenCells', amount: 8 },
@@ -129,6 +133,7 @@ export const PLANETS: Planet[] = [
       titanium: 0,
       rareCrystal: 0,
       uranium: 0,
+      salvage: 0,
     },
     travelCost: [
       { itemId: 'mechanicalParts', amount: 3 },
@@ -157,6 +162,7 @@ export const PLANETS: Planet[] = [
       titanium: 0,
       rareCrystal: 0,
       uranium: 0,
+      salvage: 0,
     },
     travelCost: [
       { itemId: 'oxygenCells', amount: 10 },
@@ -186,6 +192,7 @@ export const PLANETS: Planet[] = [
       titanium: 0,
       rareCrystal: 0,
       uranium: 0,
+      salvage: 0,
     },
     travelCost: [
       { itemId: 'oxygenCells', amount: 12 },
@@ -215,6 +222,7 @@ export const PLANETS: Planet[] = [
       titanium: 3.1,
       rareCrystal: 0,
       uranium: 0,
+      salvage: 0,
     },
     travelCost: [
       { itemId: 'copper', amount: 18 },
@@ -245,6 +253,7 @@ export const PLANETS: Planet[] = [
       titanium: 0.4,
       rareCrystal: 2.75,
       uranium: 0,
+      salvage: 0,
     },
     travelCost: [
       { itemId: 'copper', amount: 14 },
@@ -275,6 +284,7 @@ export const PLANETS: Planet[] = [
       titanium: 0.55,
       rareCrystal: 0.8,
       uranium: 3.6,
+      salvage: 0,
     },
     travelCost: [
       { itemId: 'titanium', amount: 18 },

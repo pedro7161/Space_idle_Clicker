@@ -1,7 +1,7 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SettingsDialogComponent } from './settings-dialog.component';
 import { Component } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SupportedLocale } from '../../i18n/game-messages';
+import { SettingsDialogComponent } from './settings-dialog.component';
 
 @Component({
   standalone: true,
@@ -87,6 +87,21 @@ describe('SettingsDialogComponent', () => {
     component.importValue = 'some-save-data';
     component.requestImportCode();
     expect(component.importRequested.emit).toHaveBeenCalledWith('some-save-data');
+  });
+
+  it('should show feedback when an imported save file cannot be read', async () => {
+    spyOn(component.importRequested, 'emit');
+    const input = {
+      files: [{ text: () => Promise.reject(new Error('read failed')) }],
+      value: 'save.json',
+    } as unknown as HTMLInputElement;
+
+    await component.importSaveFile({ target: input } as unknown as Event);
+
+    expect(component.importRequested.emit).not.toHaveBeenCalled();
+    expect(component.feedbackMessage).toBe(component.copy.messages.ui.startScreen.importReadError);
+    expect(component.feedbackTone).toBe('error');
+    expect(input.value).toBe('');
   });
 
   it('should emit localeChanged when onLocaleChange is called', () => {

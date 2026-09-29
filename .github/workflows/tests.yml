@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - staging
   push:
     branches:
       - main
@@ -35,3 +36,6 @@ jobs:
 
       - name: Run unit tests
         run: npm run test:ci
+
+      - name: Run production build
+        run: npm run build

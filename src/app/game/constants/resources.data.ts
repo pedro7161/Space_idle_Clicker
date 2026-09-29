@@ -86,6 +86,15 @@ export const RESOURCE_DEFS: ResourceDef[] = [
     mineralColor: '#d9f99d',
     basePerClick: 2,
   },
+  {
+    id: 'salvage',
+    name: 'Salvage',
+    description: 'Reclaimed technology and materials from defeated enemy systems.',
+    icon: 'Sv',
+    color: '#6366f1',
+    mineralColor: '#818cf8',
+    basePerClick: 0,
+  },
 ];
 
 export const CRAFTED_DEFS: CraftedDef[] = [

@@ -20,6 +20,90 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
   {
+    version: '0.8.0',
+    releasedAt: '2026-04-26',
+    title: {
+      en: 'The Void Syndicate',
+      pt: 'O Sindicato do Vazio',
+    },
+    summary: {
+      en: 'Enemies are now a living faction that remembers your attacks, escalates in response, and targets your weakest planets. A smarter tutorial, affordable-upgrade highlights, and cleaner combat controls round out the update.',
+      pt: 'Os inimigos são agora uma fação viva que recorda os teus ataques, escala em resposta e ataca os teus planetas mais vulneráveis. Um tutorial mais inteligente, indicadores de melhorias acessíveis e controlos de combate mais limpos completam a atualização.',
+    },
+    items: [
+      {
+        type: 'added',
+        en: 'Faction Anger system: launching attacks raises Void Syndicate anger, which decays over time. At Alert (30+) fleets spawn faster and target weaker planets; at Enraged (60+) fleets spawn at double rate and retaliate against the planet you attacked from.',
+        pt: 'Sistema de Fúria da Fação: lançar ataques aumenta a fúria do Sindicato do Vazio, que decai com o tempo. Em Alerta (30+) as frotas aparecem mais depressa e visam planetas mais fracos; em Enfurecido (60+) as frotas aparecem ao dobro da velocidade e retaliam contra o planeta de onde atacaste.',
+      },
+      {
+        type: 'added',
+        en: 'Dynamic planet threat levels: undefended raids escalate a planet\'s danger level (up to 2 tiers above its base), while 6 consecutive defended raids de-escalate it. Garrison defense targets scale with the current danger level.',
+        pt: 'Níveis de ameaça planetária dinâmicos: raids sem defesa aumentam o nível de perigo de um planeta (até 2 níveis acima da base), enquanto 6 raids defendidas consecutivas o reduzem. Os alvos de defesa da guarnição escalam com o nível de perigo atual.',
+      },
+      {
+        type: 'added',
+        en: 'Garrison attrition: raids that overwhelm a garrison destroy a portion of the weakest units based on how much the defense was outmatched.',
+        pt: 'Desgaste da guarnição: raids que ultrapassam a guarnição destroem parte das unidades mais fracas com base em quanto a defesa foi superada.',
+      },
+      {
+        type: 'added',
+        en: 'Attack strength ratio: offensive strikes now succeed only when total strength meets the required threshold. Casualties are lower at higher overkill ratios, and loot scales up to 1.5× at 3× the required strength.',
+        pt: 'Rácio de força de ataque: os ataques ofensivos só têm sucesso quando a força total cumpre o limiar necessário. As baixas são menores com rácios de overkill mais altos, e o saque escala até 1,5× com o triplo da força necessária.',
+      },
+      {
+        type: 'added',
+        en: 'Attack result popup: when a strike resolves, a modal shows the outcome, strength ratio, loot received, and unit casualties. Dismiss it to continue.',
+        pt: 'Popup de resultado do ataque: quando um ataque é resolvido, um modal mostra o resultado, o rácio de força, o saque obtido e as baixas de unidades. Descarta-o para continuar.',
+      },
+      {
+        type: 'added',
+        en: 'Faction Anger widget in the Military tab: a color-coded bar shows current anger (calm/alert/enraged) with a description of the active threat state.',
+        pt: 'Widget de Fúria da Fação no separador Militar: uma barra codificada por cores mostra a fúria atual (calmo/alerta/enfurecido) com uma descrição do estado de ameaça ativo.',
+      },
+      {
+        type: 'added',
+        en: 'Build quantity buttons (×1, ×5, ×10, Max) in Unit Production to speed up garrison reinforcement.',
+        pt: 'Botões de quantidade de construção (×1, ×5, ×10, Máx) na Produção de Unidades para acelerar o reforço da guarnição.',
+      },
+      {
+        type: 'added',
+        en: 'All six Military tab sections are now collapsible, and Garrisons, Infrastructure, and Enemy Systems use a two-column grid layout.',
+        pt: 'As seis secções do separador Militar são agora recolhíveis, e Guarnições, Infraestrutura e Sistemas Inimigos usam um layout em grelha de duas colunas.',
+      },
+      {
+        type: 'added',
+        en: 'Combat log now tracks all event types: enemy raids, player strike results, and Void Syndicate tier changes, color-coded and showing time elapsed.',
+        pt: 'O registo de combate acompanha agora todos os tipos de eventos: raids inimigas, resultados de ataques do jogador e mudanças de nível do Sindicato do Vazio, codificados por cores e com o tempo decorrido.',
+      },
+      {
+        type: 'added',
+        en: 'Tutorial overhaul: a new mining-until-affordable step prevents the upgrade tutorial from appearing before the player can buy anything. The tutorial popup is now draggable.',
+        pt: 'Revisão do tutorial: um novo passo de mineração-até-acessível impede que o tutorial de melhorias apareça antes de o jogador poder comprar alguma coisa. O popup do tutorial é agora arrastável.',
+      },
+      {
+        type: 'changed',
+        en: 'Upgrade cards and the Upgrade button light up with a cyan glow when the player can afford them. The Upgrades tab also glows when affordable upgrades are available or when the tutorial is directing the player there.',
+        pt: 'Os cartões de melhoria e o botão Melhorar iluminam-se com um brilho ciano quando o jogador os pode pagar. O separador Melhorias também brilha quando há melhorias acessíveis ou quando o tutorial está a direcionar o jogador para lá.',
+      },
+      {
+        type: 'changed',
+        en: 'Ship parts in the Launch tab disappear once built. Planet Routes are hidden until the ship is launched.',
+        pt: 'As peças da nave no separador Lançamento desaparecem depois de construídas. As Rotas Planetárias ficam ocultas até a nave ser lançada.',
+      },
+      {
+        type: 'changed',
+        en: 'The Unlock (All Planets) recipe button is now hidden until the player has launched a ship, and shows the resource cost directly on the button.',
+        pt: 'O botão de Desbloquear (Todos os Planetas) nas receitas fica agora oculto até o jogador ter lançado uma nave, e mostra o custo de recursos diretamente no botão.',
+      },
+      {
+        type: 'fixed',
+        en: 'Tutorial overlay now shows even when the target element is off-screen (e.g. on a closed mobile panel), falling back to a centered tooltip with a full-screen dim.',
+        pt: 'O overlay do tutorial aparece agora mesmo quando o elemento alvo está fora do ecrã (por exemplo, num painel móvel fechado), recorrendo a um tooltip centrado com um esbatimento de ecrã inteiro.',
+      },
+    ],
+  },
+  {
     version: '0.7.1',
     releasedAt: '2026-04-04',
     title: {

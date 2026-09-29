@@ -1,9 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component, output } from '@angular/core';
-import { FormatNumberPipe } from '../../pipes/format-number.pipe';
-import { CraftedDef, ItemId, Planet, ResourceDef } from '../../models';
 import { GameMessagesService } from '../../i18n/game-messages';
+import { ItemId, Planet } from '../../models';
+import { FormatNumberPipe } from '../../pipes/format-number.pipe';
 import { GameService } from '../../services/game.service';
+
+interface OverviewItem {
+  id: ItemId;
+  name: string;
+  icon: string;
+  color: string;
+  section: 'raw' | 'crafted';
+}
 
 @Component({
   selector: 'app-resource-overview',
@@ -13,18 +21,29 @@ import { GameService } from '../../services/game.service';
 })
 export class ResourceOverviewComponent {
   readonly workspaceToggleRequested = output<void>();
+  readonly rawItems: OverviewItem[];
+  readonly craftedItems: OverviewItem[];
+  private readonly allItems: OverviewItem[];
 
   constructor(
     public game: GameService,
     public copy: GameMessagesService,
-  ) {}
-
-  get rawResources(): ResourceDef[] {
-    return this.game.resources;
-  }
-
-  get craftedItems(): CraftedDef[] {
-    return this.game.craftedItems;
+  ) {
+    this.rawItems = this.game.resources.map(resource => ({
+      id: resource.id,
+      name: resource.name,
+      icon: resource.icon,
+      color: resource.color,
+      section: 'raw',
+    }));
+    this.craftedItems = this.game.craftedItems.map(craftedItem => ({
+      id: craftedItem.id,
+      name: craftedItem.name,
+      icon: craftedItem.icon,
+      color: craftedItem.color,
+      section: 'crafted',
+    }));
+    this.allItems = [...this.rawItems, ...this.craftedItems];
   }
 
   get trackedPlanets(): Planet[] {
@@ -40,8 +59,10 @@ export class ResourceOverviewComponent {
   }
 
   get networkTotalItems(): number {
-    return [...this.rawResources, ...this.craftedItems]
-      .reduce((total, item) => total + this.game.getNetworkInventoryAmount(item.id), 0);
+    return this.allItems.reduce(
+      (total, item) => total + this.game.getNetworkInventoryAmount(item.id),
+      0,
+    );
   }
 
   getTotalAmount(itemId: ItemId): number {

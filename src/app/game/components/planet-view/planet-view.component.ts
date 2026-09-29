@@ -29,6 +29,8 @@ export class PlanetViewComponent implements OnInit {
   private floatId = 0;
   private currentPlanetId = '';
 
+  private readonly formatNumber = new FormatNumberPipe();
+
   constructor(
     public game: GameService,
     public copy: GameMessagesService,
@@ -70,7 +72,7 @@ export class PlanetViewComponent implements OnInit {
 
   get localAutoLabel(): string {
     return this.copy.format(this.copy.messages.ui.planetView.perSecond, {
-      value: new FormatNumberPipe().transform(this.localAutoRate),
+      value: this.formatNumber.transform(this.localAutoRate),
     });
   }
 
@@ -141,21 +143,11 @@ export class PlanetViewComponent implements OnInit {
   }
 
   getItemLabel(itemId: ItemId): string {
-    const resource = this.game.resources.find(item => item.id === itemId);
-    if (resource) {
-      return resource.name;
-    }
-
-    return this.game.craftedItems.find(item => item.id === itemId)?.name ?? itemId;
+    return this.game.getItemLabel(itemId);
   }
 
   getItemColor(itemId: ItemId): string {
-    const resource = this.game.resources.find(item => item.id === itemId);
-    if (resource) {
-      return resource.color;
-    }
-
-    return this.game.craftedItems.find(item => item.id === itemId)?.color ?? '#cbd5e1';
+    return this.game.getItemColor(itemId);
   }
 
   getPlanetMultiplier(resourceId: ResourceDef['id']): number {
@@ -176,10 +168,9 @@ export class PlanetViewComponent implements OnInit {
 
   private spawnFloatingText(event: MouseEvent, value: number): void {
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const pipe = new FormatNumberPipe();
     const floatingText: FloatingText = {
       id: this.floatId++,
-      value: `+${pipe.transform(value)}`,
+      value: `+${this.formatNumber.transform(value)}`,
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
     };
