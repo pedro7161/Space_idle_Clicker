@@ -110,6 +110,28 @@ describe('GameService', () => {
       expect(service.getInventoryAmount('sentinelDrone', 'solara')).toBe(1);
     });
 
+    it('should count crafted military units from 0 even though inventories lack their keys', () => {
+      // Military unit ids aren't in ALL_ITEM_IDS, so `inventory[id] += n` used to store NaN.
+      setScore(3000);
+      const state = (service as any).state;
+      delete state.planetInventories.solara.sentinelDrone;
+      state.planetInventories.solara.basicCircuits = 10_000;
+      state.planetInventories.solara.mechanicalParts = 10_000;
+      state.planetInventories.solara.copper = 10_000;
+
+      for (let i = 0; i < 3; i++) {
+        expect(service.craftMilitaryUnit('sentinel-drone')).toBe(true);
+      }
+      expect(service.getInventoryAmount('sentinelDrone', 'solara')).toBe(3);
+    });
+
+    it('never deploys a NaN count when the unit key is missing from the inventory', () => {
+      setScore(3000);
+      delete (service as any).state.planetInventories.solara.sentinelDrone;
+      expect(service.deployUnit('verdara', 'sentinelDrone', 5)).toBe(false);
+      expect(service.getPlanetTotalUnits('verdara')).toBe(0);
+    });
+
     it('should increase planet unit cap with Planetary Hangar levels', () => {
       setScore(3000);
       const state = (service as any).state;

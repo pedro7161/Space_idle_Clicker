@@ -217,6 +217,10 @@ function buildGeneratedPlanet(seed: GeneratedPlanetSeed): Planet {
   };
 }
 
+function finiteOrZero(value: number | null | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private state!: GameState;
@@ -675,7 +679,7 @@ export class GameService {
   }
 
   getInventoryAmount(itemId: ItemId, planetId: string = this.state.currentPlanetId): number {
-    return this.getPlanetInventory(planetId)[itemId] ?? 0;
+    return finiteOrZero(this.getPlanetInventory(planetId)[itemId]);
   }
 
   getStationInventoryAmount(itemId: ItemId, planetId: string): number {
@@ -967,7 +971,7 @@ export class GameService {
       return false;
     }
 
-    const available = inventory[unitId] ?? 0;
+    const available = finiteOrZero(inventory[unitId]);
     if (available <= 0) {
       return false;
     }
@@ -984,11 +988,12 @@ export class GameService {
     const maxByDefense = Math.floor(remainingDefense / perUnitDefense);
 
     const actual = Math.min(available, count, remainingCapacity, maxByDefense);
-    if (actual <= 0) {
+    // Math.min returns NaN if any input is NaN, and `NaN <= 0` is false.
+    if (!Number.isFinite(actual) || actual <= 0) {
       return false;
     }
 
-    inventory[unitId] -= actual;
+    inventory[unitId] = available - actual;
 
     const now = Date.now();
     const travelTime = this.calculateUnitTravelTime(this.state.currentPlanetId, planetId);
@@ -2417,12 +2422,16 @@ export class GameService {
     });
   }
 
+  // Military units (sentinelDrone, ...) aren't in ALL_ITEM_IDS, so inventories don't start with
+  // their keys: `inventory[id] += n` on a missing key stored NaN. Treat missing/invalid as 0.
   private addItem(itemId: ItemId, amount: number, planetId: string): void {
-    this.getPlanetInventory(planetId)[itemId] += amount;
+    const inventory = this.getPlanetInventory(planetId);
+    inventory[itemId] = finiteOrZero(inventory[itemId]) + amount;
   }
 
   private removeItem(itemId: ItemId, amount: number, planetId: string): void {
-    this.getPlanetInventory(planetId)[itemId] -= amount;
+    const inventory = this.getPlanetInventory(planetId);
+    inventory[itemId] = finiteOrZero(inventory[itemId]) - amount;
   }
 
   private getPlanetScopedKey(planetId: string, entityId: string): string {
