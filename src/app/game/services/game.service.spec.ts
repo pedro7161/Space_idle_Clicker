@@ -88,16 +88,22 @@ describe('GameService', () => {
   describe('military unit cap', () => {
     beforeEach(() => service.init());
 
+    // getState() returns an emitted snapshot (inventories are copied), so arrange the
+    // service's internal state directly, like the other suites in this file.
+    function internalState() {
+      return (service as any).state;
+    }
+
     function setScore(score: number) {
-      const state = service.getState();
+      const state = internalState();
       RESOURCE_IDS.forEach(resourceId => {
         state.totalMined[resourceId] = score;
       });
     }
 
-    it('should clamp deployments to planet unit cap (including units in transit)', () => {
+    it('should clamp deployments to the unit cap and the raid-defense target', () => {
       setScore(3000);
-      const state = service.getState();
+      const state = internalState();
       state.planetInventories['solara']['basicCircuits'] = 10_000;
       state.planetInventories['solara']['mechanicalParts'] = 10_000;
       state.planetInventories['solara']['copper'] = 10_000;
@@ -105,19 +111,35 @@ describe('GameService', () => {
       for (let i = 0; i < 201; i++) {
         expect(service.craftMilitaryUnit('sentinel-drone')).toBe(true);
       }
+      // Military units aren't pre-seeded in inventories; crafting must still count from 0, not NaN.
+      expect(service.getInventoryAmount('sentinelDrone', 'solara')).toBe(201);
 
       expect(service.getPlanetUnitCap('solara')).toBe(200);
       expect(service.getPlanetTotalUnits('solara')).toBe(0);
 
+      const verdara = service.getPlanet('verdara')!;
+      const defenseRoom = service.getDefenseNeutralizeTarget(verdara.requiredShipTier);
+      const expected = Math.min(201, service.getPlanetUnitCap('verdara'), defenseRoom);
+
       expect(service.deployUnit('verdara', 'sentinelDrone', 999)).toBe(true);
-      expect(service.getPlanetTotalUnits('verdara')).toBe(200);
-      expect(service.getPlanetTotalUnits('verdara')).toBe(service.getPlanetUnitCap('verdara'));
-      expect(service.getInventoryAmount('sentinelDrone', 'solara')).toBe(1);
+      expect(service.getPlanetTotalUnits('verdara')).toBe(expected);
+      expect(service.getPlanetTotalUnits('verdara')).toBeLessThanOrEqual(service.getPlanetUnitCap('verdara'));
+      expect(service.getInventoryAmount('sentinelDrone', 'solara')).toBe(201 - expected);
+
+      // Once the defense target is covered, further deploys are refused instead of over-sending.
+      expect(service.deployUnit('verdara', 'sentinelDrone', 999)).toBe(false);
+    });
+
+    it('never deploys a NaN count when the unit key is missing from the inventory', () => {
+      setScore(3000);
+      delete internalState().planetInventories['solara']['sentinelDrone'];
+      expect(service.deployUnit('verdara', 'sentinelDrone', 5)).toBe(false);
+      expect(service.getPlanetTotalUnits('verdara')).toBe(0);
     });
 
     it('should increase planet unit cap with Planetary Hangar levels', () => {
       setScore(3000);
-      const state = service.getState();
+      const state = internalState();
       state.planetInventories['solara']['refinedMetal'] = 10_000;
       state.planetInventories['solara']['mechanicalParts'] = 10_000;
       state.planetInventories['solara']['basicCircuits'] = 10_000;
